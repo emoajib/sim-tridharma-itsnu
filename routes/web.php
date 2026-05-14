@@ -118,6 +118,17 @@ Route::middleware('auth')->group(function () {
     Route::post('/bimbingan', [MahasiswaBimbinganController::class, 'store'])->name('bimbingan.store');
     Route::put('/bimbingan/{mahasiswaBimbingan}', [MahasiswaBimbinganController::class, 'update'])->name('bimbingan.update');
     Route::delete('/bimbingan/{mahasiswaBimbingan}', [MahasiswaBimbinganController::class, 'destroy'])->name('bimbingan.destroy');
+
+    // SPMI Routes
+    Route::get('/spmi/audit', [\App\Http\Controllers\Api\AuditMutuController::class, 'index'])->name('spmi.audit');
+    Route::post('/spmi/audit', [\App\Http\Controllers\Api\AuditMutuController::class, 'store'])->name('spmi.audit.store');
+    Route::put('/spmi/audit/{auditMutu}', [\App\Http\Controllers\Api\AuditMutuController::class, 'update'])->name('spmi.audit.update');
+    Route::delete('/spmi/audit/{auditMutu}', [\App\Http\Controllers\Api\AuditMutuController::class, 'destroy'])->name('spmi.audit.destroy');
+
+    Route::get('/spmi/risk', [\App\Http\Controllers\Api\RiskRegisterController::class, 'index'])->name('spmi.risk');
+    Route::post('/spmi/risk', [\App\Http\Controllers\Api\RiskRegisterController::class, 'store'])->name('spmi.risk.store');
+    Route::put('/spmi/risk/{riskRegister}', [\App\Http\Controllers\Api\RiskRegisterController::class, 'update'])->name('spmi.risk.update');
+    Route::delete('/spmi/risk/{riskRegister}', [\App\Http\Controllers\Api\RiskRegisterController::class, 'destroy'])->name('spmi.risk.destroy');
 });
 
 require __DIR__.'/auth.php';
