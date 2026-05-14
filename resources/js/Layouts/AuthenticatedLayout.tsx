@@ -37,6 +37,14 @@ export default function Authenticated({
 
     const isPortofolioActive = portofolioLinks.some((l) => route().current(l.route));
 
+    const otherLinks = [
+        { name: 'BKD', route: 'bkd' },
+        { name: 'Dokumen', route: 'dokumen' },
+        { name: 'Bimbingan', route: 'bimbingan' },
+    ];
+
+    const isOtherActive = otherLinks.some((l) => route().current(l.route));
+
     return (
         <div className="min-h-screen bg-gray-100">
             <nav className="border-b border-gray-100 bg-white">
@@ -133,6 +141,12 @@ export default function Authenticated({
                                         </div>
                                     )}
                                 </div>
+
+                                {otherLinks.map((link) => (
+                                    <NavLink key={link.route} href={route(link.route)} active={route().current(link.route)}>
+                                        {link.name}
+                                    </NavLink>
+                                ))}
                             </div>
                         </div>
 
@@ -191,6 +205,14 @@ export default function Authenticated({
                             Portofolio
                         </div>
                         {portofolioLinks.map((link) => (
+                            <ResponsiveNavLink key={link.route} href={route(link.route)} active={route().current(link.route)}>
+                                {link.name}
+                            </ResponsiveNavLink>
+                        ))}
+                        <div className="px-4 py-2 text-sm font-medium text-gray-500 uppercase tracking-wider">
+                            Lainnya
+                        </div>
+                        {otherLinks.map((link) => (
                             <ResponsiveNavLink key={link.route} href={route(link.route)} active={route().current(link.route)}>
                                 {link.name}
                             </ResponsiveNavLink>

@@ -14,6 +14,9 @@ use App\Http\Controllers\Api\PenelitianController;
 use App\Http\Controllers\Api\PublikasiController;
 use App\Http\Controllers\Api\PkmController;
 use App\Http\Controllers\Api\PenunjangController;
+use App\Http\Controllers\Api\BkdController;
+use App\Http\Controllers\Api\DokumenBuktiController;
+use App\Http\Controllers\Api\MahasiswaBimbinganController;
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('master-data/summary', [MasterDataController::class, 'summary']);
@@ -31,4 +34,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('publikasi', PublikasiController::class);
     Route::apiResource('pkm', PkmController::class);
     Route::apiResource('penunjang', PenunjangController::class);
+
+    Route::apiResource('bkd', BkdController::class);
+    Route::apiResource('dokumen', DokumenBuktiController::class);
+    Route::apiResource('bimbingan', MahasiswaBimbinganController::class);
 });

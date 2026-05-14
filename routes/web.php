@@ -14,6 +14,9 @@ use App\Http\Controllers\Api\PublikasiController;
 use App\Http\Controllers\Api\PkmController;
 use App\Http\Controllers\Api\PenunjangController;
 use App\Http\Controllers\Api\PortofolioController;
+use App\Http\Controllers\Api\BkdController;
+use App\Http\Controllers\Api\DokumenBuktiController;
+use App\Http\Controllers\Api\MahasiswaBimbinganController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -98,6 +101,24 @@ Route::middleware('auth')->group(function () {
     Route::post('/portofolio/penunjang', [PenunjangController::class, 'store'])->name('portofolio.penunjang.store');
     Route::put('/portofolio/penunjang/{penunjang}', [PenunjangController::class, 'update'])->name('portofolio.penunjang.update');
     Route::delete('/portofolio/penunjang/{penunjang}', [PenunjangController::class, 'destroy'])->name('portofolio.penunjang.destroy');
+
+    // BKD Routes
+    Route::get('/bkd', [BkdController::class, 'index'])->name('bkd');
+    Route::post('/bkd', [BkdController::class, 'store'])->name('bkd.store');
+    Route::put('/bkd/{bkd}', [BkdController::class, 'update'])->name('bkd.update');
+    Route::delete('/bkd/{bkd}', [BkdController::class, 'destroy'])->name('bkd.destroy');
+
+    // Dokumen Routes
+    Route::get('/dokumen', [DokumenBuktiController::class, 'index'])->name('dokumen');
+    Route::post('/dokumen', [DokumenBuktiController::class, 'store'])->name('dokumen.store');
+    Route::put('/dokumen/{dokumenBukti}', [DokumenBuktiController::class, 'update'])->name('dokumen.update');
+    Route::delete('/dokumen/{dokumenBukti}', [DokumenBuktiController::class, 'destroy'])->name('dokumen.destroy');
+
+    // Bimbingan Routes
+    Route::get('/bimbingan', [MahasiswaBimbinganController::class, 'index'])->name('bimbingan');
+    Route::post('/bimbingan', [MahasiswaBimbinganController::class, 'store'])->name('bimbingan.store');
+    Route::put('/bimbingan/{mahasiswaBimbingan}', [MahasiswaBimbinganController::class, 'update'])->name('bimbingan.update');
+    Route::delete('/bimbingan/{mahasiswaBimbingan}', [MahasiswaBimbinganController::class, 'destroy'])->name('bimbingan.destroy');
 });
 
 require __DIR__.'/auth.php';
