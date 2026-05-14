@@ -41,6 +41,8 @@ export default function Authenticated({
         { name: 'BKD', route: 'bkd' },
         { name: 'Dokumen', route: 'dokumen' },
         { name: 'Bimbingan', route: 'bimbingan' },
+        { name: 'Mapping CPL-MK', route: 'kurikulum.mapping' },
+        { name: 'RPS', route: 'kurikulum.rps' },
         { name: 'Audit Mutu', route: 'spmi.audit' },
         { name: 'Risk Register', route: 'spmi.risk' },
     ];

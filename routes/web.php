@@ -129,6 +129,15 @@ Route::middleware('auth')->group(function () {
     Route::post('/spmi/risk', [\App\Http\Controllers\Api\RiskRegisterController::class, 'store'])->name('spmi.risk.store');
     Route::put('/spmi/risk/{riskRegister}', [\App\Http\Controllers\Api\RiskRegisterController::class, 'update'])->name('spmi.risk.update');
     Route::delete('/spmi/risk/{riskRegister}', [\App\Http\Controllers\Api\RiskRegisterController::class, 'destroy'])->name('spmi.risk.destroy');
+
+    // Kurikulum Mapping + RPS Routes
+    Route::get('/kurikulum/mapping', [\App\Http\Controllers\Api\KurikulumMappingController::class, 'index'])->name('kurikulum.mapping');
+    Route::post('/kurikulum/mapping/toggle', [\App\Http\Controllers\Api\KurikulumMappingController::class, 'toggleMapping'])->name('kurikulum.mapping.toggle');
+
+    Route::get('/kurikulum/rps', [\App\Http\Controllers\Api\RpsController::class, 'index'])->name('kurikulum.rps');
+    Route::post('/kurikulum/rps', [\App\Http\Controllers\Api\RpsController::class, 'store'])->name('kurikulum.rps.store');
+    Route::put('/kurikulum/rps/{rp}', [\App\Http\Controllers\Api\RpsController::class, 'update'])->name('kurikulum.rps.update');
+    Route::delete('/kurikulum/rps/{rp}', [\App\Http\Controllers\Api\RpsController::class, 'destroy'])->name('kurikulum.rps.destroy');
 });
 
 require __DIR__.'/auth.php';
