@@ -18,6 +18,9 @@ use App\Http\Controllers\Api\BkdController;
 use App\Http\Controllers\Api\DokumenBuktiController;
 use App\Http\Controllers\Api\MahasiswaBimbinganController;
 use App\Http\Controllers\Api\SaranaController;
+use App\Http\Controllers\Api\MitraController;
+use App\Http\Controllers\Api\KerjasamaController;
+use App\Http\Controllers\Api\KeuanganController;
 use App\Http\Controllers\Api\AlumniController;
 use App\Http\Controllers\Api\KuisionerTracerController;
 use App\Http\Controllers\Api\TracerJawabanController;
@@ -148,6 +151,24 @@ Route::middleware('auth')->group(function () {
     Route::post('/sarpras', [SaranaController::class, 'store'])->name('sarpras.store');
     Route::put('/sarpras/{sarana}', [SaranaController::class, 'update'])->name('sarpras.update');
     Route::delete('/sarpras/{sarana}', [SaranaController::class, 'destroy'])->name('sarpras.destroy');
+
+    // Mitra Routes
+    Route::get('/mitra', [MitraController::class, 'index'])->name('mitra');
+    Route::post('/mitra', [MitraController::class, 'store'])->name('mitra.store');
+    Route::put('/mitra/{mitra}', [MitraController::class, 'update'])->name('mitra.update');
+    Route::delete('/mitra/{mitra}', [MitraController::class, 'destroy'])->name('mitra.destroy');
+
+    // Kerjasama Routes
+    Route::get('/kerjasama', [KerjasamaController::class, 'index'])->name('kerjasama');
+    Route::post('/kerjasama', [KerjasamaController::class, 'store'])->name('kerjasama.store');
+    Route::put('/kerjasama/{kerjasama}', [KerjasamaController::class, 'update'])->name('kerjasama.update');
+    Route::delete('/kerjasama/{kerjasama}', [KerjasamaController::class, 'destroy'])->name('kerjasama.destroy');
+
+    // Keuangan Routes
+    Route::get('/keuangan', [KeuanganController::class, 'index'])->name('keuangan');
+    Route::post('/keuangan', [KeuanganController::class, 'store'])->name('keuangan.store');
+    Route::put('/keuangan/{keuangan}', [KeuanganController::class, 'update'])->name('keuangan.update');
+    Route::delete('/keuangan/{keuangan}', [KeuanganController::class, 'destroy'])->name('keuangan.destroy');
 
     // Alumni Routes
     Route::get('/alumni', [AlumniController::class, 'index'])->name('alumni');
