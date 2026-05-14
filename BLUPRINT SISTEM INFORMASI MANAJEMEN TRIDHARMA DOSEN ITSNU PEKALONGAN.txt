@@ -1,0 +1,364 @@
+================================================================================
+Sistem Multi-Agent AI untuk Manajemen Tridharma Guna Optimalisasi Akreditasi ITSNU Pekalongan
+================================================================================
+File ini berisi spesifikasi lengkap untuk membangun aplikasi web sesuai kebutuhan
+akreditasi IAPS 4.0 dan IAPT 3.0. Gunakan sebagai acuan tunggal (single source of truth)
+seluruh tim pengembang.
+
+================================================================================
+1. RINGKASAN EKSEKUTIF
+================================================================================
+Sistem informasi terintegrasi berbasis role-based access control (RBAC) dan multi-agent AI
+yang mengelola data Tridharma dosen, sarpras, keuangan, kerjasama, mahasiswa, dan alumni.
+Dilengkapi dashboard analitik prediktif untuk Kaprodi, Dekan, Rektor, LPM, LPPM, dan
+Lembaga Kerjasama. Agent AI bertugas verifikasi otomatis, deteksi anomali, rekomendasi
+perbaikan akreditasi, dan generasi dokumen LED/LKPT secara cerdas.
+
+Tujuan: Mempercepat persiapan akreditasi, menjaga konsistensi data, notifikasi proaktif,
+mencapai predikat UNGGUL atau BAIK SEKALI.
+
+================================================================================
+2. ARSITEKTUR AGENT AI
+================================================================================
+Sistem menggunakan 6 agent AI yang berkolaborasi via message broker (RabbitMQ).
+
+| Agent               | Fungsi                                                                 | Algoritma / Model                          |
+|---------------------|------------------------------------------------------------------------|--------------------------------------------|
+| Verifikasi Data     | Memeriksa keabsahan bukti (file vs klaim), deteksi duplikasi, inkonsistensi | Rule-based + NLP ringan (metadata file)    |
+| Prediksi Skor       | Menghitung skor sementara & prediksi akhir akreditasi                  | Weighted Sum Model + Monte Carlo Simulation|
+| Rekomendasi Tindakan| Memberi saran perbaikan personal per prodi/dosen                       | Decision Tree + Association Rules (Apriori)|
+| Peringatan Dini     | Memantau threshold indikator, kirim notifikasi real-time               | Rule-based + Isolation Forest (anomali)    |
+| Generator Dokumen   | Menyusun LED/LKPT otomatis sesuai template BAN-PT/LAM                  | Template + LLM (Gemini API / Llama 3 lokal)|
+| Integrasi Eksternal | Sinkronasi otomatis dengan PDDikti, SINTA, Sister, atasi konflik       | CRON + Reconciliation logic (majority voting) |
+
+Komunikasi: Publish-subscribe via RabbitMQ. Agent dapat berjalan asinkron.
+
+================================================================================
+3. MODUL SISTEM (12 MODUL UTAMA + AGENT AI)
+================================================================================
+| Kode | Nama Modul                       | Agent AI Terkait                         |
+|------|----------------------------------|------------------------------------------|
+| M1   | Manajemen Data Induk (Dosen, Prodi, Fakultas, MK, Kurikulum, CPL) | Verifikasi, Integrasi |
+| M2   | Portofolio Tridharma Dosen (pendidikan, penelitian, PkM, penunjang) | Verifikasi, Prediksi, Integrasi |
+| M3   | BKD & Laporan Kinerja Dosen      | Peringatan Dini                          |
+| M4   | Manajemen Bukti & Dokumen        | Verifikasi, Generator                    |
+| M5   | SPMI (Penjaminan Mutu Internal) - audit, risk register, tindak lanjut | Rekomendasi, Peringatan |
+| M6   | Integrasi & Interoperabilitas (PDDikti, SINTA, Sister) | Integrasi Eksternal |
+| M7   | Dashboard & Laporan Akreditasi   | Prediksi, Rekomendasi, Generator         |
+| M8   | Manajemen Kurikulum & RPS (CPL-CPMK) | Verifikasi (kesesuaian)                |
+| M9   | Sarana & Prasarana (inventaris, kalibrasi, rasio) | Peringatan (jatuh tempo kalibrasi) |
+| M10  | Mahasiswa & Alumni (tracer study, prestasi, daya serap) | Prediksi (daya serap) |
+| M11  | Kerjasama & Mitra (MOU, realisasi) | Rekomendasi (mitra potensial)          |
+| M12  | Keuangan (dana penelitian/PkM)   | Verifikasi (kewajaran dana)              |
+
+Setiap modul dilengkapi widget Chat Assistant AI (floating button) yang dapat ditanyai.
+
+================================================================================
+4. USER ROLE FINAL (15 ROLE + AGENT AI ACCESS)
+================================================================================
+| No | Role                         | Akses Agent AI                               |
+|----|------------------------------|----------------------------------------------|
+| 1  | Super Admin                  | Kelola agent, log agent, restart agent       |
+| 2  | Rektor                       | Agent Prediksi (institusi), Rekomendasi strategis |
+| 3  | Wakil Rektor 1 (Akademik)    | Agent Prediksi (tridharma institusi)         |
+| 4  | Wakil Rektor 2 (Keuangan & Sarpras) | Agent Peringatan sarpras & dana     |
+| 5  | LPM (Lembaga Penjaminan Mutu)| Agent Rekomendasi, Generator (LED institusi) |
+| 6  | Kepala LPPM                   | Agent Verifikasi penelitian/PkM, Integrasi SINTA |
+| 7  | Staf LPPM                     | Sama tanpa konfigurasi agent                |
+| 8  | Kepala Lembaga Kerjasama      | Agent Rekomendasi mitra                      |
+| 9  | Staf Kerjasama                | Input dibantu agent verifikasi               |
+| 10 | Dekan                         | Agent Prediksi (fakultas)                    |
+| 11 | Kaprodi                       | Agent Prediksi (prodi), Peringatan, Generator LKPT |
+| 12 | Staf Prodi / Operator         | Tanya agent (read-only rekomendasi)         |
+| 13 | Dosen                         | Agent Asisten pribadi (rekap, saran publikasi) |
+| 14 | Asesor Tamu (sementara)       | Tidak akses agent, hanya hasil statis       |
+| 15 | Bagian Akademik               | Agent Verifikasi kurikulum                   |
+
+Implementasi RBAC dengan tabel roles, permissions, dan role_permission.
+
+================================================================================
+5. DASHBOARD ANALITIK DENGAN AGENT AI (PER ROLE)
+================================================================================
+Setiap dashboard memiliki widget Agent AI:
+- Skor akreditasi simulasi (agent prediksi)
+- Daftar kekurangan (agent verifikasi)
+- Rekomendasi prioritas (agent rekomendasi)
+- Alert merah/kuning (agent peringatan)
+
+Komponen visualisasi:
+- Gauge chart untuk skor prediksi
+- Radar chart capaian per kriteria (C1-C9)
+- Bar chart perbandingan capaian vs target
+- Trend line (publikasi, PkM, kerjasama) dengan linear regression
+
+Fitur interaktif:
+- Drill-down klik pada kriteria -> tampilkan bukti & indikator kurang
+- Filter periode akademik (semester/tahun)
+- Tambah mode bandingkan antar prodi (untuk dekan/rektor)
+- Tombol "Generate LKPT/LED dengan AI" memanggil Agent Generator
+
+Mockup UI terdapat di bagian akhir (lihat poin 10).
+
+================================================================================
+6. STACK TEKNOLOGI LENGKAP (SIAP PRODUKSI)
+================================================================================
+Backend utama: Java 21 + Spring Boot 3.2  atau  PHP 8.2 + Laravel 11 (pilih sesuai tim)
+Agent AI microservice: Python 3.11 + FastAPI + Celery
+Database: PostgreSQL 16 + TimescaleDB (time-series agent log) + pgvector (semantic search bukti)
+Cache & Queue: Redis 7 + RabbitMQ 3.13
+Frontend: React 18 + Vite + Tailwind CSS + shadcn/ui
+Visualisasi: Apache ECharts 5.5
+Orkestrasi: Docker + Kubernetes (k3s) atau docker-compose untuk staging
+Integrasi eksternal: Feeder PDDikti (SOAP), SINTA REST API, Sister API
+LLM (opsional): Gemini 1.5 Flash (cost rendah) atau Llama 3 8B (inference lokal)
+Logging & Monitoring: ELK Stack (Elasticsearch, Logstash, Kibana) + Prometheus + Grafana
+
+Persyaratan kepatuhan:
+- SSL/TLS untuk semua koneksi (HTTPS)
+- JWT dengan refresh token untuk autentikasi
+- Backup harian database ke S3/minIO
+- Log audit untuk semua perubahan data kritis (tabel logging terpisah)
+
+================================================================================
+7. UML RINGKAS (CUKUP UNTUK CODING)
+================================================================================
+7.1 Use Case (aktor: manusia + agent AI)
+- Dosen: Input portofolio, upload bukti, lihat BKD, tanya asisten AI
+- Kaprodi: Semua use case dosen (untuk prodi) + dashboard analitik + generate LKPT
+- Dekan: Dashboard agregat fakultas, perbandingan prodi, rekap BKD
+- Rektor: Dashboard institusi, skor prediksi, kebijakan strategis
+- LPM: Kelola audit, risk register, generate LED institusi
+- LPPM: Verifikasi penelitian/PkM, sinkronasi SINTA
+- Kerjasama: Kelola mitra, MOU, realisasi
+- Agent AI: (otomatis) verifikasi data, update prediksi, kirim alert, generate dokumen
+
+7.2 Class Diagram (Entity inti + Agent interface)
+@Entity: Dosen, Prodi, KegiatanTridharma, BuktiDokumen, IndikatorAkreditasi, PemenuhanIndikator, SkorAkreditasi, dll.
+Interface Agent { void execute(Task task); }
+Implementasi: VerifikasiAgent, PrediksiAgent, RekomendasiAgent, PeringatanAgent, GeneratorAgent, IntegrasiAgent.
+Scheduler: @Scheduled(fixedDelay=3600000) untuk menjalankan agent periodik.
+
+7.3 Sequence Diagram (Prediksi otomatis)
+AgentScheduler -> PrediksiAgent: run()
+PrediksiAgent -> DB: ambil data capaian semua prodi
+DB --> PrediksiAgent: data
+PrediksiAgent -> WeightedSumModel: hitung skor
+Model --> PrediksiAgent: skor + confidence interval
+PrediksiAgent -> DB: simpan ke table agent_prediction_history
+PrediksiAgent -> MessageBroker: publish event "skor_update"
+MessageBroker -> WebSocket: kirim ke frontend
+Frontend -> User: render skor baru di dashboard
+
+================================================================================
+8. FITUR AGENT AI YANG PALING KRUSIAL UNTUK AKREDITASI
+================================================================================
+8.1 Auto-checklist pemenuhan indikator
+   - Agent Verifikasi mencocokkan data & bukti dengan master indikator akreditasi (IAPS/IAPT)
+   - Output: tabel status hijau/kuning/merah per butir
+
+8.2 Prediksi kelulusan akreditasi
+   - Agent Prediksi menggunakan Weighted Sum + Monte Carlo (1000 simulasi)
+   - Output: Probabilitas Unggul/Baik Sekali/Baik/Tidak terakreditasi
+
+8.3 Rekomendasi strategis prioritas
+   - Agent Rekomendasi menganalisis gap terbesar (selisih capaian vs target)
+   - Output: "Tingkatkan publikasi internasional: kurang 3 artikel", "Rasio dosen S3 28% perlu tambah 2 dosen"
+
+8.4 Otomatisasi narasi LED/LKPT
+   - Agent Generator dengan LLM (prompt engineering)
+   - Input: data tabel capaian prodi + template BAN-PT
+   - Output: dokumen .docx dengan paragraf narasi, tabel, grafik siap edit
+
+8.5 Deteksi anomali BKD
+   - Agent Peringatan bandingkan beban dosen dengan rata-rata fakultas, threshold 20% di bawah rata-rata
+   - Notifikasi ke Kaprodi jika dosen < 12 SKS dua semester berturut-turut
+
+================================================================================
+9. RENCANA IMPLEMENTASI (5 FASE, TOTAL 25 MINGGU)
+================================================================================
+Fase 0 (2 minggu) - Persiapan:
+   - Setup infrastruktur (Docker, PostgreSQL, Redis, RabbitMQ, MinIO)
+   - Inisialisasi skeleton backend (Spring Boot/Laravel) dan frontend (React)
+
+Fase 1 (6 minggu) - Core Modul (M1, M2, M3, M4, M7 tanpa AI):
+   - CRUD master data (dosen, prodi, mk, periode)
+   - Portofolio dosen, BKD, upload bukti
+   - Dashboard sederhana (manual input tanpa prediksi)
+
+Fase 2 (6 minggu) - Modul Tambahan (M5, M8, M9, M10, M11, M12):
+   - SPMI, kurikulum, sarpras, mahasiswa/alumni, kerjasama, keuangan
+
+Fase 3 (4 minggu) - Agent AI Microservice:
+   - Implementasi 6 agent dalam Python FastAPI
+   - Integrasi ke backend via REST API (trigger agent) dan RabbitMQ (event-driven)
+
+Fase 4 (4 minggu) - Dashboard Analitik + LLM Generator:
+   - Dashboard interaktif untuk Kaprodi, Dekan, Rektor, LPM, LPPM, Kerjasama
+   - Integrasi ECharts, widget Agent AI
+   - Generator dokumen dengan Gemini API (fallback template jika offline)
+
+Fase 5 (3 minggu) - UAT & Deployment:
+   - User acceptance test (minimal 5 kaprodi, 10 dosen, 3 pimpinan)
+   - Pelatihan dan dokumentasi
+   - Deployment produksi (K3s + backup otomatis)
+
+Catatan: Tim minimal 5 orang (1 TL, 2 backend, 1 frontend, 1 AI engineer).
+
+================================================================================
+10. ERD LENGKAP (45 TABEL) - LISTING NAMA TABEL DAN DESKRIPSI SINGKAT
+================================================================================
+Tabel Master (1-18):
+1. m_fakultas                     - Fakultas
+2. m_prodi                        - Program Studi
+3. m_dosen                        - Dosen
+4. m_mahasiswa                    - Mahasiswa
+5. m_alumni                       - Alumni
+6. m_mata_kuliah                  - Mata Kuliah
+7. m_kurikulum                    - Kurikulum
+8. m_mk_kurikulum                 - Relasi MK ke Kurikulum
+9. m_cpl                          - Capaian Pembelajaran Lulusan
+10. m_cpl_mk                      - Pemetaan CPL ke MK
+11. m_periode_akademik            - Semester/Tahun Ajaran
+12. m_role                        - Role RBAC
+13. m_permission                  - Hak akses granular
+14. m_role_permission             - Relasi role-permission
+15. m_user                        - User login (kredensial)
+16. m_mitra                       - Mitra kerjasama
+17. m_kerjasama                   - Data MOU/kerjasama
+18. m_sarana                      - Sarana dan prasarana
+
+Tabel Transaksi (19-25):
+19. trx_kegiatan_pendidikan       - Mengajar, bimbingan, ujian
+20. trx_penelitian                - Penelitian dosen
+21. trx_publikasi                 - Publikasi ilmiah
+22. trx_pkm                       - Pengabdian masyarakat
+23. trx_penunjang                 - Seminar, workshop, penghargaan
+24. trx_bkd                       - BKD per periode
+25. trx_mahasiswa_bimbingan       - Bimbingan TA/skripsi/PKL
+
+Tabel Bukti, Mutu, Akreditasi (26-31):
+26. doc_bukti                     - Dokumen bukti akreditasi (polymorphic)
+27. m_indikator_akreditasi        - Indikator BAN-PT/LAM
+28. trx_pemenuhan_indikator       - Pemenuhan indikator per prodi per periode
+29. trx_skor_akreditasi           - Skor prediksi/real
+30. trx_audit_mutu                - Audit internal SPMI
+31. trx_risk_register             - Manajemen risiko
+
+Tabel Logging Agent AI & History (32-37):
+32. agent_execution_log           - Log eksekusi tiap agent
+33. agent_prediction_history      - History prediksi (time-series)
+34. agent_rekomendasi_log         - Rekomendasi yang dihasilkan agent
+35. agent_peringatan_log          - Alert yang dikirim agent
+36. agent_verifikasi_hasil        - Hasil verifikasi data
+37. agent_generator_history       - Dokumen LED/LKPT yang digenerate AI
+
+Tabel Integrasi dan Pendukung (38-45):
+38. integrasi_log_sinkron         - Log sinkronisasi PDDikti/SINTA/Sister
+39. integrasi_pddikti_dosen       - Mapping data dosen dari PDDikti
+40. integrasi_sinta_publikasi     - Data publikasi dari SINTA
+41. m_role_user_log               - Log perubahan role user
+42. m_kuisioner_tracer            - Kuisioner tracer study alumni
+43. trx_tracer_jawaban            - Jawaban alumni
+44. m_prodi_keahlian              - Kelompok keahlian di prodi
+45. trx_prodi_keahlian_dosen      - Relasi dosen dengan keahlian
+
+Setiap tabel memiliki kolom id (PK), created_at, updated_at, dan soft_delete jika diperlukan.
+Relasi foreign key sesuai dengan aturan normalisasi.
+
+================================================================================
+11. MOCKUP UI DASHBOARD AGENT AI (KAPRODI)
+================================================================================
+Tampilan desktop (minimal lebar 1280px) dengan layout grid 3 kolom.
+
++----------------------------------------------------------------------------+
+| ITSNU - SIM Tridharma                     [Dr. Ahmad, Kaprodi S1 Informatika] |
+| [Dashboard] [Portofolio] [BKD] [Akreditasi] [Laporan]   [Notif 3] [Profil] |
++----------------------------------------------------------------------------+
+| +------------------------+ +------------------------+ +--------------------+
+| | AGENT PREDIKSI         | | AGENT PERINGATAN (MERAH)| | AGENT REKOMENDASI   |
+| | Skor: 3.45/4.00 [GAUGE]| | ! Rasio S3=28% (<30%)  | | ★ Prioritas:        |
+| | Prediksi Unggul: 85%   | | ! Bukti C5 kurang:      | | 1. Publikasi Scopus |
+| | Confidence ±0.12       | |   - 2 PC rusak          | |    kurang 3 artikel |
+| +------------------------+ +------------------------+ +--------------------+
+| +----------------------------------------------------------------------------+
+| | CAPAIAN PER KRITERIA (Radar chart)  |  BAR CHART capaian vs target        |
+| |    (gambar radar dengan 9 sumbu)    |  C1: 90% [||||||| ] target 85%      |
+| |                                      |  C2: 75% [||||||  ] target 80%      |
+| | Klik pada kriteria untuk detail bukti|  C3: 65% [|||||   ] target 75%      |
+| +----------------------------------------------------------------------------+
+| +------------------------+ +------------------------+ +--------------------+
+| | KINERJA DOSEN (TOP 5)  | | ALERT SISTEM           | | GENERATOR DOKUMEN AI |
+| | 1. Dr.Budi: 4 Scopus   | | 14 Feb: BKD deadline   | | [Generate LKPT]     |
+| | 2. Dr.Siti: 3 PkM      | | 10 Feb: 2 dosen belum  | | Preview & Download  |
+| | [Lihat semua]          | |   input penelitian     | | DOCX                |
+| +------------------------+ +------------------------+ +--------------------+
+| +----------------------------------------------------------------------------+
+| | GRAFIK TREN PUBLIKASI & PKM (2020-2024) - line chart interaktif           |
+| |  (dapat drill-down klik tahun)                                           |
+| +----------------------------------------------------------------------------+
+| [Export PDF] [Kirim ke Rektor] [Chat Assistant AI]                           |
++----------------------------------------------------------------------------+
+
+Floating Chat Assistant: muncul sebagai ikon di kanan bawah. Klik membuka modal seperti contoh di bawah.
+
++------------------------------------------------------+
+| 🤖 Agent AI Assistant - Tridharma ITSNU      [X]    |
+|------------------------------------------------------|
+| Halo, saya Agent AI. Ada yang bisa saya bantu?      |
+| Contoh: "Apa kekurangan akreditasi prodi saya?"     |
+|------------------------------------------------------|
+| Anda: Bagaimana naikkan skor C5?                    |
+| Agent: C5 Anda 55%. Saran: 1) Lengkapi 2 PC lab,   |
+| 2) Kalibrasi OHP, 3) Upload foto laboratorium.      |
+| [Ya, buat laporan] [Tidak]                          |
+|------------------------------------------------------|
+| [Ketik pesan...]                           [Kirim]  |
++------------------------------------------------------+
+
+================================================================================
+12. INSTRUKSI KEPATUHAN BUILD APLIKASI WEB
+================================================================================
+Agar pembangunan aplikasi sesuai dengan blueprint ini, tim pengembang WAJIB:
+
+12.1 Mengikuti arsitektur yang telah ditetapkan (tidak mengubah modul inti tanpa persetujuan).
+
+12.2 Mengimplementasikan seluruh 45 tabel database sesuai ERD, minimal kolom yang disebut.
+     Tabel log agent (32-37) wajib ada untuk audit trail AI.
+
+12.3 Menyediakan REST API dokumentasi menggunakan OpenAPI (Swagger) untuk backend.
+
+12.4 Mengintegrasikan agent AI sebagai microservice terpisah (Python) dan berkomunikasi via
+     RabbitMQ (publish event) dan REST API (trigger langsung).
+
+12.5 Dashboard harus memiliki widget Agent AI di setiap halaman utama untuk kaprodi, dekan,
+     rektor, LPM, LPPM, dan kerjasama. Elemen interaktif (radar chart drill-down, gauge,
+     tombol generate) wajib berfungsi.
+
+12.6 Keamanan: Implementasi RBAC sesuai 15 role; gunakan JWT; semua request ke API diverifikasi
+     permission-nya; password hash bcrypt; gunakan HTTPS.
+
+12.7 Mengimplementasikan scheduler (cron) untuk menjalankan agent prediksi, verifikasi, dan
+     integrasi setiap 1 jam (minimum).
+
+12.8 Menyediakan fitur ekspor dokumen (PDF, DOCX) untuk LED/LKPT dan dashboard.
+
+12.9 Melakukan uji coba (UAT) dengan minimal 5 pengguna dari masing-masing role utama
+     (Dosen, Kaprodi, Dekan, Rektor, LPM).
+
+12.10 Dokumentasi kode (README, komentar pada kode, dan panduan deployment).
+
+================================================================================
+AKHIR DOKUMEN
+================================================================================
+Versi: 1.0 Final
+Tanggal: 13 Mei 2026
+Status: Siap digunakan untuk tahap development.
+
+Alur Kerja pengembangan aplikasi ini: PLAN - BUILD - TES KODE -  GIT COMMIT - PUSH GIT HUB - TES KODE DI GITHUB
+
+
+Catatan: File ini adalah satu-satunya acuan. Semua perubahan harus melalui revisi
+dokumen resmi.
+
+
+
