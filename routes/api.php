@@ -42,4 +42,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('bkd', BkdController::class);
     Route::apiResource('dokumen', DokumenBuktiController::class);
     Route::apiResource('bimbingan', MahasiswaBimbinganController::class);
+
+    // AI Agent Routes
+    Route::post('agents/{agent}/run', [\App\Http\Controllers\Api\AgentController::class, 'run']);
+    Route::get('agents/status', [\App\Http\Controllers\Api\AgentController::class, 'status']);
 });
