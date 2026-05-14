@@ -12,6 +12,7 @@ export default function Authenticated({
     const user = usePage().props.auth.user;
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
     const [showingMasterData, setShowingMasterData] = useState(false);
+    const [showingPortofolio, setShowingPortofolio] = useState(false);
 
     const masterDataLinks = [
         { name: 'Fakultas', route: 'master-data.fakultas' },
@@ -24,6 +25,17 @@ export default function Authenticated({
     ];
 
     const isMasterDataActive = masterDataLinks.some((l) => route().current(l.route));
+
+    const portofolioLinks = [
+        { name: 'Dashboard Portofolio', route: 'portofolio' },
+        { name: 'Pendidikan', route: 'portofolio.pendidikan' },
+        { name: 'Penelitian', route: 'portofolio.penelitian' },
+        { name: 'Publikasi', route: 'portofolio.publikasi' },
+        { name: 'PKM', route: 'portofolio.pkm' },
+        { name: 'Penunjang', route: 'portofolio.penunjang' },
+    ];
+
+    const isPortofolioActive = portofolioLinks.some((l) => route().current(l.route));
 
     return (
         <div className="min-h-screen bg-gray-100">
@@ -64,6 +76,46 @@ export default function Authenticated({
                                         >
                                             <div className="py-1" role="menu">
                                                 {masterDataLinks.map((link) => (
+                                                    <Link
+                                                        key={link.route}
+                                                        href={route(link.route)}
+                                                        className={`block px-4 py-2 text-sm ${
+                                                            route().current(link.route)
+                                                                ? 'bg-indigo-50 text-indigo-700'
+                                                                : 'text-gray-700 hover:bg-gray-50'
+                                                        }`}
+                                                        role="menuitem"
+                                                    >
+                                                        {link.name}
+                                                    </Link>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setShowingPortofolio(!showingPortofolio)}
+                                        className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium transition duration-150 ease-in-out ${
+                                            isPortofolioActive
+                                                ? 'border-indigo-400 text-gray-900'
+                                                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                                        }`}
+                                    >
+                                        Portofolio
+                                        <svg className="ml-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                        </svg>
+                                    </button>
+
+                                    {showingPortofolio && (
+                                        <div
+                                            className="absolute left-0 mt-2 w-56 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 z-50"
+                                            onMouseLeave={() => setShowingPortofolio(false)}
+                                        >
+                                            <div className="py-1" role="menu">
+                                                {portofolioLinks.map((link) => (
                                                     <Link
                                                         key={link.route}
                                                         href={route(link.route)}
@@ -131,6 +183,14 @@ export default function Authenticated({
                             Master Data
                         </div>
                         {masterDataLinks.map((link) => (
+                            <ResponsiveNavLink key={link.route} href={route(link.route)} active={route().current(link.route)}>
+                                {link.name}
+                            </ResponsiveNavLink>
+                        ))}
+                        <div className="px-4 py-2 text-sm font-medium text-gray-500 uppercase tracking-wider">
+                            Portofolio
+                        </div>
+                        {portofolioLinks.map((link) => (
                             <ResponsiveNavLink key={link.route} href={route(link.route)} active={route().current(link.route)}>
                                 {link.name}
                             </ResponsiveNavLink>

@@ -8,6 +8,12 @@ use App\Http\Controllers\Api\MataKuliahController;
 use App\Http\Controllers\Api\KurikulumController;
 use App\Http\Controllers\Api\CplController;
 use App\Http\Controllers\Api\PeriodeAkademikController;
+use App\Http\Controllers\Api\KegiatanPendidikanController;
+use App\Http\Controllers\Api\PenelitianController;
+use App\Http\Controllers\Api\PublikasiController;
+use App\Http\Controllers\Api\PkmController;
+use App\Http\Controllers\Api\PenunjangController;
+use App\Http\Controllers\Api\PortofolioController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -65,6 +71,33 @@ Route::middleware('auth')->group(function () {
     Route::post('/master-data/periode-akademik', [PeriodeAkademikController::class, 'store'])->name('master-data.periode-akademik.store');
     Route::put('/master-data/periode-akademik/{periode_akademik}', [PeriodeAkademikController::class, 'update'])->name('master-data.periode-akademik.update');
     Route::delete('/master-data/periode-akademik/{periode_akademik}', [PeriodeAkademikController::class, 'destroy'])->name('master-data.periode-akademik.destroy');
+
+    // Portofolio Routes
+    Route::get('/portofolio', [PortofolioController::class, 'index'])->name('portofolio');
+    Route::get('/portofolio/pendidikan', [KegiatanPendidikanController::class, 'index'])->name('portofolio.pendidikan');
+    Route::post('/portofolio/pendidikan', [KegiatanPendidikanController::class, 'store'])->name('portofolio.pendidikan.store');
+    Route::put('/portofolio/pendidikan/{kegiatanPendidikan}', [KegiatanPendidikanController::class, 'update'])->name('portofolio.pendidikan.update');
+    Route::delete('/portofolio/pendidikan/{kegiatanPendidikan}', [KegiatanPendidikanController::class, 'destroy'])->name('portofolio.pendidikan.destroy');
+
+    Route::get('/portofolio/penelitian', [PenelitianController::class, 'index'])->name('portofolio.penelitian');
+    Route::post('/portofolio/penelitian', [PenelitianController::class, 'store'])->name('portofolio.penelitian.store');
+    Route::put('/portofolio/penelitian/{penelitian}', [PenelitianController::class, 'update'])->name('portofolio.penelitian.update');
+    Route::delete('/portofolio/penelitian/{penelitian}', [PenelitianController::class, 'destroy'])->name('portofolio.penelitian.destroy');
+
+    Route::get('/portofolio/publikasi', [PublikasiController::class, 'index'])->name('portofolio.publikasi');
+    Route::post('/portofolio/publikasi', [PublikasiController::class, 'store'])->name('portofolio.publikasi.store');
+    Route::put('/portofolio/publikasi/{publikasi}', [PublikasiController::class, 'update'])->name('portofolio.publikasi.update');
+    Route::delete('/portofolio/publikasi/{publikasi}', [PublikasiController::class, 'destroy'])->name('portofolio.publikasi.destroy');
+
+    Route::get('/portofolio/pkm', [PkmController::class, 'index'])->name('portofolio.pkm');
+    Route::post('/portofolio/pkm', [PkmController::class, 'store'])->name('portofolio.pkm.store');
+    Route::put('/portofolio/pkm/{pkm}', [PkmController::class, 'update'])->name('portofolio.pkm.update');
+    Route::delete('/portofolio/pkm/{pkm}', [PkmController::class, 'destroy'])->name('portofolio.pkm.destroy');
+
+    Route::get('/portofolio/penunjang', [PenunjangController::class, 'index'])->name('portofolio.penunjang');
+    Route::post('/portofolio/penunjang', [PenunjangController::class, 'store'])->name('portofolio.penunjang.store');
+    Route::put('/portofolio/penunjang/{penunjang}', [PenunjangController::class, 'update'])->name('portofolio.penunjang.update');
+    Route::delete('/portofolio/penunjang/{penunjang}', [PenunjangController::class, 'destroy'])->name('portofolio.penunjang.destroy');
 });
 
 require __DIR__.'/auth.php';

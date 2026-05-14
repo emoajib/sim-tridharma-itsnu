@@ -9,6 +9,11 @@ use App\Http\Controllers\Api\KurikulumController;
 use App\Http\Controllers\Api\CplController;
 use App\Http\Controllers\Api\PeriodeAkademikController;
 use App\Http\Controllers\Api\MasterDataController;
+use App\Http\Controllers\Api\KegiatanPendidikanController;
+use App\Http\Controllers\Api\PenelitianController;
+use App\Http\Controllers\Api\PublikasiController;
+use App\Http\Controllers\Api\PkmController;
+use App\Http\Controllers\Api\PenunjangController;
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('master-data/summary', [MasterDataController::class, 'summary']);
@@ -20,4 +25,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('kurikulum', KurikulumController::class);
     Route::apiResource('cpl', CplController::class);
     Route::apiResource('periode-akademik', PeriodeAkademikController::class);
+
+    Route::apiResource('kegiatan-pendidikan', KegiatanPendidikanController::class);
+    Route::apiResource('penelitian', PenelitianController::class);
+    Route::apiResource('publikasi', PublikasiController::class);
+    Route::apiResource('pkm', PkmController::class);
+    Route::apiResource('penunjang', PenunjangController::class);
 });
