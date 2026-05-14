@@ -17,6 +17,10 @@ use App\Http\Controllers\Api\PortofolioController;
 use App\Http\Controllers\Api\BkdController;
 use App\Http\Controllers\Api\DokumenBuktiController;
 use App\Http\Controllers\Api\MahasiswaBimbinganController;
+use App\Http\Controllers\Api\SaranaController;
+use App\Http\Controllers\Api\AlumniController;
+use App\Http\Controllers\Api\KuisionerTracerController;
+use App\Http\Controllers\Api\TracerJawabanController;
 use App\Http\Controllers\Api\DashboardController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -138,6 +142,28 @@ Route::middleware('auth')->group(function () {
     Route::post('/kurikulum/rps', [\App\Http\Controllers\Api\RpsController::class, 'store'])->name('kurikulum.rps.store');
     Route::put('/kurikulum/rps/{rp}', [\App\Http\Controllers\Api\RpsController::class, 'update'])->name('kurikulum.rps.update');
     Route::delete('/kurikulum/rps/{rp}', [\App\Http\Controllers\Api\RpsController::class, 'destroy'])->name('kurikulum.rps.destroy');
+
+    // Sarpras Routes
+    Route::get('/sarpras', [SaranaController::class, 'index'])->name('sarpras');
+    Route::post('/sarpras', [SaranaController::class, 'store'])->name('sarpras.store');
+    Route::put('/sarpras/{sarana}', [SaranaController::class, 'update'])->name('sarpras.update');
+    Route::delete('/sarpras/{sarana}', [SaranaController::class, 'destroy'])->name('sarpras.destroy');
+
+    // Alumni Routes
+    Route::get('/alumni', [AlumniController::class, 'index'])->name('alumni');
+    Route::post('/alumni', [AlumniController::class, 'store'])->name('alumni.store');
+    Route::put('/alumni/{alumni}', [AlumniController::class, 'update'])->name('alumni.update');
+    Route::delete('/alumni/{alumni}', [AlumniController::class, 'destroy'])->name('alumni.destroy');
+
+    // Tracer Routes
+    Route::get('/tracer/kuisioner', [KuisionerTracerController::class, 'index'])->name('tracer.kuisioner');
+    Route::post('/tracer/kuisioner', [KuisionerTracerController::class, 'store'])->name('tracer.kuisioner.store');
+    Route::put('/tracer/kuisioner/{kuisionerTracer}', [KuisionerTracerController::class, 'update'])->name('tracer.kuisioner.update');
+    Route::delete('/tracer/kuisioner/{kuisionerTracer}', [KuisionerTracerController::class, 'destroy'])->name('tracer.kuisioner.destroy');
+
+    Route::get('/tracer/jawaban', [TracerJawabanController::class, 'index'])->name('tracer.jawaban');
+    Route::post('/tracer/jawaban', [TracerJawabanController::class, 'store'])->name('tracer.jawaban.store');
+    Route::delete('/tracer/jawaban/{tracerJawaban}', [TracerJawabanController::class, 'destroy'])->name('tracer.jawaban.destroy');
 });
 
 require __DIR__.'/auth.php';
