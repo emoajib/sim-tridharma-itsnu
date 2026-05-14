@@ -32,7 +32,7 @@ class RolePermissionSeeder extends Seeder
 
         foreach ($permissionsByModule as $module => $actions) {
             foreach ($actions as $action) {
-                Permission::create(['name' => "{$module}.{$action}", 'guard_name' => 'web']);
+                Permission::findOrCreate("{$module}.{$action}", 'web');
             }
         }
 
@@ -55,7 +55,7 @@ class RolePermissionSeeder extends Seeder
         ];
 
         foreach ($roles as $roleName => $rolePerms) {
-            $role = Role::create(['name' => $roleName, 'guard_name' => 'web']);
+            $role = Role::findOrCreate($roleName, 'web');
 
             if (isset($rolePerms['all']) && $rolePerms['all']) {
                 $role->givePermissionTo(Permission::all());
@@ -72,28 +72,36 @@ class RolePermissionSeeder extends Seeder
             }
         }
 
-        $admin = User::create([
-            'name' => 'Super Admin',
-            'email' => 'admin@itsnu.ac.id',
-            'password' => bcrypt('password'),
-            'is_active' => true,
-        ]);
-        $admin->assignRole('Super Admin');
+        $admin = User::firstOrCreate(
+            ['email' => 'admin@itsnu.ac.id'],
+            ['name' => 'Super Admin', 'password' => bcrypt('password'), 'is_active' => true]
+        );
+        if (!$admin->hasRole('Super Admin')) {
+            $admin->assignRole('Super Admin');
+        }
 
-        $kaprodi = User::create([
-            'name' => 'Kaprodi S1 Informatika',
-            'email' => 'kaprodi@itsnu.ac.id',
-            'password' => bcrypt('password'),
-            'is_active' => true,
-        ]);
-        $kaprodi->assignRole('Kaprodi');
+        $kaprodi = User::firstOrCreate(
+            ['email' => 'kaprodi@itsnu.ac.id'],
+            ['name' => 'Kaprodi S1 Informatika', 'password' => bcrypt('password'), 'is_active' => true]
+        );
+        if (!$kaprodi->hasRole('Kaprodi')) {
+            $kaprodi->assignRole('Kaprodi');
+        }
 
-        $dosen = User::create([
-            'name' => 'Dosen A',
-            'email' => 'dosen@itsnu.ac.id',
-            'password' => bcrypt('password'),
-            'is_active' => true,
-        ]);
-        $dosen->assignRole('Dosen');
+        $dosen = User::firstOrCreate(
+            ['email' => 'dosen@itsnu.ac.id'],
+            ['name' => 'Dosen A', 'password' => bcrypt('password'), 'is_active' => true]
+        );
+        if (!$dosen->hasRole('Dosen')) {
+            $dosen->assignRole('Dosen');
+        }
+
+        $multi = User::firstOrCreate(
+            ['email' => 'multi@itsnu.ac.id'],
+            ['name' => 'Dr. Ahmad (Multi-Role)', 'password' => bcrypt('password'), 'is_active' => true]
+        );
+        if (!$multi->hasRole('Dosen')) {
+            $multi->assignRole('Dosen', 'Kaprodi', 'Dekan');
+        }
     }
 }

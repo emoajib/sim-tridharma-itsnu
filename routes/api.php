@@ -17,8 +17,12 @@ use App\Http\Controllers\Api\PenunjangController;
 use App\Http\Controllers\Api\BkdController;
 use App\Http\Controllers\Api\DokumenBuktiController;
 use App\Http\Controllers\Api\MahasiswaBimbinganController;
+use App\Http\Controllers\Api\RoleSwitchController;
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::post('role/switch', [RoleSwitchController::class, 'switch']);
+    Route::get('role/list', [RoleSwitchController::class, 'roles']);
+
     Route::get('master-data/summary', [MasterDataController::class, 'summary']);
 
     Route::apiResource('fakultas', FakultasController::class);
