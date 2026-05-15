@@ -1,5 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
+import PeringatanBadge from '@/Components/Agent/PeringatanBadge';
+import PrediksiWidget from '@/Components/Agent/PrediksiWidget';
+import RadarChart from '@/Components/Agent/RadarChart';
 
 interface Periode {
     id: number;
@@ -13,6 +16,31 @@ interface RecentItem {
     judul_publikasi?: string;
     judul_pkm?: string;
     nama_kegiatan?: string;
+    created_at: string;
+}
+
+interface PeringatanStats {
+    critical: number;
+    warning: number;
+    info: number;
+    unread: number;
+    total: number;
+}
+
+interface VerifikasiStats {
+    valid: number;
+    need_review: number;
+    invalid: number;
+    total: number;
+}
+
+interface LatestPrediction {
+    id: number;
+    skor_prediksi: number;
+    prob_unggul: number;
+    prob_baik_sekali: number;
+    prob_baik: number;
+    confidence_interval: string;
     created_at: string;
 }
 
@@ -30,6 +58,9 @@ interface Props {
     recentPkm: RecentItem[];
     periode_list: Periode[];
     selectedPeriode: Periode | null;
+    peringatanStats?: PeringatanStats;
+    verifikasiStats?: VerifikasiStats;
+    latestPrediction?: LatestPrediction | null;
 }
 
 function StatCard({ label, value, color, href }: { label: string; value: number; color: string; href?: string }) {
@@ -46,7 +77,7 @@ function formatDate(date: string) {
     return new Date(date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-export default function Dashboard({ stats, portofolioStats, bkdStats, recentPendidikan, recentPenelitian, recentPublikasi, recentPkm, periode_list, selectedPeriode }: Props) {
+export default function Dashboard({ stats, portofolioStats, bkdStats, recentPendidikan, recentPenelitian, recentPublikasi, recentPkm, periode_list, selectedPeriode, peringatanStats, verifikasiStats, latestPrediction }: Props) {
     function changePeriode(e: React.ChangeEvent<HTMLSelectElement>) {
         router.get(route('dashboard'), { periode_id: e.target.value || undefined }, { preserveState: true, replace: true });
     }
@@ -108,6 +139,66 @@ export default function Dashboard({ stats, portofolioStats, bkdStats, recentPend
                             <StatCard label="Rata SKS" value={Math.round(bkdStats.rata_sks * 10) / 10} color="bg-blue-500" />
                         </div>
                     </div>
+
+                    {/* AI Agent Dashboard */}
+                    {(peringatanStats || latestPrediction) && (
+                        <div className="mb-8">
+                            <div className="mb-3 flex items-center justify-between">
+                                <h3 className="text-lg font-semibold text-gray-800">AI Agent Dashboard</h3>
+                                <div className="flex items-center gap-2">
+                                    <Link
+                                        href={route('peringatan')}
+                                        className="text-sm text-indigo-600 hover:text-indigo-800"
+                                    >
+                                        Lihat Semua
+                                    </Link>
+                                </div>
+                            </div>
+                            
+                            {/* Peringatan Badge - Always visible at top of AI section */}
+                            {peringatanStats && (
+                                <div className="mb-4">
+                                    <PeringatanBadge
+                                        critical={peringatanStats.critical}
+                                        warning={peringatanStats.warning}
+                                        info={peringatanStats.info}
+                                        unread={peringatanStats.unread}
+                                    />
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                                {/* Prediksi Widget */}
+                                <div>
+                                    {latestPrediction ? (
+                                        <PrediksiWidget
+                                            skor_prediksi={latestPrediction.skor_prediksi}
+                                            prob_unggul={latestPrediction.prob_unggul}
+                                            prob_baik_sekali={latestPrediction.prob_baik_sekali}
+                                            prob_baik={latestPrediction.prob_baik}
+                                            last_updated={latestPrediction.created_at}
+                                            showRunButton={true}
+                                        />
+                                    ) : (
+                                        <PrediksiWidget
+                                            skor_prediksi={0}
+                                            prob_unggul={0}
+                                            prob_baik_sekali={0}
+                                            prob_baik={0}
+                                            showRunButton={true}
+                                        />
+                                    )}
+                                </div>
+
+                                {/* Radar Chart */}
+                                <RadarChart
+                                    data={[]}
+                                    title="Capaian per Kriteria (C1-C9)"
+                                    showTarget={true}
+                                />
+                            </div>
+                        </div>
+                    )}
 
                     {/* Recent Activities */}
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

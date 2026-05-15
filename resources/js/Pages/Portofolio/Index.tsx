@@ -83,7 +83,7 @@ export default function PortofolioIndex({
     function applyFilter(key: string, value: string) {
         const next = { ...filters, [key]: value };
         setFilters(next);
-        router.get(route('portofolio.index'), next, { preserveState: true, replace: true });
+        router.get(route('portofolio'), next, { preserveState: true, replace: true });
     }
 
     const counts = { pendidikan_count, penelitian_count, publikasi_count, pkm_count, penunjang_count };

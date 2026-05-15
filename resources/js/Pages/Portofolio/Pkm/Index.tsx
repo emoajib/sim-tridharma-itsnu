@@ -135,7 +135,7 @@ export default function Index({ pkm, dosen_list, prodi_list, periode_list, succe
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
                     <div className="mb-4">
-                        <Link href={route('portofolio.index')} className="text-sm text-indigo-600 hover:text-indigo-900">&larr; Kembali ke Portofolio</Link>
+                        <Link href={route('portofolio')} className="text-sm text-indigo-600 hover:text-indigo-900">&larr; Kembali ke Portofolio</Link>
                     </div>
 
                     {success && (

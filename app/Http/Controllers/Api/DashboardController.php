@@ -15,6 +15,10 @@ use App\Models\Bkd;
 use App\Models\MahasiswaBimbingan;
 use App\Models\DokumenBukti;
 use App\Models\PeriodeAkademik;
+use App\Models\AgentPeringatanLog;
+use App\Models\AgentVerifikasiHasil;
+use App\Models\AgentPredictionHistory;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -22,6 +26,18 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
+        $defaultTab = Setting::get('dashboard_default_tab', 'overview');
+
+        $redirectRoutes = [
+            'portofolio' => route('portofolio'),
+            'bkd' => route('bkd'),
+            'ai' => route('peringatan'),
+        ];
+
+        if ($defaultTab !== 'overview' && isset($redirectRoutes[$defaultTab])) {
+            return redirect($redirectRoutes[$defaultTab]);
+        }
+
         $periodeId = $request->get('periode_id');
 
         $stats = [
@@ -56,6 +72,25 @@ class DashboardController extends Controller
             'rata_sks' => (clone $query(Bkd::query()))->avg('total_sks') ?? 0,
         ];
 
+        // AI Agent Stats
+        $peringatanStats = [
+            'critical' => AgentPeringatanLog::where('tingkat', 'critical')->count(),
+            'warning' => AgentPeringatanLog::where('tingkat', 'warning')->count(),
+            'info' => AgentPeringatanLog::where('tingkat', 'info')->count(),
+            'unread' => AgentPeringatanLog::where('is_read', false)->count(),
+            'total' => AgentPeringatanLog::count(),
+        ];
+
+        $verifikasiStats = [
+            'valid' => AgentVerifikasiHasil::where('status', 'valid')->count(),
+            'need_review' => AgentVerifikasiHasil::where('status', 'need_review')->count(),
+            'invalid' => AgentVerifikasiHasil::where('status', 'invalid')->count(),
+            'total' => AgentVerifikasiHasil::count(),
+        ];
+
+        // Latest prediction
+        $latestPrediction = AgentPredictionHistory::latest()->first();
+
         $periode_list = PeriodeAkademik::select('id', 'nama_periode')->get();
         $selectedPeriode = $periodeId ? PeriodeAkademik::find($periodeId) : null;
 
@@ -69,6 +104,11 @@ class DashboardController extends Controller
             'recentPkm' => $recentPkm,
             'periode_list' => $periode_list,
             'selectedPeriode' => $selectedPeriode,
+            'dashboardDefaultTab' => $defaultTab,
+            // AI Agent Data
+            'peringatanStats' => $peringatanStats,
+            'verifikasiStats' => $verifikasiStats,
+            'latestPrediction' => $latestPrediction,
         ]);
     }
 }

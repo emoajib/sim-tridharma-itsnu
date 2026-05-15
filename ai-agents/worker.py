@@ -1,10 +1,6 @@
-import logging
-
 from celery import Celery
 
 from config import REDIS_URL
-
-logger = logging.getLogger("worker")
 
 celery_app = Celery("akreditasi_agents", broker=REDIS_URL, backend=REDIS_URL)
 

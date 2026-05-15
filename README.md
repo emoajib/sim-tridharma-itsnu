@@ -1,58 +1,133 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Sistem Multi-Agent AI untuk Manajemen Tridharma Dosen
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sistem Informasi Manajemen Tridharma Dosen berbasis Laravel 11 + React + Inertia dengan integrasi **AI Agent Microservice** untuk optimalisasi akreditasi.
 
-## About Laravel
+## Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### 🔹 Core Features
+- **Master Data**: Fakultas, Prodi, Dosen, Mahasiswa, Alumni, MK, Kurikulum, CPL, Periode Akademik
+- **Portofolio Tridharma**: Pendidikan, Penelitian, Publikasi, PKM, Penunjang
+- **BKD (Beban Kerja Dosen)**: Input dan validasi BKD dosen
+- **Dokumen Bukti**: Upload dan management dokumen akreditasi
+- **SPMI**: Audit Mutu dan Risk Register
+- **Kurikulum**: CPL-MK Mapping Matrix dan RPS
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### 🤖 AI Agent Features (6 Agents)
+1. **Verifikasi Agent** - Validasi dokumen, deteksi duplikasi
+2. **Prediksi Agent** - Prediksi skor akreditasi (Monte Carlo simulation)
+3. **Rekomendasi Agent** - Saran perbaikan prioritas
+4. **Peringatan Agent** - Alert BKD, kalibrasi, kadaluarsa akreditasi
+5. **Generator Agent** - Generate otomatis narasi LED/LKPT
+6. **Integrasi Agent** - Sinkronisasi PDDIKTI, SINTA, Sister
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### 🔧 Technology Stack
+- **Backend**: Laravel 11 (PHP 8.2+)
+- **Frontend**: React 18 + Inertia + Tailwind CSS
+- **AI Microservice**: Python FastAPI + Celery + RabbitMQ
+- **Database**: SQLite (dev) / PostgreSQL (prod)
+- **Queue**: RabbitMQ
+- **Cache**: Redis
 
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Installation
 
 ```bash
-composer require laravel/boost --dev
+# Clone repository
+git clone <repository-url>
+cd "Sistem Multi-Agent AI AKREDITASI"
 
-php artisan boost:install
+# Install PHP dependencies
+composer install
+
+# Install Node dependencies
+npm install
+
+# Setup environment
+cp .env.example .env
+# Edit .env for database and RabbitMQ settings
+
+# Run migrations
+php artisan migrate
+
+# Build frontend
+npm run build
+
+# Start Laravel
+php artisan serve
+
+# Start AI Agent Microservice (separate terminal)
+cd ai-agents
+source venv/bin/activate
+python main.py
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+## AI Agent Usage
 
-## Contributing
+### Via Dashboard
+1. Buka halaman Dashboard
+2. Widget AI Agent menampilkan:
+   - PeringatanBadge (jumlah alert)
+   - PrediksiWidget (skor gauge chart)
+   - RadarChart (capaian kriteria)
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Via Menu AI Agent
+- **Peringatan** (`/peringatan`) - Lihat dan kelola alert
+- **Verifikasi** (`/verifikasi`) - Hasil verifikasi dokumen
+- **Generator** (`/generator`) - Generate dokumen LED/LKPT
 
-## Code of Conduct
+### Via API
+```bash
+# Trigger agent via API
+POST /api/agents/{agent}/run
+Body: {"prodi_id": 1, "periode_id": 1}
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### Via Scheduler
+Agents dijalankan otomatis setiap jam:
+```bash
+php artisan schedule:run
+# atau
+php artisan agents:run-all
+```
 
-## Security Vulnerabilities
+## Project Structure
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```
+├── app/
+│   ├── Console/Commands/     # Artisan commands
+│   ├── Http/Controllers/    # API & Web controllers
+│   ├── Jobs/                 # Queue jobs
+│   ├── Models/               # Eloquent models
+│   └── Services/             # Business logic
+├── ai-agents/
+│   ├── agents/               # Python AI agents
+│   ├── main.py               # FastAPI entry point
+│   └── worker.py             # Celery tasks
+├── resources/js/
+│   ├── Components/           # React components
+│   │   └── Agent/            # AI widgets
+│   └── Pages/                # Inertia pages
+│       ├── Peringatan/       # Peringatan page
+│       ├── Verifikasi/       # Verifikasi page
+│       └── Generator/        # Generator page
+└── database/
+    ├── migrations/           # DB migrations
+    └── seeders/              # Data seeders
+```
+
+## Available Routes
+
+| Route | Description |
+|-------|-------------|
+| `/dashboard` | Main dashboard |
+| `/peringatan` | AI Peringatan Dini |
+| `/verifikasi` | AI Verifikasi Dokumen |
+| `/generator` | AI Generator Dokumen |
+| `/portofolio` | Portofolio Tridharma |
+| `/bkd` | BKD Dosen |
+| `/kurikulum/mapping` | CPL-MK Mapping |
+| `/spmi/audit` | Audit Mutu |
+| `/spmi/risk` | Risk Register |
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+MIT License - see LICENSE file for details.

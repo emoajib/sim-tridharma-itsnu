@@ -67,7 +67,7 @@ export default function Index({ dokumen, dosen_list, success }: Props) {
     const [deleteTarget, setDeleteTarget] = useState<DokumenItem | null>(null);
     const [file, setFile] = useState<File | null>(null);
 
-    const { data, setData, post, put, delete: destroy, errors, processing, reset } = useForm({
+    const { data, setData, post, delete: destroy, errors, processing, reset } = useForm({
         dosen_id: '',
         nama_dokumen: '',
         keterangan: '',

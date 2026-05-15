@@ -57,7 +57,7 @@ export default function RpsIndex({ rps, mk_list, prodi_list, periode_list, succe
     const [editing, setEditing] = useState<Rps | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<Rps | null>(null);
 
-    const { data, setData, post, put, delete: destroy, errors, processing, reset } = useForm({
+    const { data, setData, post, delete: destroy, errors, processing, reset } = useForm({
         kode_rps: '',
         mata_kuliah_id: '',
         prodi_id: '',

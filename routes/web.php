@@ -188,6 +188,23 @@ Route::middleware('auth')->group(function () {
     Route::get('/tracer/jawaban', [TracerJawabanController::class, 'index'])->name('tracer.jawaban');
     Route::post('/tracer/jawaban', [TracerJawabanController::class, 'store'])->name('tracer.jawaban.store');
     Route::delete('/tracer/jawaban/{tracerJawaban}', [TracerJawabanController::class, 'destroy'])->name('tracer.jawaban.destroy');
+
+    // AI Agent Pages
+    Route::get('/peringatan', [\App\Http\Controllers\Api\PeringatanController::class, 'index'])->name('peringatan');
+    Route::post('/peringatan/{id}/read', [\App\Http\Controllers\Api\PeringatanController::class, 'markAsRead'])->name('peringatan.markRead');
+    Route::post('/peringatan/mark-all-read', [\App\Http\Controllers\Api\PeringatanController::class, 'markAllAsRead'])->name('peringatan.markAllRead');
+    Route::post('/peringatan/run', [\App\Http\Controllers\Api\PeringatanController::class, 'runAgent'])->name('peringatan.run');
+
+    Route::get('/verifikasi', [\App\Http\Controllers\Api\VerifikasiController::class, 'index'])->name('verifikasi');
+    Route::post('/verifikasi/run', [\App\Http\Controllers\Api\VerifikasiController::class, 'runAgent'])->name('verifikasi.run');
+
+    // Generator Dokumen
+    Route::get('/generator', [\App\Http\Controllers\Api\GeneratorController::class, 'index'])->name('generator');
+    Route::post('/generator/generate', [\App\Http\Controllers\Api\GeneratorController::class, 'generate'])->name('generator.generate');
+
+    // Admin Settings
+    Route::get('/admin/settings', [\App\Http\Controllers\Api\AdminSettingController::class, 'index'])->name('admin.settings');
+    Route::post('/admin/settings', [\App\Http\Controllers\Api\AdminSettingController::class, 'updateMultiple'])->name('admin.settings.update');
 });
 
 require __DIR__.'/auth.php';

@@ -24,29 +24,31 @@ class BaseAgent(ABC):
     def log_execution(
         self,
         agent_name: str,
-        task_id: str | None,
+        triggered_by: str | None,
         input_data: dict,
         output_data: dict,
         status: str = "success",
         error_message: str | None = None,
     ):
         db = SessionLocal()
+        started_at = datetime.now(timezone.utc)
         try:
             db.execute(
                 text("""
                     INSERT INTO agent_execution_log
-                        (agent_name, task_id, input_data, output_data, status, error_message, executed_at)
+                        (agent_name, status, started_at, finished_at, input_data, output_data, error_message, triggered_by, created_at, updated_at)
                     VALUES
-                        (:agent_name, :task_id, :input_data, :output_data, :status, :error_message, :executed_at)
+                        (:agent_name, :status, :started_at, :finished_at, :input_data, :output_data, :error_message, :triggered_by, NOW(), NOW())
                 """),
                 {
                     "agent_name": agent_name,
-                    "task_id": task_id,
+                    "status": status,
+                    "started_at": started_at,
+                    "finished_at": datetime.now(timezone.utc),
                     "input_data": str(input_data),
                     "output_data": str(output_data),
-                    "status": status,
                     "error_message": error_message,
-                    "executed_at": datetime.now(timezone.utc),
+                    "triggered_by": triggered_by,
                 },
             )
             db.commit()
