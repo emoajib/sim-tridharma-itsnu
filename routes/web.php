@@ -27,6 +27,7 @@ use App\Http\Controllers\Api\TracerJawabanController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\RoleSwitchController;
 use App\Http\Controllers\Api\AiptController;
+use App\Http\Controllers\Api\TemplateController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -202,6 +203,14 @@ Route::middleware('auth')->group(function () {
     // Generator Dokumen
     Route::get('/generator', [\App\Http\Controllers\Api\GeneratorController::class, 'index'])->name('generator');
     Route::post('/generator/generate', [\App\Http\Controllers\Api\GeneratorController::class, 'generate'])->name('generator.generate');
+
+    // SINTA Import Routes
+    Route::post('/import/sinta/publikasi', [\App\Http\Controllers\Api\SintaImportController::class, 'importPublikasi'])->name('import.sinta.publikasi');
+    Route::post('/import/sinta/penelitian', [\App\Http\Controllers\Api\SintaImportController::class, 'importPenelitian'])->name('import.sinta.penelitian');
+
+    // Template Routes
+    Route::get('/admin/templates', [TemplateController::class, 'index'])->name('admin.templates.index');
+    Route::get('/admin/templates/download/{filename}', [TemplateController::class, 'download'])->name('admin.templates.download');
 
     // Admin Settings
     Route::get('/admin/settings', [\App\Http\Controllers\Api\AdminSettingController::class, 'index'])->name('admin.settings');
