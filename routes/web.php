@@ -207,6 +207,7 @@ Route::middleware('auth')->group(function () {
     // SINTA Import Routes
     Route::post('/import/sinta/publikasi', [\App\Http\Controllers\Api\SintaImportController::class, 'importPublikasi'])->name('import.sinta.publikasi');
     Route::post('/import/sinta/penelitian', [\App\Http\Controllers\Api\SintaImportController::class, 'importPenelitian'])->name('import.sinta.penelitian');
+    Route::post('/import/sinta/pkm', [\App\Http\Controllers\Api\SintaImportController::class, 'importPkm'])->name('import.sinta.pkm');
 
     // Template Routes
     Route::get('/admin/templates', [TemplateController::class, 'index'])->name('admin.templates.index');
@@ -216,6 +217,18 @@ Route::middleware('auth')->group(function () {
     Route::get('/admin/settings', [\App\Http\Controllers\Api\AdminSettingController::class, 'index'])->name('admin.settings');
     Route::post('/admin/settings', [\App\Http\Controllers\Api\AdminSettingController::class, 'updateMultiple'])->name('admin.settings.update');
     Route::get('/aipt', [AiptController::class, 'index'])->name('aipt.index');
+
+    // Accreditation Management (Lembaga & Instrumen)
+    Route::get('/admin/lembaga', [\App\Http\Controllers\Api\LembagaAkreditasiController::class, 'index'])->name('admin.lembaga.index');
+    Route::post('/admin/lembaga', [\App\Http\Controllers\Api\LembagaAkreditasiController::class, 'store'])->name('admin.lembaga.store');
+    Route::put('/admin/lembaga/{lembagaAkreditasi}', [\App\Http\Controllers\Api\LembagaAkreditasiController::class, 'update'])->name('admin.lembaga.update');
+    Route::delete('/admin/lembaga/{lembagaAkreditasi}', [\App\Http\Controllers\Api\LembagaAkreditasiController::class, 'destroy'])->name('admin.lembaga.destroy');
+
+    Route::get('/admin/instrumen', [\App\Http\Controllers\Api\InstrumenAkreditasiController::class, 'index'])->name('admin.instrumen.index');
+    Route::post('/admin/instrumen', [\App\Http\Controllers\Api\InstrumenAkreditasiController::class, 'store'])->name('admin.instrumen.store');
+    Route::put('/admin/instrumen/{instrumenAkreditasi}', [\App\Http\Controllers\Api\InstrumenAkreditasiController::class, 'update'])->name('admin.instrumen.update');
+    Route::delete('/admin/instrumen/{instrumenAkreditasi}', [\App\Http\Controllers\Api\InstrumenAkreditasiController::class, 'destroy'])->name('admin.instrumen.destroy');
+    Route::post('/admin/instrumen/import-preview', [\App\Http\Controllers\Api\InstrumenAkreditasiController::class, 'importPreview'])->name('admin.instrumen.import-preview');
 });
 
 require __DIR__.'/auth.php';

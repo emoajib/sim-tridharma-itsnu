@@ -76,6 +76,8 @@ export default function Theme3Layout({
 
     const adminLinks = [
         { name: 'Pengaturan Sistem', route: 'admin.settings', icon: '⚙️' },
+        { name: 'Lembaga Akreditasi', route: 'admin.lembaga.index', icon: '🏛️' },
+        { name: 'Instrumen Penilaian', route: 'admin.instrumen.index', icon: '📋' },
     ];
 
     // Sidebar component

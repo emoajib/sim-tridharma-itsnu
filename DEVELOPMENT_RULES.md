@@ -44,6 +44,24 @@ PLAN → BUILD → TES KODE → GIT COMMIT → PUSH GITHUB → TES KODE DI GITHU
 
 ---
 
+## 🛡️ Protokol Keamanan Data & Database (PENTING)
+
+Untuk mencegah kehilangan data (Data Loss) di masa depan, aturan berikut bersifat **MUTLAK**:
+
+1.  **DILARANG KERAS** menjalankan perintah `php artisan migrate:fresh` pada database utama (PostgreSQL). Perintah ini akan menghapus seluruh data permanen.
+2.  **Gunakan Migrasi Inkremental**: Hanya gunakan `php artisan migrate` untuk menambah struktur baru.
+3.  **Prosedur Sinkronisasi SINTA**:
+    *   Sistem sinkronisasi harus menggunakan metode **Upsert** (Update or Create).
+    *   Dosen dicocokkan berdasarkan **NIDN/NUPTK**.
+    *   Publikasi dicocokkan berdasarkan **Judul + ID Dosen**.
+    *   JANGAN pernah menghapus data lama untuk memasukkan data baru dari Excel.
+4.  **Verifikasi pgAdmin 4**:
+    *   Pastikan pgAdmin 4 terhubung ke database `sim_tridharma_itsnu` di port **5433**.
+    *   Data yang ada di aplikasi adalah cerminan langsung dari tabel di pgAdmin.
+5.  **Backup Rutin**: Admin IT wajib melakukan export backup `.sql` dari pgAdmin minimal sekali dalam seminggu.
+
+---
+
 ## ⚠️ Penting
 
 - **JANGAN** skip step TES KODE
@@ -66,5 +84,7 @@ PLAN → BUILD → TES KODE → GIT COMMIT → PUSH GITHUB → TES KODE DI GITHU
 
 ---
 
-Versi: 1.0
-Tanggal: 15 Mei 2026
+Versi: 1.1 (Security Update)
+Tanggal: 17 Mei 2026
+Update: Penambahan Protokol Keamanan Data & Database
+_

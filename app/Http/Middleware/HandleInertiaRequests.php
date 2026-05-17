@@ -38,6 +38,15 @@ class HandleInertiaRequests extends Middleware
                     'role_list' => $user->roleList(),
                 ]) : null,
             ],
+            'flash' => [
+                'success' => $request->session()->get('success'),
+                'error' => $request->session()->get('error'),
+            ],
+            'appSettings' => [
+                'theme_mode' => \App\Models\Setting::get('theme_mode', 'klasik'),
+                'theme_color' => \App\Models\Setting::get('theme_color', 'indigo'),
+                'chat_enabled' => \App\Models\Setting::get('chat_enabled', true),
+            ]
         ];
     }
 }

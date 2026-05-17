@@ -18,6 +18,7 @@ use App\Models\PeriodeAkademik;
 use App\Models\AgentPeringatanLog;
 use App\Models\AgentVerifikasiHasil;
 use App\Models\AgentPredictionHistory;
+use App\Models\LembagaAkreditasi;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -40,6 +41,12 @@ class DashboardController extends Controller
         }
 
         $periodeId = $request->get('periode_id');
+        $instrumenId = $request->get('instrumen_id'); // ID dari m_lembaga_akreditasi
+
+        // Default to BAN-PT if not specified
+        if (!$instrumenId) {
+            $instrumenId = LembagaAkreditasi::where('singkatan', 'BAN-PT')->first()?->id;
+        }
 
         $stats = [
             'dosen_count' => Dosen::count(),
@@ -48,6 +55,11 @@ class DashboardController extends Controller
         ];
 
         $query = fn($q) => $periodeId ? $q->where('periode_id', $periodeId) : $q;
+
+        // Dynamic Program Discovery based on selected Instrument
+        $activeProdis = Prodi::where('lembaga_akreditasi_id', $instrumenId)
+            ->with('fakultas')
+            ->get();
 
         $portofolioStats = [
             'pendidikan_count' => $query(KegiatanPendidikan::query())->count(),
@@ -62,8 +74,6 @@ class DashboardController extends Controller
 
         $recentPendidikan = $query(KegiatanPendidikan::with('dosen'))->latest()->take(5)->get();
         $recentPenelitian = $query(Penelitian::with('dosen'))->latest()->take(5)->get();
-        $recentPublikasi = $query(Publikasi::with('dosen'))->latest()->take(5)->get();
-        $recentPkm = $query(Pkm::with('dosen'))->latest()->take(5)->get();
 
         $bkdStats = [
             'total' => $query(Bkd::query())->count(),
@@ -82,48 +92,39 @@ class DashboardController extends Controller
             'total' => AgentPeringatanLog::count(),
         ];
 
-        $verifikasiStats = [
-            'valid' => AgentVerifikasiHasil::where('status', 'valid')->count(),
-            'need_review' => AgentVerifikasiHasil::where('status', 'need_review')->count(),
-            'invalid' => AgentVerifikasiHasil::where('status', 'invalid')->count(),
-            'total' => AgentVerifikasiHasil::count(),
-        ];
+        // Multi-Prodi Accreditation Info (FILTERED BY INSTRUMENT)
+        $prodiAccreditation = $activeProdis->map(function($p) use ($periodeId) {
+            $latestSim = AgentPredictionHistory::where('prodi_id', $p->id)
+                ->when($periodeId, fn($q) => $q->where('periode_id', $periodeId))
+                ->latest()
+                ->first();
+            
+            return [
+                'id' => $p->id,
+                'nama' => $p->nama_prodi,
+                'fakultas' => $p->fakultas->nama_fakultas ?? '-',
+                'status_saat_ini' => $p->akreditasi ?? 'Belum Terakreditasi',
+                'skor_simulasi' => $latestSim ? $latestSim->skor_prediksi : 0,
+                'trend' => rand(-5, 10) / 100,
+            ];
+        });
 
-        // Multi-Prodi Accreditation Info
-        $prodiAccreditation = Prodi::with('fakultas')
-            ->select('id', 'nama_prodi', 'akreditasi', 'fakultas_id')
-            ->get()
-            ->map(function($p) use ($periodeId) {
-                // Get latest simulated score from agent history if exists
-                $latestSim = AgentPredictionHistory::where('prodi_id', $p->id)
-                    ->when($periodeId, fn($q) => $q->where('periode_id', $periodeId))
-                    ->latest()
-                    ->first();
-                
-                return [
-                    'id' => $p->id,
-                    'nama' => $p->nama_prodi,
-                    'fakultas' => $p->fakultas->nama_fakultas ?? '-',
-                    'status_saat_ini' => $p->akreditasi ?? 'Belum Terakreditasi',
-                    'skor_simulasi' => $latestSim ? $latestSim->skor_prediksi : 0,
-                    'trend' => rand(-5, 10) / 100, // Dummy trend for visualization
-                ];
-            });
+        // Institutional info (Only if BAN-PT is selected)
+        $institutionAccreditation = null;
+        if (LembagaAkreditasi::find($instrumenId)?->singkatan === 'BAN-PT') {
+            $institutionAccreditation = [
+                'nama' => 'ITSNU Pekalongan',
+                'status_saat_ini' => Setting::get('aipt_status', 'Baik'),
+                'skor_simulasi' => Setting::get('aipt_sim_score', 3.12),
+                'target' => 'Unggul',
+                'last_sync' => now()->subDays(2)->format('d M Y'),
+            ];
+        }
 
-        // Institutional Accreditation (AIPT) - Simplified for now
-        $institutionAccreditation = [
-            'nama' => 'ITSNU Pekalongan',
-            'status_saat_ini' => Setting::get('aipt_status', 'Baik'),
-            'skor_simulasi' => Setting::get('aipt_sim_score', 3.12),
-            'target' => 'Unggul',
-            'last_sync' => now()->subDays(2)->format('d M Y'),
-        ];
-
-        // Latest prediction
         $latestPrediction = AgentPredictionHistory::latest()->first();
-
         $periode_list = PeriodeAkademik::select('id', 'nama_periode')->get();
         $selectedPeriode = $periodeId ? PeriodeAkademik::find($periodeId) : null;
+        $lembaga_list = LembagaAkreditasi::where('is_active', true)->get();
 
         return Inertia::render('Dashboard', [
             'stats' => $stats,
@@ -131,16 +132,17 @@ class DashboardController extends Controller
             'bkdStats' => $bkdStats,
             'recentPendidikan' => $recentPendidikan,
             'recentPenelitian' => $recentPenelitian,
-            'recentPublikasi' => $recentPublikasi,
-            'recentPkm' => $recentPkm,
             'periode_list' => $periode_list,
             'selectedPeriode' => $selectedPeriode,
+            'lembaga_list' => $lembaga_list,
+            'selectedInstrumenId' => (int) $instrumenId,
+            'filters' => [
+                'periode_id' => $periodeId,
+                'instrumen_id' => $instrumenId,
+            ],
             'dashboardDefaultTab' => $defaultTab,
-            // AI Agent Data
             'peringatanStats' => $peringatanStats,
-            'verifikasiStats' => $verifikasiStats,
             'latestPrediction' => $latestPrediction,
-            // New Informative Data
             'prodiAccreditation' => $prodiAccreditation,
             'institutionAccreditation' => $institutionAccreditation,
         ]);

@@ -103,6 +103,8 @@ export default function Authenticated({
 
     const adminLinks = [
         { name: 'Pengaturan Sistem', route: 'admin.settings', icon: '⚙️' },
+        { name: 'Lembaga Akreditasi', route: 'admin.lembaga.index', icon: '🏛️' },
+        { name: 'Instrumen Penilaian', route: 'admin.instrumen.index', icon: '📋' },
     ];
 
     const isAiAgentActive = aiAgentLinks.some((l) => route().current(l.route));
