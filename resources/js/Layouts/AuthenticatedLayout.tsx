@@ -16,6 +16,8 @@ const themeColors: Record<string, { primary: string; primaryHover: string; light
     emerald: { primary: 'bg-emerald-600', primaryHover: 'hover:bg-emerald-700', light: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-500' },
 };
 
+import Theme3Layout from './Theme3Layout';
+
 export default function Authenticated({
     header,
     children,
@@ -23,6 +25,13 @@ export default function Authenticated({
     const { props } = usePage();
     const user = props.auth?.user;
     const appSettings = props.appSettings as any;
+    const themeMode = appSettings?.theme_mode || 'klasik';
+
+    // Use Theme 3 layout when theme_mode is 'theme3'
+    if (themeMode === 'theme3') {
+        return <Theme3Layout header={header}>{children}</Theme3Layout>;
+    }
+
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
     const [showingMasterData, setShowingMasterData] = useState(false);
     const [showingPortofolio, setShowingPortofolio] = useState(false);
@@ -30,23 +39,23 @@ export default function Authenticated({
     const [showChat, setShowChat] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
-    const layoutType = appSettings?.layout_type || 'navbar';
-    const chatEnabled = appSettings?.chat_enabled !== false && appSettings?.chat_enabled !== 'false';
-    const themeMode = appSettings?.theme_mode || 'klasik';
-    const themeColor = appSettings?.theme_color || 'indigo';
-    const colors = themeColors[themeColor] || themeColors.indigo;
+     const layoutType = appSettings?.layout_type || 'navbar';
+     const chatEnabled = appSettings?.chat_enabled !== false && appSettings?.chat_enabled !== 'false';
+     const themeColor = appSettings?.theme_color || 'indigo';
+     const colors = themeColors[themeColor] || themeColors.indigo;
 
-    const isModernTheme = themeMode === 'modern';
+     const isModernTheme = themeMode === 'modern';
 
-    useEffect(() => {
-        if (isModernTheme) {
-            document.documentElement.classList.add('theme-modern');
-            document.documentElement.classList.remove('theme-klasik');
-        } else {
-            document.documentElement.classList.add('theme-klasik');
-            document.documentElement.classList.remove('theme-modern');
-        }
-    }, [isModernTheme]);
+     useEffect(() => {
+         if (isModernTheme) {
+             document.documentElement.classList.add('theme-modern');
+             document.documentElement.classList.remove('theme-klasik', 'theme-3');
+         } else {
+             // klasik
+             document.documentElement.classList.add('theme-klasik');
+             document.documentElement.classList.remove('theme-modern', 'theme-3');
+         }
+     }, [themeMode]);
 
     const masterDataLinks = [
         { name: 'Fakultas', route: 'master-data.fakultas', icon: '🏛️' },

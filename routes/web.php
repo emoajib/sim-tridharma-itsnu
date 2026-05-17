@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\KuisionerTracerController;
 use App\Http\Controllers\Api\TracerJawabanController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\RoleSwitchController;
+use App\Http\Controllers\Api\AiptController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -205,6 +206,7 @@ Route::middleware('auth')->group(function () {
     // Admin Settings
     Route::get('/admin/settings', [\App\Http\Controllers\Api\AdminSettingController::class, 'index'])->name('admin.settings');
     Route::post('/admin/settings', [\App\Http\Controllers\Api\AdminSettingController::class, 'updateMultiple'])->name('admin.settings.update');
+    Route::get('/aipt', [AiptController::class, 'index'])->name('aipt.index');
 });
 
 require __DIR__.'/auth.php';

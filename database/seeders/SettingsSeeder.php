@@ -38,7 +38,7 @@ class SettingsSeeder extends Seeder
                 'key' => 'theme_mode',
                 'value' => 'klasik',
                 'type' => 'string',
-                'description' => 'Theme mode: klasik atau modern'
+                'description' => 'Theme mode: klasik, modern, atau theme3'
             ],
         ];
 

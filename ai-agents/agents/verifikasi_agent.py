@@ -14,6 +14,8 @@ class VerifikasiAgent(BaseAgent):
     version = "1.0.0"
 
     def execute(self, data: dict) -> dict:
+        if isinstance(data, list):
+            data = {}
         results = []
         db = SessionLocal()
         try:

@@ -13,11 +13,14 @@ class RekomendasiAgent(BaseAgent):
     version = "1.0.0"
 
     def execute(self, data: dict) -> dict:
+        if isinstance(data, list):
+            data = {}
         missing = self.validate_input(data, ["prodi_id"])
         if missing:
             return {"status": "error", "message": f"Missing fields: {missing}"}
 
         prodi_id = data["prodi_id"]
+
         db = SessionLocal()
         try:
             rows = db.execute(
@@ -30,50 +33,60 @@ class RekomendasiAgent(BaseAgent):
                         pi.skor_tercapai,
                         pi.status,
                         i.bobot
-                    FROM indikator i
+                    FROM m_indikator_akreditasi i
                     LEFT JOIN trx_pemenuhan_indikator pi
                         ON pi.indikator_id = i.id AND pi.prodi_id = :prodi_id
                     WHERE pi.status IN ('merah', 'kuning')
-                    ORDER BY
-                        CASE pi.status WHEN 'merah' THEN 0 ELSE 1 END,
-                        i.bobot DESC
+                    ORDER BY i.bobot DESC
+                    LIMIT 10
                 """),
                 {"prodi_id": prodi_id},
             ).fetchall()
 
-            recommendations = []
+            rekomendasi_list = []
             for r in rows:
-                skor = r.skor_tercapai or 0
-                target = r.target or 0
-                gap = target - skor
-
-                priority = "high" if r.status == "merah" else "medium"
-
-                recommendations.append({
+                prio = "Tinggi" if r.bobot >= 4 else ("Sedang" if r.bobot >= 2 else "Rendah")
+                rekomendasi_list.append({
                     "indikator_id": r.id,
                     "kode": r.kode_indikator,
                     "nama": r.nama_indikator,
-                    "skor_saat_ini": skor,
-                    "target": target,
-                    "gap": round(gap, 2),
-                    "status": r.status,
-                    "priority": priority,
-                    "rekomendasi": self._generate_recomendation(r.nama_indikator, skor, target, gap, priority),
+                    "status_saat_ini": r.status,
+                    "skor_saat_ini": r.skor_tercapai,
+                    "target": r.target,
+                    "prioritas": prio,
+                    "saran": f"Tingkatkan pemenuhan pada indikator {r.kode_indikator} untuk mencapai target {r.target}.",
                 })
 
-            result = {"rekomendasi": recommendations, "total": len(recommendations)}
-            self.log_execution(self.name, None, data, result)
+            result = {
+                "prodi_id": prodi_id,
+                "rekomendasi": rekomendasi_list,
+                "total_rekomendasi": len(rekomendasi_list),
+            }
+
+            # Log to database
+            for rec in rekomendasi_list:
+                db.execute(
+                    text("""
+                        INSERT INTO agent_rekomendasi_log
+                            (prodi_id, indikator_id, prioritas, saran, is_read, created_at, updated_at)
+                        VALUES
+                            (:prodi_id, :i_id, :prio, :saran, false, NOW(), NOW())
+                    """),
+                    {
+                        "prodi_id": prodi_id,
+                        "i_id": rec["indikator_id"],
+                        "prio": rec["prioritas"],
+                        "saran": rec["saran"],
+                    },
+                )
+            db.commit()
+
+            self.log_execution(self.name, "system", data, result)
             return result
 
         except Exception as e:
-            logger.error(f"Rekomendasi error: {e}", exc_info=True)
-            result = {"status": "error", "message": str(e)}
-            self.log_execution(self.name, None, data, result, status="error", error_message=str(e))
-            return result
+            logger.error(f"RekomendasiAgent execution failed: {e}", exc_info=True)
+            db.rollback()
+            return {"status": "error", "message": str(e)}
         finally:
             db.close()
-
-    def _generate_recomendation(self, nama: str, skor: float, target: float, gap: float, priority: str) -> str:
-        if priority == "high":
-            return f"Segera tingkatkan capaian '{nama}' (gap {gap:.2f} dari target {target:.2f}) — prioritas utama"
-        return f"Tingkatkan capaian '{nama}' (gap {gap:.2f} dari target {target:.2f})"

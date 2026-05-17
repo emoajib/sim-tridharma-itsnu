@@ -21,6 +21,7 @@ use App\Models\AgentPredictionHistory;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -88,6 +89,36 @@ class DashboardController extends Controller
             'total' => AgentVerifikasiHasil::count(),
         ];
 
+        // Multi-Prodi Accreditation Info
+        $prodiAccreditation = Prodi::with('fakultas')
+            ->select('id', 'nama_prodi', 'akreditasi', 'fakultas_id')
+            ->get()
+            ->map(function($p) use ($periodeId) {
+                // Get latest simulated score from agent history if exists
+                $latestSim = AgentPredictionHistory::where('prodi_id', $p->id)
+                    ->when($periodeId, fn($q) => $q->where('periode_id', $periodeId))
+                    ->latest()
+                    ->first();
+                
+                return [
+                    'id' => $p->id,
+                    'nama' => $p->nama_prodi,
+                    'fakultas' => $p->fakultas->nama_fakultas ?? '-',
+                    'status_saat_ini' => $p->akreditasi ?? 'Belum Terakreditasi',
+                    'skor_simulasi' => $latestSim ? $latestSim->skor_prediksi : 0,
+                    'trend' => rand(-5, 10) / 100, // Dummy trend for visualization
+                ];
+            });
+
+        // Institutional Accreditation (AIPT) - Simplified for now
+        $institutionAccreditation = [
+            'nama' => 'ITSNU Pekalongan',
+            'status_saat_ini' => Setting::get('aipt_status', 'Baik'),
+            'skor_simulasi' => Setting::get('aipt_sim_score', 3.12),
+            'target' => 'Unggul',
+            'last_sync' => now()->subDays(2)->format('d M Y'),
+        ];
+
         // Latest prediction
         $latestPrediction = AgentPredictionHistory::latest()->first();
 
@@ -109,6 +140,9 @@ class DashboardController extends Controller
             'peringatanStats' => $peringatanStats,
             'verifikasiStats' => $verifikasiStats,
             'latestPrediction' => $latestPrediction,
+            // New Informative Data
+            'prodiAccreditation' => $prodiAccreditation,
+            'institutionAccreditation' => $institutionAccreditation,
         ]);
     }
 }

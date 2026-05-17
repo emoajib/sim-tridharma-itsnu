@@ -26,9 +26,9 @@ class RabbitMQConsumer:
         )
         self.connection = pika.BlockingConnection(parameters)
         self.channel = self.connection.channel()
-        self.channel.exchange_declare(exchange=RABBITMQ_EXCHANGE, exchange_type="direct", durable=True)
+        self.channel.exchange_declare(exchange=RABBITMQ_EXCHANGE, exchange_type="topic", durable=True)
         self.channel.queue_declare(queue=RABBITMQ_QUEUE, durable=True)
-        self.channel.queue_bind(queue=RABBITMQ_QUEUE, exchange=RABBITMQ_EXCHANGE, routing_key=RABBITMQ_QUEUE)
+        self.channel.queue_bind(queue=RABBITMQ_QUEUE, exchange=RABBITMQ_EXCHANGE, routing_key="agent.#")
         self.channel.basic_qos(prefetch_count=1)
         logger.info("Connected to RabbitMQ")
 
@@ -97,7 +97,7 @@ class RabbitMQPublisher:
         )
         self.connection = pika.BlockingConnection(parameters)
         self.channel = self.connection.channel()
-        self.channel.exchange_declare(exchange=RABBITMQ_EXCHANGE, exchange_type="direct", durable=True)
+        self.channel.exchange_declare(exchange=RABBITMQ_EXCHANGE, exchange_type="topic", durable=True)
         logger.info("RabbitMQ publisher connected")
 
     def publish(self, routing_key: str, message: dict):

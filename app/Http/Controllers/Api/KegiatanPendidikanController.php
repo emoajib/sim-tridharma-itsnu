@@ -25,7 +25,7 @@ class KegiatanPendidikanController extends Controller
             ->paginate(10);
 
         return Inertia::render('Portofolio/KegiatanPendidikan/Index', [
-            'pendidikan' => $pendidikan,
+            'kegiatan_pendidikan' => $pendidikan,
             'dosen_list' => Dosen::select('id', 'nama_depan', 'nama_belakang')->get(),
             'prodi_list' => Prodi::select('id', 'nama_prodi')->get(),
             'periode_list' => PeriodeAkademik::select('id', 'nama_periode')->get(),

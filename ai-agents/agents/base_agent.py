@@ -1,3 +1,4 @@
+import json
 import logging
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
@@ -45,8 +46,8 @@ class BaseAgent(ABC):
                     "status": status,
                     "started_at": started_at,
                     "finished_at": datetime.now(timezone.utc),
-                    "input_data": str(input_data),
-                    "output_data": str(output_data),
+                    "input_data": json.dumps(input_data),
+                    "output_data": json.dumps(output_data),
                     "error_message": error_message,
                     "triggered_by": triggered_by,
                 },

@@ -167,9 +167,9 @@ export default function Index({ settings }: Props) {
                                 <label className="mb-2 block text-sm font-medium text-gray-700">
                                     Mode Tema
                                 </label>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                                     <label className={`flex cursor-pointer items-center justify-between rounded-lg border-2 p-4 transition-all ${formData.theme_mode === 'klasik' ? `${colors.border} ${colors.bg}` : 'border-gray-200 hover:border-gray-300'}`}>
-                                        <div className="flex items-center">
+                                        <div className="flex items-center w-full">
                                             <input
                                                 type="radio"
                                                 name="theme_mode"
@@ -178,14 +178,14 @@ export default function Index({ settings }: Props) {
                                                 onChange={() => handleChange('theme_mode', 'klasik')}
                                                 className="hidden"
                                             />
-                                            <div className="text-center">
+                                            <div className="text-center w-full">
                                                 <span className="block text-lg font-semibold text-gray-800">📄 Klasik</span>
-                                                <span className="text-xs text-gray-500">Tampilan default Laravel</span>
+                                                <span className="text-xs text-gray-500">Tampilan default</span>
                                             </div>
                                         </div>
                                     </label>
                                     <label className={`flex cursor-pointer items-center justify-between rounded-lg border-2 p-4 transition-all ${formData.theme_mode === 'modern' ? `${colors.border} ${colors.bg}` : 'border-gray-200 hover:border-gray-300'}`}>
-                                        <div className="flex items-center">
+                                        <div className="flex items-center w-full">
                                             <input
                                                 type="radio"
                                                 name="theme_mode"
@@ -194,15 +194,31 @@ export default function Index({ settings }: Props) {
                                                 onChange={() => handleChange('theme_mode', 'modern')}
                                                 className="hidden"
                                             />
-                                            <div className="text-center">
+                                            <div className="text-center w-full">
                                                 <span className="block text-lg font-semibold text-gray-800">✨ Modern</span>
-                                                <span className="text-xs text-gray-500">Tampilan baru dengan Outfit font</span>
+                                                <span className="text-xs text-gray-500">Outfit Font</span>
+                                            </div>
+                                        </div>
+                                    </label>
+                                    <label className={`flex cursor-pointer items-center justify-between rounded-lg border-2 p-4 transition-all ${formData.theme_mode === 'theme3' ? `${colors.border} ${colors.bg}` : 'border-gray-200 hover:border-gray-300'}`}>
+                                        <div className="flex items-center w-full">
+                                            <input
+                                                type="radio"
+                                                name="theme_mode"
+                                                value="theme3"
+                                                checked={formData.theme_mode === 'theme3'}
+                                                onChange={() => handleChange('theme_mode', 'theme3')}
+                                                className="hidden"
+                                            />
+                                            <div className="text-center w-full">
+                                                <span className="block text-lg font-semibold text-gray-800">🎨 Theme 3</span>
+                                                <span className="text-xs text-gray-500">Sidebar & KPI</span>
                                             </div>
                                         </div>
                                     </label>
                                 </div>
                                 <p className="mt-2 text-xs text-gray-500">
-                                    Tema Klasik menggunakan gaya default Laravel Breeze. Tema Modern menggunakan font Outfit dengan komponen styled customs.
+                                    Pilih mode tampilan sistem. Theme 3 memberikan pengalaman navigasi sidebar dengan visual KPI yang lebih detail.
                                 </p>
                             </div>
                         </div>

@@ -14,6 +14,8 @@ class PeringatanAgent(BaseAgent):
     version = "1.0.0"
 
     def execute(self, data: dict) -> dict:
+        if isinstance(data, list):
+            data = {}
         prodi_id = data.get("prodi_id")
         db = SessionLocal()
         try:
