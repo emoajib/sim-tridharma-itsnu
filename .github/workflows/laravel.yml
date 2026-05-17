@@ -33,6 +33,8 @@ jobs:
       run: npm run build
     - name: Generate key
       run: php artisan key:generate
+    - name: Create Storage Directories
+      run: mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views
     - name: Directory Permissions
       run: chmod -R 777 storage bootstrap/cache
     - name: Create Database
