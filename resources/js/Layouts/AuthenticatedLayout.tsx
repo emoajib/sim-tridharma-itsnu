@@ -23,8 +23,9 @@ export default function Authenticated({
     children,
 }: PropsWithChildren<{ header?: ReactNode }>) {
     const { props } = usePage();
-    const user = props.auth?.user;
-    const appSettings = props.appSettings as any;
+    const auth = (props.auth as any) || {};
+    const user = auth.user;
+    const appSettings = (props.appSettings as any) || {};
     const themeMode = appSettings?.theme_mode || 'klasik';
 
     // Use Theme 3 layout when theme_mode is 'theme3'
@@ -35,6 +36,7 @@ export default function Authenticated({
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
     const [showingMasterData, setShowingMasterData] = useState(false);
     const [showingPortofolio, setShowingPortofolio] = useState(false);
+    const [showingSpmi, setShowingSpmi] = useState(false);
     const [showingAdmin, setShowingAdmin] = useState(false);
     const [showChat, setShowChat] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -67,8 +69,6 @@ export default function Authenticated({
         { name: 'Periode Akademik', route: 'master-data.periode-akademik', icon: '📅' },
     ];
 
-    const isMasterDataActive = masterDataLinks.some((l) => route().current(l.route));
-
     const portofolioLinks = [
         { name: 'Dashboard Portofolio', route: 'portofolio', icon: '📊' },
         { name: 'Pendidikan', route: 'portofolio.pendidikan', icon: '🎓' },
@@ -78,9 +78,7 @@ export default function Authenticated({
         { name: 'Penunjang', route: 'portofolio.penunjang', icon: '📁' },
     ];
 
-    const isPortofolioActive = portofolioLinks.some((l) => route().current(l.route));
-
-    const otherLinks = [
+    const tridharmaOtherLinks = [
         { name: 'BKD', route: 'bkd', icon: '📄' },
         { name: 'Dokumen', route: 'dokumen', icon: '📑' },
         { name: 'Bimbingan', route: 'bimbingan', icon: '💬' },
@@ -89,6 +87,9 @@ export default function Authenticated({
         { name: 'Mitra', route: 'mitra', icon: '🤝' },
         { name: 'Kerjasama', route: 'kerjasama', icon: '🔗' },
         { name: 'Keuangan', route: 'keuangan', icon: '💰' },
+    ];
+
+    const spmiLinks = [
         { name: 'Mapping CPL-MK', route: 'kurikulum.mapping', icon: '🔀' },
         { name: 'RPS', route: 'kurikulum.rps', icon: '📃' },
         { name: 'Audit Mutu', route: 'spmi.audit', icon: '✅' },
@@ -107,6 +108,10 @@ export default function Authenticated({
         { name: 'Instrumen Penilaian', route: 'admin.instrumen.index', icon: '📋' },
     ];
 
+    const isMasterDataActive = masterDataLinks.some((l) => route().current(l.route));
+    const isPortofolioActive = portofolioLinks.some((l) => route().current(l.route));
+    const isTridharmaActive = tridharmaOtherLinks.some((l) => route().current(l.route));
+    const isSpmiActive = spmiLinks.some((l) => route().current(l.route));
     const isAiAgentActive = aiAgentLinks.some((l) => route().current(l.route));
     const isAdminActive = adminLinks.some((l) => route().current(l.route));
 
@@ -116,8 +121,6 @@ export default function Authenticated({
         }
         return 'inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 transition duration-150 ease-in-out hover:border-gray-300 hover:text-gray-700';
     };
-
-    const getActiveDropdownColor = () => colors.text;
 
     const Sidebar = () => (
         <>
@@ -130,143 +133,129 @@ export default function Authenticated({
             <aside
                 className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
                     sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-                } ${isModernTheme ? 'sidebar-modern' : 'bg-gray-900'}`}
+                } ${isModernTheme ? 'sidebar-modern' : 'bg-gray-900 shadow-xl'}`}
             >
-                <div className="flex h-16 items-center justify-center border-b border-gray-800">
+                <div className="flex h-16 items-center justify-center border-b border-gray-800/50">
                     <Link href="/">
                         <ApplicationLogo className="block h-9 w-auto fill-current text-white" />
                     </Link>
                 </div>
 
-                <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
+                <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5 custom-scrollbar">
                     <Link
                         href={route('dashboard')}
-                        className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all ${
+                        className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-bold transition-all mb-4 ${
                             route().current('dashboard')
                                 ? isModernTheme
                                     ? 'sidebar-item-active'
-                                    : `${colors.primary} text-white`
+                                    : `${colors.primary} text-white shadow-lg`
                                 : isModernTheme
                                 ? 'sidebar-item-modern'
                                 : 'text-gray-400 hover:bg-gray-800 hover:text-white'
                         }`}
                     >
                         <span>📊</span>
-                        <span>Dashboard</span>
+                        <span>DASHBOARD</span>
                     </Link>
 
-                    <div className="pt-4 pb-2">
-                        <p className="px-4 text-xs font-semibold uppercase tracking-wider text-gray-500">Master Data</p>
-                    </div>
+                    <div className="pt-2 pb-1 px-4 text-[10px] font-black uppercase tracking-widest text-gray-500">Master Data</div>
                     {masterDataLinks.map((link) => (
                         <Link
                             key={link.route}
                             href={route(link.route)}
-                            className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm transition-all ${
+                            className={`flex items-center gap-3 rounded-lg px-4 py-2 text-sm transition-all ${
                                 route().current(link.route)
-                                    ? isModernTheme
-                                        ? 'sidebar-item-active'
-                                        : `${colors.light} ${colors.text}`
-                                    : isModernTheme
-                                    ? 'sidebar-item-modern'
-                                    : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                                    ? isModernTheme ? 'sidebar-item-active' : `${colors.light} ${colors.text} font-bold`
+                                    : isModernTheme ? 'sidebar-item-modern' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
                             }`}
                         >
-                            <span>{link.icon}</span>
+                            <span className="text-base">{link.icon}</span>
                             <span>{link.name}</span>
                         </Link>
                     ))}
 
-                    <div className="pt-4 pb-2">
-                        <p className="px-4 text-xs font-semibold uppercase tracking-wider text-gray-500">Portofolio</p>
-                    </div>
+                    <div className="pt-4 pb-1 px-4 text-[10px] font-black uppercase tracking-widest text-gray-500">Kinerja Tridharma</div>
                     {portofolioLinks.map((link) => (
                         <Link
                             key={link.route}
                             href={route(link.route)}
-                            className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm transition-all ${
+                            className={`flex items-center gap-3 rounded-lg px-4 py-2 text-sm transition-all ${
                                 route().current(link.route)
-                                    ? isModernTheme
-                                        ? 'sidebar-item-active'
-                                        : `${colors.light} ${colors.text}`
-                                    : isModernTheme
-                                    ? 'sidebar-item-modern'
-                                    : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                                    ? isModernTheme ? 'sidebar-item-active' : `${colors.light} ${colors.text} font-bold`
+                                    : isModernTheme ? 'sidebar-item-modern' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
                             }`}
                         >
-                            <span>{link.icon}</span>
+                            <span className="text-base">{link.icon}</span>
                             <span>{link.name}</span>
                         </Link>
                     ))}
 
-                    <div className="pt-4 pb-2">
-                        <p className="px-4 text-xs font-semibold uppercase tracking-wider text-gray-500">Lainnya</p>
-                    </div>
-                    {otherLinks.map((link) => (
+                    <div className="pt-4 pb-1 px-4 text-[10px] font-black uppercase tracking-widest text-gray-500">Penjaminan Mutu (SPMI)</div>
+                    {spmiLinks.map((link) => (
                         <Link
                             key={link.route}
                             href={route(link.route)}
-                            className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm transition-all ${
+                            className={`flex items-center gap-3 rounded-lg px-4 py-2 text-sm transition-all ${
                                 route().current(link.route)
-                                    ? isModernTheme
-                                        ? 'sidebar-item-active'
-                                        : `${colors.light} ${colors.text}`
-                                    : isModernTheme
-                                    ? 'sidebar-item-modern'
-                                    : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                                    ? isModernTheme ? 'sidebar-item-active' : `${colors.light} ${colors.text} font-bold`
+                                    : isModernTheme ? 'sidebar-item-modern' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
                             }`}
                         >
-                            <span>{link.icon}</span>
+                            <span className="text-base">{link.icon}</span>
                             <span>{link.name}</span>
                         </Link>
                     ))}
 
-                    <div className="pt-4 pb-2">
-                        <p className="px-4 text-xs font-semibold uppercase tracking-wider text-gray-500">AI Agents</p>
-                    </div>
+                    <div className="pt-4 pb-1 px-4 text-[10px] font-black uppercase tracking-widest text-gray-500">Layanan Lainnya</div>
+                    {tridharmaOtherLinks.map((link) => (
+                        <Link
+                            key={link.route}
+                            href={route(link.route)}
+                            className={`flex items-center gap-3 rounded-lg px-4 py-2 text-sm transition-all ${
+                                route().current(link.route)
+                                    ? isModernTheme ? 'sidebar-item-active' : `${colors.light} ${colors.text} font-bold`
+                                    : isModernTheme ? 'sidebar-item-modern' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                            }`}
+                        >
+                            <span className="text-base">{link.icon}</span>
+                            <span>{link.name}</span>
+                        </Link>
+                    ))}
+
+                    <div className="pt-4 pb-1 px-4 text-[10px] font-black uppercase tracking-widest text-gray-500">Agent AI Copilot</div>
                     {aiAgentLinks.map((link) => (
                         <Link
                             key={link.route}
                             href={route(link.route)}
-                            className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm transition-all ${
+                            className={`flex items-center gap-3 rounded-lg px-4 py-2 text-sm transition-all ${
                                 route().current(link.route)
-                                    ? isModernTheme
-                                        ? 'sidebar-item-active'
-                                        : `${colors.light} ${colors.text}`
-                                    : isModernTheme
-                                    ? 'sidebar-item-modern'
-                                    : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                                    ? isModernTheme ? 'sidebar-item-active' : `${colors.light} ${colors.text} font-bold`
+                                    : isModernTheme ? 'sidebar-item-modern' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
                             }`}
                         >
-                            <span>{link.icon}</span>
+                            <span className="text-base">{link.icon}</span>
                             <span>{link.name}</span>
                         </Link>
                     ))}
 
-                    <div className="pt-4 pb-2">
-                        <p className="px-4 text-xs font-semibold uppercase tracking-wider text-gray-500">Admin</p>
-                    </div>
+                    <div className="pt-4 pb-1 px-4 text-[10px] font-black uppercase tracking-widest text-gray-500">Administrasi</div>
                     {adminLinks.map((link) => (
                         <Link
                             key={link.route}
                             href={route(link.route)}
-                            className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm transition-all ${
+                            className={`flex items-center gap-3 rounded-lg px-4 py-2 text-sm transition-all ${
                                 route().current(link.route)
-                                    ? isModernTheme
-                                        ? 'sidebar-item-active'
-                                        : `${colors.light} ${colors.text}`
-                                    : isModernTheme
-                                    ? 'sidebar-item-modern'
-                                    : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                                    ? isModernTheme ? 'sidebar-item-active' : `${colors.light} ${colors.text} font-bold`
+                                    : isModernTheme ? 'sidebar-item-modern' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
                             }`}
                         >
-                            <span>{link.icon}</span>
+                            <span className="text-base">{link.icon}</span>
                             <span>{link.name}</span>
                         </Link>
                     ))}
                 </nav>
 
-                <div className="border-t border-gray-800 p-4">
+                <div className="border-t border-gray-800 p-4 bg-gray-900/50 backdrop-blur-sm">
                     <RoleSwitcher />
                 </div>
             </aside>
@@ -277,25 +266,21 @@ export default function Authenticated({
         return (
             <div className={`min-h-screen ${isModernTheme ? 'bg-gray-50' : 'bg-gray-100'}`}>
                 <Sidebar />
-
                 <div className="lg:pl-64">
-                    <nav className={`sticky top-0 z-30 border-b ${isModernTheme ? 'border-gray-200 bg-white/80 backdrop-blur' : 'border-gray-100 bg-white'}`}>
+                    <nav className={`sticky top-0 z-30 border-b ${isModernTheme ? 'border-gray-200 bg-white/80 backdrop-blur' : 'border-gray-100 bg-white shadow-sm'}`}>
                         <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-                            <button
-                                onClick={() => setSidebarOpen(!sidebarOpen)}
-                                className="rounded-md p-2 text-gray-500 hover:bg-gray-100 lg:hidden"
-                            >
-                                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                                </svg>
+                            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="rounded-md p-2 text-gray-500 hover:bg-gray-100 lg:hidden">
+                                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
                             </button>
-
+                            <div className="flex items-center gap-4">
+                                <div className="hidden sm:block text-xs font-bold text-gray-400 uppercase tracking-widest">ITSNU Pekalongan • Sistem Akreditasi Multi-Agent</div>
+                            </div>
                             <div className="flex items-center gap-3">
                                 <RoleSwitcher />
                                 <Dropdown>
                                     <Dropdown.Trigger>
-                                        <button className="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition hover:text-gray-700 focus:outline-none">
-                                            {user?.name}
+                                        <button className="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-black leading-4 text-gray-700 transition hover:text-gray-900 focus:outline-none">
+                                            {user?.name?.toUpperCase() || 'USER'}
                                             <svg className="-me-0.5 ms-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                                 <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                                             </svg>
@@ -309,16 +294,13 @@ export default function Authenticated({
                             </div>
                         </div>
                     </nav>
-
                     {header && (
-                        <header className={`${isModernTheme ? 'bg-white shadow-sm' : 'bg-white shadow'}`}>
+                        <header className={`${isModernTheme ? 'bg-white border-b border-gray-200' : 'bg-white shadow-sm'}`}>
                             <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{header}</div>
                         </header>
                     )}
-
-                    <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+                    <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">{children}</main>
                 </div>
-
                 {chatEnabled && (
                     <>
                         <ChatButton onClick={() => setShowChat(true)} />
@@ -331,177 +313,89 @@ export default function Authenticated({
 
     return (
         <div className={`min-h-screen ${isModernTheme ? 'bg-gray-50' : 'bg-gray-100'}`}>
-            <nav className={`border-b ${isModernTheme ? 'border-gray-200 bg-white/80 backdrop-blur' : 'border-gray-100 bg-white'}`}>
+            <nav className={`border-b ${isModernTheme ? 'border-gray-200 bg-white/80 backdrop-blur' : 'border-gray-100 bg-white shadow-sm'}`}>
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex h-16 justify-between">
                         <div className="flex">
                             <div className="flex shrink-0 items-center">
-                                <Link href="/">
-                                    <ApplicationLogo className="block h-9 w-auto fill-current text-gray-800" />
-                                </Link>
+                                <Link href="/"><ApplicationLogo className="block h-9 w-auto fill-current text-gray-800" /></Link>
                             </div>
-
-                            <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                                <NavLink href={route('dashboard')} active={route().current('dashboard')}>
-                                    Dashboard
-                                </NavLink>
-
-                                <div className="relative">
-                                    <button
-                                        onClick={() => setShowingMasterData(!showingMasterData)}
-                                        className={getDropdownActiveClass(isMasterDataActive)}
-                                    >
-                                        Master Data
-                                        <svg className="ml-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                                        </svg>
+                            <div className="hidden space-x-4 sm:-my-px sm:ms-10 sm:flex">
+                                <NavLink href={route('dashboard')} active={route().current('dashboard')}>DASHBOARD</NavLink>
+                                
+                                <div className="relative flex items-center">
+                                    <button onClick={() => setShowingMasterData(!showingMasterData)} className={getDropdownActiveClass(isMasterDataActive)}>
+                                        MASTER DATA <svg className="ml-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
                                     </button>
-
                                     {showingMasterData && (
-                                        <div
-                                            className="absolute left-0 mt-2 w-56 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 z-50"
-                                            onMouseLeave={() => setShowingMasterData(false)}
-                                        >
-                                            <div className="py-1" role="menu">
-                                                {masterDataLinks.map((link) => (
-                                                    <Link
-                                                        key={link.route}
-                                                        href={route(link.route)}
-                                                        className={`block px-4 py-2 text-sm ${
-                                                            route().current(link.route)
-                                                                ? `${colors.light} ${colors.text}`
-                                                                : 'text-gray-700 hover:bg-gray-50'
-                                                        }`}
-                                                        role="menuitem"
-                                                    >
-                                                        {link.name}
-                                                    </Link>
-                                                ))}
-                                            </div>
+                                        <div className="absolute left-0 top-14 mt-2 w-56 rounded-md bg-white shadow-2xl ring-1 ring-black ring-opacity-5 z-50" onMouseLeave={() => setShowingMasterData(false)}>
+                                            <div className="py-1">{masterDataLinks.map((link) => (
+                                                <Link key={link.route} href={route(link.route)} className={`block px-4 py-2 text-sm ${route().current(link.route) ? `${colors.light} ${colors.text} font-bold` : 'text-gray-700 hover:bg-gray-50'}`}>{link.name}</Link>
+                                            ))}</div>
                                         </div>
                                     )}
                                 </div>
 
-                                <div className="relative">
-                                    <button
-                                        onClick={() => setShowingPortofolio(!showingPortofolio)}
-                                        className={getDropdownActiveClass(isPortofolioActive)}
-                                    >
-                                        Portofolio
-                                        <svg className="ml-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                                        </svg>
+                                <div className="relative flex items-center">
+                                    <button onClick={() => setShowingPortofolio(!showingPortofolio)} className={getDropdownActiveClass(isPortofolioActive)}>
+                                        PORTOFOLIO <svg className="ml-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
                                     </button>
-
                                     {showingPortofolio && (
-                                        <div
-                                            className="absolute left-0 mt-2 w-56 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 z-50"
-                                            onMouseLeave={() => setShowingPortofolio(false)}
-                                        >
-                                            <div className="py-1" role="menu">
-                                                {portofolioLinks.map((link) => (
-                                                    <Link
-                                                        key={link.route}
-                                                        href={route(link.route)}
-                                                        className={`block px-4 py-2 text-sm ${
-                                                            route().current(link.route)
-                                                                ? `${colors.light} ${colors.text}`
-                                                                : 'text-gray-700 hover:bg-gray-50'
-                                                        }`}
-                                                        role="menuitem"
-                                                    >
-                                                        {link.name}
-                                                    </Link>
-                                                ))}
-                                            </div>
+                                        <div className="absolute left-0 top-14 mt-2 w-56 rounded-md bg-white shadow-2xl ring-1 ring-black ring-opacity-5 z-50" onMouseLeave={() => setShowingPortofolio(false)}>
+                                            <div className="py-1">{portofolioLinks.map((link) => (
+                                                <Link key={link.route} href={route(link.route)} className={`block px-4 py-2 text-sm ${route().current(link.route) ? `${colors.light} ${colors.text} font-bold` : 'text-gray-700 hover:bg-gray-50'}`}>{link.name}</Link>
+                                            ))}</div>
                                         </div>
                                     )}
                                 </div>
 
-                                {otherLinks.map((link) => (
-                                    <NavLink key={link.route} href={route(link.route)} active={route().current(link.route)}>
-                                        {link.name}
-                                    </NavLink>
-                                ))}
-
-                                {aiAgentLinks.map((link) => (
-                                    <NavLink key={link.route} href={route(link.route)} active={route().current(link.route)}>
-                                        {link.name}
-                                    </NavLink>
-                                ))}
-
-                                <div className="relative">
-                                    <button
-                                        onClick={() => setShowingAdmin(!showingAdmin)}
-                                        className={getDropdownActiveClass(isAdminActive)}
-                                    >
-                                        Admin
-                                        <svg className="ml-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                                        </svg>
+                                <div className="relative flex items-center">
+                                    <button onClick={() => setShowingSpmi(!showingSpmi)} className={getDropdownActiveClass(isSpmiActive)}>
+                                        MUTU (SPMI) <svg className="ml-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
                                     </button>
+                                    {showingSpmi && (
+                                        <div className="absolute left-0 top-14 mt-2 w-56 rounded-md bg-white shadow-2xl ring-1 ring-black ring-opacity-5 z-50" onMouseLeave={() => setShowingSpmi(false)}>
+                                            <div className="py-1">{spmiLinks.map((link) => (
+                                                <Link key={link.route} href={route(link.route)} className={`block px-4 py-2 text-sm ${route().current(link.route) ? `${colors.light} ${colors.text} font-bold` : 'text-gray-700 hover:bg-gray-50'}`}>{link.name}</Link>
+                                            ))}</div>
+                                        </div>
+                                    )}
+                                </div>
 
+                                {aiAgentLinks.map((link) => (<NavLink key={link.route} href={route(link.route)} active={route().current(link.route)}>{link.name.toUpperCase()}</NavLink>))}
+
+                                <div className="relative flex items-center">
+                                    <button onClick={() => setShowingAdmin(!showingAdmin)} className={getDropdownActiveClass(isAdminActive)}>
+                                        ADMIN <svg className="ml-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                                    </button>
                                     {showingAdmin && (
-                                        <div
-                                            className="absolute right-0 mt-2 w-56 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 z-50"
-                                            onMouseLeave={() => setShowingAdmin(false)}
-                                        >
-                                            <div className="py-1" role="menu">
-                                                {adminLinks.map((link) => (
-                                                    <Link
-                                                        key={link.route}
-                                                        href={route(link.route)}
-                                                        className={`block px-4 py-2 text-sm ${
-                                                            route().current(link.route)
-                                                                ? `${colors.light} ${colors.text}`
-                                                                : 'text-gray-700 hover:bg-gray-50'
-                                                        }`}
-                                                        role="menuitem"
-                                                    >
-                                                        {link.name}
-                                                    </Link>
-                                                ))}
-                                            </div>
+                                        <div className="absolute right-0 top-14 mt-2 w-56 rounded-md bg-white shadow-2xl ring-1 ring-black ring-opacity-5 z-50" onMouseLeave={() => setShowingAdmin(false)}>
+                                            <div className="py-1">{adminLinks.map((link) => (
+                                                <Link key={link.route} href={route(link.route)} className={`block px-4 py-2 text-sm ${route().current(link.route) ? `${colors.light} ${colors.text} font-bold` : 'text-gray-700 hover:bg-gray-50'}`}>{link.name}</Link>
+                                            ))}</div>
                                         </div>
                                     )}
                                 </div>
                             </div>
                         </div>
 
-                        <div className="hidden sm:ms-6 sm:flex sm:items-center sm:gap-3">
+                        <div className="hidden sm:ms-6 sm:flex sm:items-center sm:gap-4">
                             <RoleSwitcher />
-                            <div className="relative ms-3">
-                                <Dropdown>
-                                    <Dropdown.Trigger>
-                                        <span className="inline-flex rounded-md">
-                                            <button
-                                                type="button"
-                                                className="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none"
-                                            >
-                                                {user.name}
-                                                <svg className="-me-0.5 ms-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                                                </svg>
-                                            </button>
-                                        </span>
-                                    </Dropdown.Trigger>
-                                    <Dropdown.Content>
-                                        <Dropdown.Link href={route('profile.edit')}>Profile</Dropdown.Link>
-                                        <Dropdown.Link href={route('logout')} method="post" as="button">Log Out</Dropdown.Link>
-                                    </Dropdown.Content>
-                                </Dropdown>
-                            </div>
+                            <Dropdown>
+                                <Dropdown.Trigger>
+                                    <button type="button" className="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-black leading-4 text-gray-700 transition duration-150 ease-in-out hover:text-gray-900 focus:outline-none">
+                                        {user?.name?.toUpperCase() || 'USER'} <svg className="-me-0.5 ms-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                                    </button>
+                                </Dropdown.Trigger>
+                                <Dropdown.Content>
+                                    <Dropdown.Link href={route('profile.edit')}>Profile</Dropdown.Link>
+                                    <Dropdown.Link href={route('logout')} method="post" as="button">Log Out</Dropdown.Link>
+                                </Dropdown.Content>
+                            </Dropdown>
                         </div>
-
                         <div className="-me-2 flex items-center sm:hidden">
-                            <button
-                                onClick={() => setShowingNavigationDropdown((prev) => !prev)}
-                                className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 transition duration-150 ease-in-out hover:bg-gray-100 hover:text-gray-500 focus:bg-gray-100 focus:text-gray-500 focus:outline-none"
-                            >
-                                <svg className="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                                    <path className={!showingNavigationDropdown ? 'inline-flex' : 'hidden'} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-                                    <path className={showingNavigationDropdown ? 'inline-flex' : 'hidden'} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
+                            <button onClick={() => setShowingNavigationDropdown((prev) => !prev)} className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 transition duration-150 ease-in-out hover:bg-gray-100 hover:text-gray-500 focus:bg-gray-100 focus:text-gray-500 focus:outline-none">
+                                <svg className="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path className={!showingNavigationDropdown ? 'inline-flex' : 'hidden'} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /><path className={showingNavigationDropdown ? 'inline-flex' : 'hidden'} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
                             </button>
                         </div>
                     </div>
@@ -509,61 +403,18 @@ export default function Authenticated({
 
                 <div className={(showingNavigationDropdown ? 'block' : 'hidden') + ' sm:hidden'}>
                     <div className="space-y-1 pb-3 pt-2">
-                        <ResponsiveNavLink href={route('dashboard')} active={route().current('dashboard')}>
-                            Dashboard
-                        </ResponsiveNavLink>
-                        <div className="px-4 py-2 text-sm font-medium text-gray-500 uppercase tracking-wider">
-                            Master Data
-                        </div>
-                        {masterDataLinks.map((link) => (
-                            <ResponsiveNavLink key={link.route} href={route(link.route)} active={route().current(link.route)}>
-                                {link.name}
-                            </ResponsiveNavLink>
-                        ))}
-                        <div className="px-4 py-2 text-sm font-medium text-gray-500 uppercase tracking-wider">
-                            Portofolio
-                        </div>
-                        {portofolioLinks.map((link) => (
-                            <ResponsiveNavLink key={link.route} href={route(link.route)} active={route().current(link.route)}>
-                                {link.name}
-                            </ResponsiveNavLink>
-                        ))}
-                        <div className="px-4 py-2 text-sm font-medium text-gray-500 uppercase tracking-wider">
-                            Lainnya
-                        </div>
-                        {otherLinks.map((link) => (
-                            <ResponsiveNavLink key={link.route} href={route(link.route)} active={route().current(link.route)}>
-                                {link.name}
-                            </ResponsiveNavLink>
-                        ))}
+                        <ResponsiveNavLink href={route('dashboard')} active={route().current('dashboard')}>DASHBOARD</ResponsiveNavLink>
+                        {masterDataLinks.map((link) => (<ResponsiveNavLink key={link.route} href={route(link.route)} active={route().current(link.route)}>{link.name}</ResponsiveNavLink>))}
                     </div>
                     <div className="border-t border-gray-200 pb-1 pt-4">
-                        <div className="px-4">
-                            <div className="text-base font-medium text-gray-800">{user.name}</div>
-                            <div className="text-sm font-medium text-gray-500">{user.email}</div>
-                        </div>
-                        <div className="mt-3 space-y-1">
-                            <ResponsiveNavLink href={route('profile.edit')}>Profile</ResponsiveNavLink>
-                            <ResponsiveNavLink method="post" href={route('logout')} as="button">Log Out</ResponsiveNavLink>
-                        </div>
+                        <div className="px-4"><div className="text-base font-medium text-gray-800">{user?.name}</div></div>
+                        <div className="mt-3 space-y-1"><ResponsiveNavLink href={route('profile.edit')}>Profile</ResponsiveNavLink><ResponsiveNavLink method="post" href={route('logout')} as="button">Log Out</ResponsiveNavLink></div>
                     </div>
                 </div>
             </nav>
-
-            {header && (
-                <header className={`${isModernTheme ? 'bg-white shadow-sm' : 'bg-white shadow'}`}>
-                    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{header}</div>
-                </header>
-            )}
-
-            <main>{children}</main>
-
-            {chatEnabled && (
-                <>
-                    <ChatButton onClick={() => setShowChat(true)} />
-                    <ChatModal isOpen={showChat} onClose={() => setShowChat(false)} />
-                </>
-            )}
+            {header && (<header className={`${isModernTheme ? 'bg-white border-b' : 'bg-white shadow-sm'}`}><div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{header}</div></header>)}
+            <main className="mx-auto max-w-7xl py-12 px-4 sm:px-6 lg:px-8">{children}</main>
+            {chatEnabled && (<><ChatButton onClick={() => setShowChat(true)} /><ChatModal isOpen={showChat} onClose={() => setShowChat(false)} /></>)}
         </div>
     );
 }

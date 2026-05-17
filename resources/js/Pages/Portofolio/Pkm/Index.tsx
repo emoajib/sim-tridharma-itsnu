@@ -50,13 +50,12 @@ interface Props {
     prodi_list: Prodi[];
     periode_list: Periode[];
     success?: string;
-    errors?: Record<string, string>;
 }
 
 export default function Index({ pkm, dosen_list, prodi_list, periode_list, success }: Props) {
     const { props } = usePage();
-    const flashError = (props as any).flash?.error;
     const flashSuccess = success || (props as any).flash?.success;
+    const flashError = (props as any).flash?.error;
 
     const [search, setSearch] = useState(() => {
         return new URLSearchParams(window.location.search).get('search') || '';
@@ -84,28 +83,6 @@ export default function Index({ pkm, dosen_list, prodi_list, periode_list, succe
         return () => clearTimeout(timer);
     }, [search]);
 
-    function openCreate() {
-        reset();
-        setEditing(null);
-        setShowModal(true);
-    }
-
-    function openEdit(item: Pkm) {
-        setEditing(item);
-        setData({
-            dosen_id: String(item.dosen_id),
-            prodi_id: String(item.prodi_id),
-            periode_id: String(item.periode_id),
-            judul_pkm: item.judul_pkm,
-            jenis_pkm: item.jenis_pkm,
-            lokasi: item.lokasi,
-            sumber_dana: item.sumber_dana,
-            jumlah_dana: String(item.jumlah_dana || ''),
-            tahun_pelaksanaan: String(item.tahun_pelaksanaan),
-        });
-        setShowModal(true);
-    }
-
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
         if (editing) {
@@ -118,17 +95,6 @@ export default function Index({ pkm, dosen_list, prodi_list, periode_list, succe
             });
         }
     };
-
-    function confirmDelete(item: Pkm) {
-        setDeleteTarget(item);
-    }
-
-    function executeDelete() {
-        if (!deleteTarget) return;
-        destroy(route('portofolio.pkm.destroy', deleteTarget.id), {
-            onSuccess: () => setDeleteTarget(null),
-        });
-    }
 
     const { data: importData, setData: setImportData, post: postImport, processing: importProcessing, reset: resetImport, errors: importErrors } = useForm({
         file: null as File | null,
@@ -145,104 +111,130 @@ export default function Index({ pkm, dosen_list, prodi_list, periode_list, succe
 
     return (
         <AuthenticatedLayout
-            header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Pengabdian Kepada Masyarakat (PkM)</h2>}
+            header={<h2 className="text-xl font-black leading-tight text-gray-800 uppercase tracking-tighter">Pengabdian Kepada Masyarakat (PkM)</h2>}
         >
             <Head title="PKM" />
 
-            <div className="py-12">
+            <div className="py-8">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <Link href={route('portofolio')} className="text-sm text-indigo-600 hover:text-indigo-900">&larr; Kembali ke Portofolio</Link>
+                    <div className="mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                        <Link href={route('portofolio')} className="text-xs font-black text-indigo-600 hover:text-indigo-800 uppercase tracking-widest flex items-center gap-2">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                            KEMBALI KE PORTOFOLIO
+                        </Link>
                         
-                        {/* Import Section */}
-                        <form onSubmit={handleImport} className="flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 p-2 shadow-sm">
+                        <form onSubmit={handleImport} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 bg-orange-50/50 p-4 rounded-2xl border border-orange-100 shadow-sm">
                             <div className="flex flex-col">
-                                <span className="text-[10px] font-black text-rose-700 uppercase px-1">Import SINTA (XLS/CSV):</span>
-                                <div className="flex items-center gap-2">
-                                    <input 
-                                        type="file" 
-                                        accept=".xlsx,.xls,.csv"
-                                        onChange={e => setImportData('file', e.target.files?.[0] || null)}
-                                        className="text-xs text-gray-600 file:mr-2 file:rounded-md file:border-0 file:bg-rose-600 file:px-2 file:py-1 file:text-xs file:font-semibold file:text-white hover:file:bg-rose-700 cursor-pointer"
-                                    />
-                                    <button 
-                                        type="submit" 
-                                        disabled={importProcessing || !importData.file}
-                                        className="rounded-md bg-rose-600 px-3 py-1 text-xs font-bold text-white hover:bg-rose-700 disabled:opacity-50 transition-all shadow-sm"
-                                    >
-                                        {importProcessing ? 'Syncing...' : 'Sinkronkan'}
-                                    </button>
-                                </div>
-                                {importErrors.file && <p className="text-[10px] text-red-600 px-1 font-bold">{importErrors.file}</p>}
+                                <span className="text-[10px] font-black text-orange-600 uppercase tracking-[0.2em] mb-1 px-1">Import SINTA PkM</span>
+                                <input 
+                                    type="file" 
+                                    accept=".xlsx,.xls,.csv"
+                                    onChange={e => setImportData('file', e.target.files?.[0] || null)}
+                                    className="text-[10px] text-gray-500 file:mr-3 file:rounded-xl file:border-0 file:bg-orange-600 file:px-4 file:py-2 file:text-[10px] file:font-black file:text-white hover:file:bg-orange-700 cursor-pointer transition-all"
+                                />
                             </div>
+                            <button 
+                                type="submit" 
+                                disabled={importProcessing || !importData.file}
+                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-600 px-6 py-2.5 text-xs font-black text-white hover:bg-orange-700 shadow-lg shadow-orange-100 transition-all active:scale-95 disabled:opacity-50 uppercase tracking-widest"
+                            >
+                                {importProcessing ? '⏳ SYNCING...' : '🚀 SINKRONKAN'}
+                            </button>
                         </form>
                     </div>
 
                     {flashSuccess && (
-                        <div className="mb-4 rounded-lg bg-green-100 p-4 text-sm text-green-700 font-bold border border-green-200 shadow-sm animate-pulse">
-                            ✅ {flashSuccess}
+                        <div className="mb-6 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-700 font-black border border-emerald-100 shadow-sm animate-in fade-in">
+                           ✅ {flashSuccess}
                         </div>
                     )}
-                    
                     {flashError && (
-                        <div className="mb-4 rounded-lg bg-rose-100 p-4 text-sm text-rose-700 font-bold border border-rose-200 shadow-sm">
-                            ❌ {flashError}
+                        <div className="mb-6 rounded-xl bg-rose-50 p-4 text-sm text-rose-700 font-black border border-rose-100 shadow-sm animate-in fade-in">
+                           ❌ {flashError}
                         </div>
                     )}
 
-                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                        <div className="border-b border-gray-200 p-6">
-                            <div className="flex items-center justify-between">
-                                <input
-                                    type="text"
-                                    placeholder="Cari PKM..."
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    className="w-64 rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                />
+                    <div className="overflow-hidden bg-white shadow-sm border border-gray-100 rounded-2xl">
+                        <div className="border-b border-gray-100 bg-gray-50/30 p-6">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div className="relative">
+                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                                        <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                                    </span>
+                                    <input
+                                        type="text"
+                                        placeholder="Cari judul PkM..."
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                        className="w-full md:w-80 rounded-xl border-gray-200 pl-10 text-sm font-medium shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                                    />
+                                </div>
                                 <button
-                                    onClick={openCreate}
-                                    className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 shadow-sm"
+                                    onClick={() => { reset(); setEditing(null); setShowModal(true); }}
+                                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-xs font-black text-white hover:bg-indigo-700 shadow-lg transition-all active:scale-95 uppercase tracking-widest"
                                 >
-                                    + Tambah PKM
+                                    <span>+</span>
+                                    <span>TAMBAH PKM MANUAL</span>
                                 </button>
                             </div>
                         </div>
 
                         <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Dosen</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Judul PKM</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Jenis</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Lokasi</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Tahun</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Aksi</th>
+                            <table className="min-w-full divide-y divide-gray-100">
+                                <thead>
+                                    <tr className="bg-gray-50/50 text-gray-400 text-[10px] uppercase font-black tracking-widest">
+                                        <th className="px-6 py-4 text-left">Dosen Pengabdian</th>
+                                        <th className="px-6 py-4 text-left">Judul PKM</th>
+                                        <th className="px-6 py-4 text-center">Jenis</th>
+                                        <th className="px-6 py-4 text-center">Lokasi</th>
+                                        <th className="px-6 py-4 text-center">Tahun</th>
+                                        <th className="px-6 py-4 text-center">Status</th>
+                                        <th className="px-6 py-4 text-right">Aksi</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-200 bg-white">
+                                <tbody className="divide-y divide-gray-50 bg-white">
                                     {pkm.data.length === 0 ? (
                                         <tr>
-                                            <td colSpan={7} className="px-6 py-12 text-center text-gray-500">Tidak ada data</td>
+                                            <td colSpan={7} className="px-6 py-16 text-center text-gray-400 italic font-medium">Tidak ada data PkM ditemukan.</td>
                                         </tr>
                                     ) : (
                                         pkm.data.map((item) => (
-                                            <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                                                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 font-medium">{item.dosen?.nama_depan || '-'}</td>
-                                                <td className="px-6 py-4 text-sm text-gray-700 leading-relaxed">{item.judul_pkm}</td>
-                                                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">{item.jenis_pkm}</td>
-                                                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">{item.lokasi || '-'}</td>
-                                                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">{item.tahun_pelaksanaan}</td>
-                                                <td className="whitespace-nowrap px-6 py-4">
-                                                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold leading-5 ${item.is_verified ? 'bg-green-100 text-emerald-800' : 'bg-yellow-100 text-amber-800'}`}>
-                                                        {item.is_verified ? 'Terverifikasi' : 'Pending AI'}
+                                            <tr key={item.id} className="hover:bg-indigo-50/30 transition-all group">
+                                                <td className="whitespace-nowrap px-6 py-5 text-sm font-black text-gray-900">{item.dosen?.nama_depan} {item.dosen?.nama_belakang}</td>
+                                                <td className="px-6 py-5">
+                                                    <div className="font-bold text-gray-800 group-hover:text-indigo-600 transition-colors leading-relaxed">{item.judul_pkm}</div>
+                                                </td>
+                                                <td className="whitespace-nowrap px-6 py-5 text-center">
+                                                    <span className="text-[10px] font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded uppercase">{item.jenis_pkm}</span>
+                                                </td>
+                                                <td className="whitespace-nowrap px-6 py-5 text-center text-[10px] font-black text-gray-500 uppercase tracking-widest">{item.lokasi || '-'}</td>
+                                                <td className="whitespace-nowrap px-6 py-5 text-center font-black text-gray-700">{item.tahun_pelaksanaan}</td>
+                                                <td className="whitespace-nowrap px-6 py-5 text-center">
+                                                    <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-black border transition-all ${
+                                                        item.is_verified ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100'
+                                                    }`}>
+                                                        {item.is_verified ? 'VERIFIED' : 'PENDING'}
                                                     </span>
                                                 </td>
-                                                <td className="whitespace-nowrap px-6 py-4 text-sm font-bold">
-                                                    <button onClick={() => openEdit(item)} className="mr-2 text-indigo-600 hover:text-indigo-900">Edit</button>
-                                                    <button onClick={() => confirmDelete(item)} className="text-red-600 hover:text-red-900">Hapus</button>
+                                                <td className="whitespace-nowrap px-6 py-5 text-right">
+                                                    <div className="flex justify-end gap-3">
+                                                        <button onClick={() => {
+                                                            setEditing(item);
+                                                            setData({
+                                                                dosen_id: String(item.dosen_id),
+                                                                prodi_id: String(item.prodi_id),
+                                                                periode_id: String(item.periode_id),
+                                                                judul_pkm: item.judul_pkm,
+                                                                jenis_pkm: item.jenis_pkm,
+                                                                lokasi: item.lokasi,
+                                                                sumber_dana: item.sumber_dana,
+                                                                jumlah_dana: String(item.jumlah_dana || ''),
+                                                                tahun_pelaksanaan: String(item.tahun_pelaksanaan),
+                                                            });
+                                                            setShowModal(true);
+                                                        }} className="text-[10px] font-black text-indigo-600 hover:text-indigo-800 uppercase tracking-widest underline decoration-indigo-200 underline-offset-4">Edit</button>
+                                                        <button onClick={() => setDeleteTarget(item)} className="text-[10px] font-black text-rose-600 hover:text-rose-800 uppercase tracking-widest">Hapus</button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))
@@ -250,90 +242,61 @@ export default function Index({ pkm, dosen_list, prodi_list, periode_list, succe
                                 </tbody>
                             </table>
                         </div>
-
-                        {pkm.last_page > 1 && (
-                            <div className="flex items-center justify-between border-t border-gray-200 px-6 py-4">
-                                <div className="text-sm text-gray-700">
-                                    Menampilkan {pkm.from} - {pkm.to} dari {pkm.total}
-                                </div>
-                                <div className="flex gap-1">
-                                    {pkm.links.map((link, i) => (
-                                        <button
-                                            key={i}
-                                            disabled={!link.url}
-                                            onClick={() => {
-                                                if (link.url) router.get(link.url, {}, { preserveState: true, replace: true });
-                                            }}
-                                            className={`rounded px-3 py-1 text-sm font-bold ${link.active ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'} ${!link.url ? 'cursor-not-allowed opacity-50' : ''}`}
-                                            dangerouslySetInnerHTML={{ __html: link.label }}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </div>
             </div>
 
             {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                    <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
-                        <div className="mb-4 flex items-center justify-between border-b pb-3">
-                            <h3 className="text-lg font-bold text-gray-900">{editing ? 'Edit PKM' : 'Tambah PKM'}</h3>
-                            <button onClick={() => setShowModal(false)} className="text-2xl text-gray-400 hover:text-gray-600">&times;</button>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="w-full max-w-lg rounded-2xl bg-white p-8 shadow-2xl border border-white/20">
+                        <div className="mb-6 flex items-center justify-between border-b border-gray-100 pb-4">
+                            <h3 className="text-xl font-black text-gray-900 uppercase tracking-tighter">{editing ? 'Edit PKM' : 'Tambah PKM Manual'}</h3>
+                            <button onClick={() => setShowModal(false)} className="text-3xl text-gray-400 hover:text-gray-600 transition-colors">&times;</button>
                         </div>
-                        <form onSubmit={submit}>
-                            <div className="grid grid-cols-1 gap-4">
+                        <form onSubmit={submit} className="space-y-5">
+                            <div>
+                                <label className="mb-1.5 block text-[10px] font-black text-gray-500 uppercase tracking-widest">Dosen Pelaksana</label>
+                                <select value={data.dosen_id} onChange={(e) => setData('dosen_id', e.target.value)} className="w-full rounded-xl border-gray-200 text-sm font-black focus:ring-indigo-500">
+                                    <option value="">Pilih Dosen</option>
+                                    {dosen_list.map((d) => (
+                                        <option key={d.id} value={d.id}>{d.nama_depan} {d.nama_belakang}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="mb-1 block text-sm font-bold text-gray-700">Dosen</label>
-                                    <select value={data.dosen_id} onChange={(e) => setData('dosen_id', e.target.value)} className="w-full rounded-lg border-gray-300 text-sm focus:ring-indigo-500">
-                                        <option value="">Pilih Dosen</option>
-                                        {dosen_list.map((d) => (
-                                            <option key={d.id} value={d.id}>{d.nama_depan} {d.nama_belakang}</option>
-                                        ))}
-                                    </select>
-                                    {errors.dosen_id && <p className="mt-1 text-xs text-red-600 font-bold">{errors.dosen_id}</p>}
-                                </div>
-                                <div>
-                                    <label className="mb-1 block text-sm font-bold text-gray-700">Prodi</label>
-                                    <select value={data.prodi_id} onChange={(e) => setData('prodi_id', e.target.value)} className="w-full rounded-lg border-gray-300 text-sm focus:ring-indigo-500">
+                                    <label className="mb-1.5 block text-[10px] font-black text-gray-500 uppercase tracking-widest">Prodi</label>
+                                    <select value={data.prodi_id} onChange={(e) => setData('prodi_id', e.target.value)} className="w-full rounded-xl border-gray-200 text-sm font-bold focus:ring-indigo-500">
                                         <option value="">Pilih Prodi</option>
                                         {prodi_list.map((p) => (
                                             <option key={p.id} value={p.id}>{p.nama_prodi}</option>
                                         ))}
                                     </select>
-                                    {errors.prodi_id && <p className="mt-1 text-xs text-red-600 font-bold">{errors.prodi_id}</p>}
                                 </div>
                                 <div>
-                                    <label className="mb-1 block text-sm font-bold text-gray-700">Judul PKM</label>
-                                    <textarea rows={2} value={data.judul_pkm} onChange={(e) => setData('judul_pkm', e.target.value)} className="w-full rounded-lg border-gray-300 text-sm focus:ring-indigo-500"></textarea>
-                                    {errors.judul_pkm && <p className="mt-1 text-xs text-red-600 font-bold">{errors.judul_pkm}</p>}
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="mb-1 block text-sm font-bold text-gray-700">Jenis</label>
-                                        <input type="text" value={data.jenis_pkm} onChange={(e) => setData('jenis_pkm', e.target.value)} className="w-full rounded-lg border-gray-300 text-sm focus:ring-indigo-500" />
-                                    </div>
-                                    <div>
-                                        <label className="mb-1 block text-sm font-bold text-gray-700">Tahun</label>
-                                        <input type="number" value={data.tahun_pelaksanaan} onChange={(e) => setData('tahun_pelaksanaan', e.target.value)} className="w-full rounded-lg border-gray-300 text-sm focus:ring-indigo-500" />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="mb-1 block text-sm font-bold text-gray-700">Lokasi</label>
-                                        <input type="text" value={data.lokasi} onChange={(e) => setData('lokasi', e.target.value)} className="w-full rounded-lg border-gray-300 text-sm focus:ring-indigo-500" />
-                                    </div>
-                                    <div>
-                                        <label className="mb-1 block text-sm font-bold text-gray-700">Jumlah Dana</label>
-                                        <input type="number" value={data.jumlah_dana} onChange={(e) => setData('jumlah_dana', e.target.value)} className="w-full rounded-lg border-gray-300 text-sm focus:ring-indigo-500" />
-                                    </div>
+                                    <label className="mb-1.5 block text-[10px] font-black text-gray-500 uppercase tracking-widest">Tahun</label>
+                                    <input type="number" value={data.tahun_pelaksanaan} onChange={(e) => setData('tahun_pelaksanaan', e.target.value)} className="w-full rounded-xl border-gray-200 text-sm font-black focus:ring-indigo-500" />
                                 </div>
                             </div>
-                            <div className="mt-6 flex justify-end gap-2 border-t pt-4">
-                                <button type="button" onClick={() => setShowModal(false)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50">Batal</button>
-                                <button type="submit" disabled={processing} className="rounded-lg bg-indigo-600 px-6 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-50 shadow-md">
-                                    {processing ? 'Menyimpan...' : 'Simpan'}
+                            <div>
+                                <label className="mb-1.5 block text-[10px] font-black text-gray-500 uppercase tracking-widest">Judul Pengabdian (PkM)</label>
+                                <textarea rows={2} value={data.judul_pkm} onChange={(e) => setData('judul_pkm', e.target.value)} className="w-full rounded-xl border-gray-200 text-sm font-bold focus:ring-indigo-500" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="mb-1.5 block text-[10px] font-black text-gray-500 uppercase tracking-widest">Lokasi</label>
+                                    <input type="text" value={data.lokasi} onChange={(e) => setData('lokasi', e.target.value)} className="w-full rounded-xl border-gray-200 text-sm font-bold focus:ring-indigo-500" />
+                                </div>
+                                <div>
+                                    <label className="mb-1.5 block text-[10px] font-black text-gray-500 uppercase tracking-widest">Sumber Dana</label>
+                                    <input type="text" value={data.sumber_dana} onChange={(e) => setData('sumber_dana', e.target.value)} className="w-full rounded-xl border-gray-200 text-sm font-bold focus:ring-indigo-500" />
+                                </div>
+                            </div>
+
+                            <div className="mt-8 flex justify-end gap-3 border-t border-gray-100 pt-6">
+                                <button type="button" onClick={() => setShowModal(false)} className="rounded-xl border border-gray-200 px-6 py-2.5 text-xs font-black text-gray-500 hover:bg-gray-50 uppercase tracking-widest transition-all">Batal</button>
+                                <button type="submit" disabled={processing} className="rounded-xl bg-indigo-600 px-8 py-2.5 text-xs font-black text-white hover:bg-indigo-700 shadow-xl transition-all active:scale-95 disabled:opacity-50 uppercase tracking-widest">
+                                    {processing ? 'Menyimpan...' : 'SIMPAN DATA'}
                                 </button>
                             </div>
                         </form>
@@ -342,14 +305,18 @@ export default function Index({ pkm, dosen_list, prodi_list, periode_list, succe
             )}
 
             {deleteTarget && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                    <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl border-2 border-rose-500">
-                        <h3 className="mb-2 text-lg font-black text-rose-600">KONFIRMASI HAPUS</h3>
-                        <p className="mb-6 text-sm text-gray-700 font-medium">Yakin ingin menghapus PKM:<br/><span className="italic font-bold">"{deleteTarget.judul_pkm}"</span>?</p>
-                        <div className="flex justify-end gap-2">
-                            <button onClick={() => setDeleteTarget(null)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50">Batal</button>
-                            <button onClick={executeDelete} disabled={processing} className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-bold text-white hover:bg-rose-700 shadow-md">
-                                {processing ? 'Menghapus...' : 'Ya, Hapus'}
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4 animate-in zoom-in-95 duration-200">
+                    <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-2xl border-t-8 border-rose-600">
+                        <h3 className="mb-2 text-xl font-black text-rose-700 uppercase tracking-tighter">KONFIRMASI HAPUS</h3>
+                        <p className="mb-8 text-sm text-gray-600 font-medium leading-relaxed">Hapus data PkM ini? Lanjutkan?</p>
+                        <div className="flex justify-end gap-3">
+                            <button onClick={() => setDeleteTarget(null)} className="rounded-xl border border-gray-200 px-6 py-2.5 text-xs font-black text-gray-500 hover:bg-gray-50 uppercase tracking-widest transition-all">Batal</button>
+                            <button onClick={() => {
+                                destroy(route('portofolio.pkm.destroy', deleteTarget.id), {
+                                    onSuccess: () => setDeleteTarget(null),
+                                });
+                            }} disabled={processing} className="rounded-xl bg-rose-600 px-6 py-2.5 text-xs font-black text-white hover:bg-rose-700 shadow-xl uppercase tracking-widest transition-all active:scale-95">
+                                {processing ? 'Menghapus...' : 'YA, HAPUS PERMANEN'}
                             </button>
                         </div>
                     </div>
