@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             DataAkademikSeeder::class,
             AccreditationSeeder::class,
+            DosenSeeder::class,
             SettingsSeeder::class,
         ]);
     }
