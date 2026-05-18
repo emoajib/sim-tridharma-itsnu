@@ -1,30 +1,27 @@
 <?php
 
-namespace Database\Seeders;
+namespace App\Console\Commands;
 
 use App\Models\Dosen;
 use App\Models\Prodi;
-use Illuminate\Database\Seeder;
+use Illuminate\Console\Command;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
-class DosenSeeder extends Seeder
+class ImportDosenExcel extends Command
 {
-    public function run(): void
+    protected $signature = 'dosen:import {file=8444.xls}';
+    protected $description = 'Import dosen from SINTA export XLS file';
+
+    public function handle(): int
     {
-        $path = database_path('seeders/data/8444.xls');
+        $path = base_path($this->argument('file'));
 
         if (!file_exists($path)) {
-            echo "⚠️  File 8444.xls not found in database/seeders/data/, skipping DosenSeeder\n";
-            return;
+            $this->error("File not found: {$path}");
+            return Command::FAILURE;
         }
 
-        $prodiList = Prodi::all();
-        $prodiMap = [];
-        foreach ($prodiList as $p) {
-            $prodiMap[$p->kode_prodi] = $p->id;
-            $prodiMap[$p->nama_prodi] = $p->id;
-        }
-        $prodiMap['S1 Teknologi Industri'] = $prodiMap['S1 Teknik Industri'] ?? null;
+        $prodiMap = $this->buildProdiMap();
 
         $spreadsheet = IOFactory::load($path);
         $sheet = $spreadsheet->getActiveSheet();
@@ -32,8 +29,12 @@ class DosenSeeder extends Seeder
 
         $headerRow = null;
         $colMap = [];
+        $imported = 0;
+        $skipped = 0;
+
         foreach ($rows as $rowIndex => $row) {
             $row = array_map('trim', array_map('strval', $row));
+
             if (in_array('NIDN', $row, true)) {
                 $headerRow = $rowIndex;
                 $colMap = [
@@ -50,15 +51,17 @@ class DosenSeeder extends Seeder
         }
 
         if (!$headerRow) {
-            echo "⚠️  Could not find NIDN header in 8444.xls\n";
-            return;
+            $this->error('Could not find header row (NIDN)');
+            return Command::FAILURE;
         }
 
-        $imported = 0;
         for ($i = $headerRow + 1; $i < count($rows); $i++) {
             $row = array_map('trim', array_map('strval', $rows[$i]));
             $nidn = $row[$colMap['nidn']] ?? '';
-            if (empty($nidn)) continue;
+
+            if (empty($nidn)) {
+                continue;
+            }
 
             $nama = $row[$colMap['nama']] ?? '';
             $prodiName = $row[$colMap['prodi']] ?? '';
@@ -68,6 +71,7 @@ class DosenSeeder extends Seeder
             $gelarBelakang = $row[$colMap['gelar_belakang']] ?? '';
 
             $prodiId = $prodiMap[$prodiName] ?? null;
+
             [$namaDepan, $namaBelakang] = $this->splitNama($nama);
 
             Dosen::firstOrCreate(
@@ -88,7 +92,31 @@ class DosenSeeder extends Seeder
             $imported++;
         }
 
-        echo "✅ {$imported} data dosen dari 8444.xls\n";
+        $this->info("Imported {$imported} dosen records from {$path}");
+        return Command::SUCCESS;
+    }
+
+    private function buildProdiMap(): array
+    {
+        $prodiList = Prodi::all();
+        $map = [];
+
+        foreach ($prodiList as $p) {
+            $map[$p->kode_prodi] = $p->id;
+            $map[$p->nama_prodi] = $p->id;
+        }
+
+        $aliases = [
+            'S1 Teknologi Industri' => 'S1 Teknik Industri',
+        ];
+
+        foreach ($aliases as $alias => $canonical) {
+            if (isset($map[$canonical])) {
+                $map[$alias] = $map[$canonical];
+            }
+        }
+
+        return $map;
     }
 
     private function splitNama(string $fullName): array
@@ -96,12 +124,20 @@ class DosenSeeder extends Seeder
         $parts = array_values(array_filter(explode(' ', $fullName), fn($p) => $p !== ''));
         $count = count($parts);
 
-        if ($count === 0) return ['', ''];
-        if ($count === 1) return [$parts[0], ''];
-        if ($count === 2) return [$parts[0], $parts[1]];
+        if ($count === 0) {
+            return ['', ''];
+        }
+        if ($count === 1) {
+            return [$parts[0], ''];
+        }
+        if ($count === 2) {
+            return [$parts[0], $parts[1]];
+        }
 
+        // 3+ words: try to detect last 2 as nama_belakang
         $namaDepan = implode(' ', array_slice($parts, 0, $count - 2));
         $namaBelakang = implode(' ', array_slice($parts, -2));
+
         return [$namaDepan, $namaBelakang];
     }
 }
