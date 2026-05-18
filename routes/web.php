@@ -28,39 +28,16 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\RoleSwitchController;
 use App\Http\Controllers\Api\AiptController;
 use App\Http\Controllers\Api\TemplateController;
-use App\Models\Setting;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
-
-Route::get('/favicon.ico', function () {
-    try {
-        $faviconPath = Setting::get('favicon_path');
-        if ($faviconPath && Storage::disk('public')->exists($faviconPath)) {
-            $file = Storage::disk('public')->get($faviconPath);
-            $mime = Storage::disk('public')->mimeType($faviconPath);
-            return response($file, 200)->header('Content-Type', $mime)->header('Cache-Control', 'public, max-age=86400');
-        }
-    } catch (\Exception $e) {
-        // fallback jika table settings belum ada
-    }
-    $legacy = public_path('favicon.ico');
-    if (file_exists($legacy)) {
-        return response()->file($legacy, ['Cache-Control' => 'public, max-age=86400']);
-    }
-    $svg = public_path('favicon.svg');
-    if (file_exists($svg)) {
-        $content = file_get_contents($svg);
-        return response($content, 200)->header('Content-Type', 'image/svg+xml')->header('Cache-Control', 'public, max-age=86400');
-    }
-    return response('favicon-not-found', 404);
-});
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
+        'laravelVersion' => Application::VERSION,
+        'phpVersion' => PHP_VERSION,
     ]);
 });
 
@@ -253,25 +230,10 @@ Route::middleware('auth')->group(function () {
     Route::delete('/admin/instrumen/{instrumenAkreditasi}', [\App\Http\Controllers\Api\InstrumenAkreditasiController::class, 'destroy'])->name('admin.instrumen.destroy');
     Route::post('/admin/instrumen/import-preview', [\App\Http\Controllers\Api\InstrumenAkreditasiController::class, 'importPreview'])->name('admin.instrumen.import-preview');
 
-    // Indikator Akreditasi
     Route::get('/admin/indikator', [\App\Http\Controllers\Api\IndikatorAkreditasiController::class, 'index'])->name('admin.indikator.index');
     Route::post('/admin/indikator', [\App\Http\Controllers\Api\IndikatorAkreditasiController::class, 'store'])->name('admin.indikator.store');
     Route::put('/admin/indikator/{indikatorAkreditasi}', [\App\Http\Controllers\Api\IndikatorAkreditasiController::class, 'update'])->name('admin.indikator.update');
     Route::delete('/admin/indikator/{indikatorAkreditasi}', [\App\Http\Controllers\Api\IndikatorAkreditasiController::class, 'destroy'])->name('admin.indikator.destroy');
-
-    // Favicon
-    Route::post('/admin/settings/favicon', [\App\Http\Controllers\Api\AdminSettingController::class, 'uploadFavicon'])->name('admin.settings.favicon.upload');
-    Route::delete('/admin/settings/favicon', [\App\Http\Controllers\Api\AdminSettingController::class, 'removeFavicon'])->name('admin.settings.favicon.remove');
-
-    // Logo
-    Route::post('/admin/settings/logo', [\App\Http\Controllers\Api\AdminSettingController::class, 'uploadLogo'])->name('admin.settings.logo.upload');
-    Route::delete('/admin/settings/logo', [\App\Http\Controllers\Api\AdminSettingController::class, 'removeLogo'])->name('admin.settings.logo.remove');
-
-    // Knowledge Base (RAG)
-    Route::get('/admin/knowledge-base', [\App\Http\Controllers\Api\KnowledgeBaseController::class, 'index'])->name('admin.knowledge-base.index');
-    Route::post('/admin/knowledge-base/upload', [\App\Http\Controllers\Api\KnowledgeBaseController::class, 'upload'])->name('admin.knowledge-base.upload');
-    Route::post('/admin/knowledge-base/{knowledgeBaseDocument}/reindex', [\App\Http\Controllers\Api\KnowledgeBaseController::class, 'reindex'])->name('admin.knowledge-base.reindex');
-    Route::delete('/admin/knowledge-base/{knowledgeBaseDocument}', [\App\Http\Controllers\Api\KnowledgeBaseController::class, 'destroy'])->name('admin.knowledge-base.destroy');
 });
 
 require __DIR__.'/auth.php';

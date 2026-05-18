@@ -103,5 +103,13 @@ class RolePermissionSeeder extends Seeder
         if (!$multi->hasRole('Dosen')) {
             $multi->assignRole('Dosen', 'Kaprodi', 'Dekan');
         }
+
+        $fakultas = User::firstOrCreate(
+            ['email' => 'fakultas@itsnu.ac.id'],
+            ['name' => 'Dekan Fakultas', 'password' => bcrypt('password'), 'is_active' => true]
+        );
+        if (!$fakultas->hasRole('Dekan')) {
+            $fakultas->assignRole('Dekan');
+        }
     }
 }
