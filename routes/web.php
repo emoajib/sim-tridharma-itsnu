@@ -28,6 +28,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\RoleSwitchController;
 use App\Http\Controllers\Api\AiptController;
 use App\Http\Controllers\Api\TemplateController;
+use App\Http\Controllers\Api\KnowledgeBaseController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -234,6 +235,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/admin/indikator', [\App\Http\Controllers\Api\IndikatorAkreditasiController::class, 'store'])->name('admin.indikator.store');
     Route::put('/admin/indikator/{indikatorAkreditasi}', [\App\Http\Controllers\Api\IndikatorAkreditasiController::class, 'update'])->name('admin.indikator.update');
     Route::delete('/admin/indikator/{indikatorAkreditasi}', [\App\Http\Controllers\Api\IndikatorAkreditasiController::class, 'destroy'])->name('admin.indikator.destroy');
+
+    // Knowledge Base Routes
+    Route::get('/admin/knowledge-base', [KnowledgeBaseController::class, 'index'])->name('admin.knowledge-base.index');
+    Route::post('/admin/knowledge-base/upload', [KnowledgeBaseController::class, 'upload'])->name('admin.knowledge-base.upload');
+    Route::delete('/admin/knowledge-base/{knowledgeBaseDocument}', [KnowledgeBaseController::class, 'destroy'])->name('admin.knowledge-base.destroy');
+    Route::post('/admin/knowledge-base/{knowledgeBaseDocument}/reindex', [KnowledgeBaseController::class, 'reindex'])->name('admin.knowledge-base.reindex');
 });
 
 require __DIR__.'/auth.php';
