@@ -7,6 +7,9 @@ use App\Imports\SintaPublikasiImport;
 use App\Imports\SintaPenelitianImport;
 use App\Imports\SintaPkmImport;
 use App\Imports\SintaDosenImport;
+use App\Models\Penelitian;
+use App\Models\Publikasi;
+use App\Models\Pkm;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Log;
@@ -42,32 +45,44 @@ class SintaImportController extends Controller
         throw $lastException;
     }
 
-    public function importPublikasi(Request $request)
-    {
-        $request->validate(['file' => 'required']);
-
-        try {
-            // STEP 1: Sync Dosen Profiles
-            $this->universalImport(new SintaDosenImport, $request->file('file'));
-            // STEP 2: Sync Publications
-            $this->universalImport(new SintaPublikasiImport, $request->file('file'));
-            
-            return redirect()->back()->with('success', 'Data Profil Dosen & Publikasi SINTA berhasil disinkronkan.');
-        } catch (\Exception $e) {
-            Log::error('SINTA Import error: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Gagal sinkronisasi: ' . $e->getMessage());
-        }
-    }
-
     public function importPenelitian(Request $request)
     {
         $request->validate(['file' => 'required']);
 
         try {
             $this->universalImport(new SintaDosenImport, $request->file('file'));
+
+            $before = Penelitian::count();
             $this->universalImport(new SintaPenelitianImport, $request->file('file'));
-            
-            return redirect()->back()->with('success', 'Data Profil Dosen & Penelitian SINTA berhasil disinkronkan.');
+            $imported = Penelitian::count() - $before;
+
+            if ($imported > 0) {
+                return redirect()->back()->with('success', "Data Profil Dosen & {$imported} Penelitian SINTA berhasil disinkronkan.");
+            } else {
+                return redirect()->back()->with('warning', 'Profil Dosen berhasil diimpor. Tidak ditemukan data Penelitian dalam file ini — gunakan export Penelitian dari SINTA.');
+            }
+        } catch (\Exception $e) {
+            Log::error('SINTA Import error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal sinkronisasi: ' . $e->getMessage());
+        }
+    }
+
+    public function importPublikasi(Request $request)
+    {
+        $request->validate(['file' => 'required']);
+
+        try {
+            $this->universalImport(new SintaDosenImport, $request->file('file'));
+
+            $before = Publikasi::count();
+            $this->universalImport(new SintaPublikasiImport, $request->file('file'));
+            $imported = Publikasi::count() - $before;
+
+            if ($imported > 0) {
+                return redirect()->back()->with('success', "Data Profil Dosen & {$imported} Publikasi SINTA berhasil disinkronkan.");
+            } else {
+                return redirect()->back()->with('warning', 'Profil Dosen berhasil diimpor. Tidak ditemukan data Publikasi dalam file ini — gunakan export Publikasi dari SINTA.');
+            }
         } catch (\Exception $e) {
             Log::error('SINTA Import error: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Gagal sinkronisasi: ' . $e->getMessage());
@@ -80,12 +95,20 @@ class SintaImportController extends Controller
 
         try {
             $this->universalImport(new SintaDosenImport, $request->file('file'));
+
+            $before = Pkm::count();
             $this->universalImport(new SintaPkmImport, $request->file('file'));
-            
-            return redirect()->back()->with('success', 'Data Profil Dosen & PkM SINTA berhasil disinkronkan.');
+            $imported = Pkm::count() - $before;
+
+            if ($imported > 0) {
+                return redirect()->back()->with('success', "Data Profil Dosen & {$imported} PkM SINTA berhasil disinkronkan.");
+            } else {
+                return redirect()->back()->with('warning', 'Profil Dosen berhasil diimpor. Tidak ditemukan data PkM dalam file ini — gunakan export PkM dari SINTA.');
+            }
         } catch (\Exception $e) {
             Log::error('SINTA Import error: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Gagal sinkronisasi: ' . $e->getMessage());
         }
     }
+
 }
