@@ -299,7 +299,14 @@ export default function Index({ dosen, success }: Props) {
                                 </div>
                                 <div className="mb-4">
                                     <label className="mb-1 block text-sm font-medium text-gray-700">Jabatan Fungsional</label>
-                                    <input type="text" value={data.jabatan_fungsional} onChange={(e) => setData('jabatan_fungsional', e.target.value)} className="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                    <select value={data.jabatan_fungsional} onChange={(e) => setData('jabatan_fungsional', e.target.value)} className="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                        <option value="">Pilih Jabatan Fungsional</option>
+                                        <option value="Tenaga Pengajar">Tenaga Pengajar</option>
+                                        <option value="Asisten Ahli">Asisten Ahli</option>
+                                        <option value="Lektor">Lektor</option>
+                                        <option value="Lektor Kepala">Lektor Kepala</option>
+                                        <option value="Guru Besar">Guru Besar</option>
+                                    </select>
                                     {errors.jabatan_fungsional && <p className="mt-1 text-xs text-red-600">{errors.jabatan_fungsional}</p>}
                                 </div>
                                 <div className="mb-4">
