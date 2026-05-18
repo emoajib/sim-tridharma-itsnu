@@ -22,6 +22,7 @@ class AppServiceProvider extends ServiceProvider
                 'dashboard_default_tab' => Setting::get('dashboard_default_tab', 'overview'),
                 'chat_enabled' => Setting::get('chat_enabled', true),
                 'theme_mode' => Setting::get('theme_mode', 'klasik'),
+                'logo_path' => Setting::get('logo_path'),
             ];
         } catch (\Exception $e) {
             $settings = [
@@ -30,6 +31,7 @@ class AppServiceProvider extends ServiceProvider
                 'dashboard_default_tab' => 'overview',
                 'chat_enabled' => true,
                 'theme_mode' => 'klasik',
+                'logo_path' => null,
             ];
         }
 

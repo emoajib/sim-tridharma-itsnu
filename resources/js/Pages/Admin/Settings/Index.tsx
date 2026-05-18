@@ -8,7 +8,9 @@ interface Settings {
     dashboard_default_tab: string;
     chat_enabled: boolean;
     theme_mode: string;
-    [key: string]: string | boolean;
+    favicon_path: string | null;
+    logo_path: string | null;
+    [key: string]: string | boolean | null;
 }
 
 interface Props {
@@ -40,6 +42,38 @@ export default function Index({ settings }: Props) {
             settings: formData,
         }, {
             onFinish: () => setSaving(false),
+        });
+    }
+
+    function handleFaviconUpload(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const form = new FormData();
+        form.append('favicon', file);
+        router.post(route('admin.settings.favicon.upload'), form, {
+            onFinish: () => window.location.reload(),
+        });
+    }
+
+    function handleFaviconRemove() {
+        router.delete(route('admin.settings.favicon.remove'), {
+            onFinish: () => window.location.reload(),
+        });
+    }
+
+    function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const form = new FormData();
+        form.append('logo', file);
+        router.post(route('admin.settings.logo.upload'), form, {
+            onFinish: () => window.location.reload(),
+        });
+    }
+
+    function handleLogoRemove() {
+        router.delete(route('admin.settings.logo.remove'), {
+            onFinish: () => window.location.reload(),
         });
     }
 
@@ -220,6 +254,109 @@ export default function Index({ settings }: Props) {
                                 <p className="mt-2 text-xs text-gray-500">
                                     Pilih mode tampilan sistem. Theme 3 memberikan pengalaman navigasi sidebar dengan visual KPI yang lebih detail.
                                 </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Branding - Logo */}
+                    <div className="mb-6 rounded-lg bg-white p-6 shadow-sm">
+                        <h3 className="mb-4 text-lg font-semibold text-gray-800">Branding</h3>
+
+                        <div className="space-y-6">
+                            {/* Logo Aplikasi */}
+                            <div>
+                                <label className="mb-2 block text-sm font-medium text-gray-700">
+                                    Logo Aplikasi
+                                </label>
+                                <p className="mb-3 text-xs text-gray-500">
+                                    Upload logo ITSNU Pekalongan (PNG/JPG/SVG, maks 2 MB). Logo akan tampil di sidebar dan header.
+                                </p>
+
+                                <div className="flex flex-wrap items-center gap-6">
+                                    <div className="flex h-20 w-20 items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 overflow-hidden">
+                                        {formData.logo_path ? (
+                                            <img
+                                                src={'/storage/' + formData.logo_path}
+                                                alt="Logo"
+                                                className="h-full w-full object-contain"
+                                            />
+                                        ) : (
+                                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-600">
+                                                <span className="text-lg font-black text-white italic">A</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-3">
+                                        <label className="cursor-pointer rounded-lg bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700 transition-all uppercase tracking-wider">
+                                            {formData.logo_path ? 'Ganti Logo' : 'Upload Logo'}
+                                            <input
+                                                type="file"
+                                                accept=".png,.jpg,.jpeg,.svg,.webp"
+                                                onChange={handleLogoUpload}
+                                                className="hidden"
+                                            />
+                                        </label>
+
+                                        {formData.logo_path && (
+                                            <button
+                                                onClick={handleLogoRemove}
+                                                className="rounded-lg border border-rose-200 px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-all uppercase tracking-wider"
+                                            >
+                                                Hapus Logo
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr className="border-gray-100" />
+
+                            {/* Favicon */}
+                            <div>
+                                <label className="mb-2 block text-sm font-medium text-gray-700">
+                                    Favicon (Ikon Tab Browser)
+                                </label>
+                                <p className="mb-3 text-xs text-gray-500">
+                                    Upload file .ico, .png, atau .svg (maks 512 KB).
+                                </p>
+
+                                <div className="flex flex-wrap items-center gap-6">
+                                    <div className="flex h-16 w-16 items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50">
+                                        {formData.favicon_path ? (
+                                            <img
+                                                src={'/storage/' + formData.favicon_path}
+                                                alt="Favicon"
+                                                className="h-10 w-10 object-contain"
+                                            />
+                                        ) : (
+                                            <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                        )}
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-3">
+                                        <label className="cursor-pointer rounded-lg bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700 transition-all uppercase tracking-wider">
+                                            {formData.favicon_path ? 'Ganti Favicon' : 'Upload Favicon'}
+                                            <input
+                                                type="file"
+                                                accept=".ico,.png,.svg"
+                                                onChange={handleFaviconUpload}
+                                                className="hidden"
+                                            />
+                                        </label>
+
+                                        {formData.favicon_path && (
+                                            <button
+                                                onClick={handleFaviconRemove}
+                                                className="rounded-lg border border-rose-200 px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-all uppercase tracking-wider"
+                                            >
+                                                Hapus Favicon
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

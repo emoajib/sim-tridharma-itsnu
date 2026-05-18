@@ -15,6 +15,7 @@ export default function Theme3Layout({
     const appSettings = props.appSettings as any;
     const chatEnabled = appSettings?.chat_enabled !== false && appSettings?.chat_enabled !== 'false';
     const themeColor = appSettings?.theme_color || 'indigo';
+    const logoUrl = appSettings?.logo_path ? '/storage/' + appSettings.logo_path : null;
 
     // State for sidebar mobile
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -78,6 +79,7 @@ export default function Theme3Layout({
         { name: 'Pengaturan Sistem', route: 'admin.settings', icon: '⚙️' },
         { name: 'Lembaga Akreditasi', route: 'admin.lembaga.index', icon: '🏛️' },
         { name: 'Instrumen Penilaian', route: 'admin.instrumen.index', icon: '📋' },
+        { name: 'Knowledge Base', route: 'admin.knowledge-base.index', icon: '📚' },
     ];
 
     // Sidebar component
@@ -96,7 +98,7 @@ export default function Theme3Layout({
             >
                 <div className="flex h-16 items-center justify-center border-b border-gray-200">
                     <Link href="/">
-                        <ApplicationLogo className="block h-9 w-auto fill-current text-gray-800" />
+                        <ApplicationLogo logoUrl={logoUrl} className="block h-9 w-auto" />
                     </Link>
                 </div>
 
@@ -282,11 +284,6 @@ export default function Theme3Layout({
             <Sidebar />
             <div className={`lg:pl-64`}>
                 <Topbar />
-                {header && (
-                    <header className={`mt-6`}>
-                        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{header}</div>
-                    </header>
-                )}
                 <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{children}</main>
                 {chatEnabled && (
                     <>

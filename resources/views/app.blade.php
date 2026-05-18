@@ -4,7 +4,11 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title inertia>{{ config('app.name', 'Laravel') }}</title>
+        <title inertia>{{ config('app.name', 'SIM Tridharma ITSNU') }}</title>
+
+        <link rel="icon" type="image/svg+xml" href="{{ url('/favicon.ico') }}">
+        <link rel="alternate icon" href="{{ url('/favicon.ico') }}" type="image/x-icon">
+        <link rel="shortcut icon" href="{{ url('/favicon.ico') }}">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">

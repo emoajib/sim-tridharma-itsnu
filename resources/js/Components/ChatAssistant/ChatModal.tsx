@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { router } from '@inertiajs/react';
 
 interface Message {
     id: number;
     role: 'user' | 'assistant';
     content: string;
+    sources?: { judul: string; sumber: string; skor: number }[];
     timestamp: string;
 }
 
@@ -14,11 +14,11 @@ interface Props {
 }
 
 const defaultSuggestions = [
-    'Apa kekurangan akreditasi prodi saya?',
-    'Bagaimana cara meningkatkan skor C5?',
-    'Berapa prediksi skor akreditasi prodi ini?',
-    'Siapa dosen dengan publikasi terbaik?',
-    'Berapa jumlah mahasiswa lulus tahun ini?',
+    'Apa itu akreditasi dan bagaimana prosesnya?',
+    'Apa saja dokumen yang dibutuhkan untuk akreditasi program studi?',
+    'Bagaimana cara menghitung skor akreditasi?',
+    'Apa standar akreditasi perguruan tinggi?',
+    'Jelaskan tentang indikator penilaian akreditasi',
 ];
 
 export default function ChatModal({ isOpen, onClose }: Props) {
@@ -26,7 +26,7 @@ export default function ChatModal({ isOpen, onClose }: Props) {
         {
             id: 1,
             role: 'assistant',
-            content: 'Halo! Saya AI Assistant untuk Sistem Tridharma. Ada yang bisa saya bantu? Silakan pilih pertanyaan di bawah atau ketik sendiri.',
+            content: 'Halo! Saya AI Assistant dengan RAG Knowledge Base. Saya bisa menjawab pertanyaan berdasarkan dokumen kebijakan akreditasi yang telah diupload. Coba tanya tentang persyaratan akreditasi atau pilih pertanyaan di bawah.',
             timestamp: new Date().toISOString(),
         },
     ]);
@@ -38,7 +38,7 @@ export default function ChatModal({ isOpen, onClose }: Props) {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    function sendMessage() {
+    async function sendMessage() {
         if (!input.trim() || loading) return;
 
         const userMessage: Message = {
@@ -52,39 +52,49 @@ export default function ChatModal({ isOpen, onClose }: Props) {
         setInput('');
         setLoading(true);
 
-        // Simulate AI response (in production, this would call an API)
-        setTimeout(() => {
+        try {
+            const response = await fetch('/api/rag/ask', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ question: input }),
+            });
+
+            if (!response.ok) throw new Error('API error');
+
+            const data = await response.json();
+
+            let content = data.answer || 'Maaf, tidak dapat memproses pertanyaan.';
+
+            if (data.sources && data.sources.length > 0) {
+                const sourcesList = data.sources
+                    .map((s: any) => `📄 ${s.judul} (${s.skor}%)`)
+                    .join('\n');
+                content += '\n\n---\nSumber:\n' + sourcesList;
+            }
+
             const assistantMessage: Message = {
                 id: Date.now() + 1,
                 role: 'assistant',
-                content: generateResponse(input),
+                content: content,
+                sources: data.sources,
                 timestamp: new Date().toISOString(),
             };
             setMessages((prev) => [...prev, assistantMessage]);
+        } catch {
+            const fallbackMessage: Message = {
+                id: Date.now() + 1,
+                role: 'assistant',
+                content: 'Maaf, AI Service sedang tidak tersedia. Pastikan Python AI Service berjalan di port 5001.\n\n`cd ai-service && python main.py`',
+                timestamp: new Date().toISOString(),
+            };
+            setMessages((prev) => [...prev, fallbackMessage]);
+        } finally {
             setLoading(false);
-        }, 1000);
-    }
-
-    function generateResponse(query: string): string {
-        const lowerQuery = query.toLowerCase();
-        
-        if (lowerQuery.includes('kekurangan') || lowerQuery.includes('indikator')) {
-            return 'Berdasarkan analisis terakhir, beberapa indikator yang perlu ditingkatkan:\n\n1. C5 (Sarana & Prasarana): Kekurangan 2 PC laboratorium\n2. C7 (Mahasiswa): Rasio dosen-mahasiswa perlu perbaikan\n\nSilakan akses halaman Peringatan untuk detail lengkap.';
         }
-        
-        if (lowerQuery.includes('prediksi') || lowerQuery.includes('skor')) {
-            return 'Prediksi skor akreditasi saat ini: 3.45/4.00 dengan probabilitas UNGGUL sebesar 85%.\n\nGunakan Agent Prediksi di dashboard untuk simulasi lebih detail.';
-        }
-        
-        if (lowerQuery.includes('publikasi') || lowerQuery.includes('dosen')) {
-            return 'Dosen dengan publikasi terbaik:\n1. Dr. Ahmad - 12 Scopus\n2. Dr. Siti - 8 Scopus\n3. Dr. Budi - 5 Scopus\n\nAkses halaman Portofolio untuk detail lengkap.';
-        }
-        
-        if (lowerQuery.includes('mahasiswa') || lowerQuery.includes('lulus')) {
-            return 'Data mahasiswa tahun ini:\n- Total terdaftar: 450\n- Lulus: 120\n- Still aktif: 280\n\nAkses halaman Alumni untuk tracer study lengkap.';
-        }
-
-        return 'Terima kasih atas pertanyaan Anda. Untuk informasi detail, saya sarankan:\n\n• Akses halaman Dashboard untuk ringkasan\n• Gunakan menu Peringatan untuk lihat kekurangan\n• Jalankan Agent Rekomendasi untuk saran perbaikan\n• Cek halaman Verifikasi untuk status dokumen';
     }
 
     function handleSuggestion(suggestion: string) {
@@ -102,7 +112,6 @@ export default function ChatModal({ isOpen, onClose }: Props) {
 
     return (
         <div className="fixed bottom-20 right-6 z-50 w-full max-w-md overflow-hidden rounded-lg bg-white shadow-2xl">
-            {/* Header */}
             <div className="flex items-center justify-between bg-indigo-600 p-4">
                 <div className="flex items-center gap-2">
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white">
@@ -112,34 +121,33 @@ export default function ChatModal({ isOpen, onClose }: Props) {
                     </div>
                     <div>
                         <h3 className="text-sm font-semibold text-white">AI Assistant</h3>
-                        <p className="text-xs text-indigo-200">Sistem Tridharma</p>
+                        <p className="text-xs text-indigo-200">RAG Knowledge Base</p>
                     </div>
                 </div>
-                <button
-                    onClick={onClose}
-                    className="text-indigo-200 hover:text-white"
-                >
+                <button onClick={onClose} className="text-indigo-200 hover:text-white">
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
             </div>
 
-            {/* Messages */}
             <div className="h-80 overflow-y-auto p-4">
                 {messages.map((msg) => (
-                    <div
-                        key={msg.id}
-                        className={`mb-3 flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                        <div
-                            className={`max-w-[80%] rounded-lg p-3 text-sm ${
-                                msg.role === 'user'
-                                    ? 'bg-indigo-600 text-white'
-                                    : 'bg-gray-100 text-gray-800'
-                            }`}
-                        >
+                    <div key={msg.id} className={`mb-3 flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[80%] rounded-lg p-3 text-sm ${
+                            msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-800'
+                        }`}>
                             <p className="whitespace-pre-wrap">{msg.content}</p>
+                            {msg.sources && msg.sources.length > 0 && (
+                                <div className="mt-2 pt-2 border-t border-gray-200">
+                                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Sumber:</p>
+                                    {msg.sources.map((s, i) => (
+                                        <p key={i} className="text-[10px] text-gray-500">
+                                            📄 {s.judul} — {s.skor}%
+                                        </p>
+                                    ))}
+                                </div>
+                            )}
                             <p className={`mt-1 text-[10px] ${
                                 msg.role === 'user' ? 'text-indigo-200' : 'text-gray-400'
                             }`}>
@@ -156,13 +164,13 @@ export default function ChatModal({ isOpen, onClose }: Props) {
                                 <div className="h-2 w-2 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: '0.1s' }}></div>
                                 <div className="h-2 w-2 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: '0.2s' }}></div>
                             </div>
+                            <p className="text-[10px] text-gray-400 mt-1">Mencari jawaban dari dokumen...</p>
                         </div>
                     </div>
                 )}
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Suggestions */}
             <div className="border-t bg-gray-50 p-3">
                 <p className="mb-2 text-xs text-gray-500">Pertanyaan cepat:</p>
                 <div className="flex flex-wrap gap-2">
@@ -178,7 +186,6 @@ export default function ChatModal({ isOpen, onClose }: Props) {
                 </div>
             </div>
 
-            {/* Input */}
             <div className="border-t p-3">
                 <div className="flex gap-2">
                     <input
@@ -186,7 +193,7 @@ export default function ChatModal({ isOpen, onClose }: Props) {
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyPress={handleKeyPress}
-                        placeholder="Ketik pertanyaan..."
+                        placeholder="Tanya tentang akreditasi..."
                         className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
                     />
                     <button

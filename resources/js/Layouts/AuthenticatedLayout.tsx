@@ -27,6 +27,7 @@ export default function Authenticated({
     const user = auth.user;
     const appSettings = (props.appSettings as any) || {};
     const themeMode = appSettings?.theme_mode || 'klasik';
+    const logoUrl = appSettings?.logo_path ? '/storage/' + appSettings.logo_path : null;
 
     // Use Theme 3 layout when theme_mode is 'theme3'
     if (themeMode === 'theme3') {
@@ -106,6 +107,7 @@ export default function Authenticated({
         { name: 'Pengaturan Sistem', route: 'admin.settings', icon: '⚙️' },
         { name: 'Lembaga Akreditasi', route: 'admin.lembaga.index', icon: '🏛️' },
         { name: 'Instrumen Penilaian', route: 'admin.instrumen.index', icon: '📋' },
+        { name: 'Knowledge Base', route: 'admin.knowledge-base.index', icon: '📚' },
     ];
 
     const isMasterDataActive = masterDataLinks.some((l) => route().current(l.route));
@@ -117,7 +119,7 @@ export default function Authenticated({
 
     const getDropdownActiveClass = (active: boolean) => {
         if (active) {
-            return `inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium transition duration-150 ease-in-out border-current ${colors.text}`;
+            return `inline-flex items-center border-b-2 px-1 pt-1 text-sm font-bold transition duration-150 ease-in-out border-current ${colors.text}`;
         }
         return 'inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 transition duration-150 ease-in-out hover:border-gray-300 hover:text-gray-700';
     };
@@ -137,7 +139,7 @@ export default function Authenticated({
             >
                 <div className="flex h-16 items-center justify-center border-b border-gray-800/50">
                     <Link href="/">
-                        <ApplicationLogo className="block h-9 w-auto fill-current text-white" />
+                        <ApplicationLogo logoUrl={logoUrl} isDark={!isModernTheme} className="block w-auto" />
                     </Link>
                 </div>
 
@@ -318,7 +320,7 @@ export default function Authenticated({
                     <div className="flex h-16 justify-between">
                         <div className="flex">
                             <div className="flex shrink-0 items-center">
-                                <Link href="/"><ApplicationLogo className="block h-9 w-auto fill-current text-gray-800" /></Link>
+                                <Link href="/"><ApplicationLogo logoUrl={logoUrl} className="block w-auto" /></Link>
                             </div>
                             <div className="hidden space-x-4 sm:-my-px sm:ms-10 sm:flex">
                                 <NavLink href={route('dashboard')} active={route().current('dashboard')}>DASHBOARD</NavLink>
