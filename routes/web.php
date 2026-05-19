@@ -205,6 +205,7 @@ Route::middleware('auth')->group(function () {
     // Generator Dokumen
     Route::get('/generator', [\App\Http\Controllers\Api\GeneratorController::class, 'index'])->name('generator');
     Route::post('/generator/generate', [\App\Http\Controllers\Api\GeneratorController::class, 'generate'])->name('generator.generate');
+    Route::get('/generator/download/{id}', [\App\Http\Controllers\Api\GeneratorController::class, 'download'])->name('generator.download');
 
     // Prediksi Akreditasi
     Route::get('/prediksi', [PrediksiController::class, 'index'])->name('prediksi');

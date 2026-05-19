@@ -1,7 +1,11 @@
 import logging
+import os
 from datetime import datetime
 
 from sqlalchemy import text
+from docx import Document
+from docx.shared import Inches, Pt, RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from agents.base_agent import BaseAgent
 from database import SessionLocal
@@ -51,26 +55,32 @@ class GeneratorAgent(BaseAgent):
             sections = self._build_sections(nama_prodi, nama_periode, indikator_data, jenis_dokumen)
             narasi = "\n\n".join(s["isi"] for s in sections)
 
+            docx_path = self._create_docx(nama_prodi, nama_periode, sections, jenis_dokumen)
+
             result = {
                 "narasi": narasi,
                 "sections": sections,
                 "jenis_dokumen": jenis_dokumen,
                 "prodi": nama_prodi,
                 "periode": nama_periode,
+                "file_path": docx_path,
             }
 
             db.execute(
                 text("""
                     INSERT INTO agent_generator_history 
-                        (prodi_id, periode_id, jenis_dokumen, judul, status, hasil_text, generated_by, created_at, updated_at)
-                    VALUES (:prodi_id, :periode_id, :jenis, :judul, 'selesai', :hasil, 'agent', NOW(), NOW())
+                        (prodi_id, periode_id, jenis_dokumen, judul, file_path, status, hasil_text, generated_by, created_at, updated_at)
+                    VALUES (:prodi_id, :periode_id, :jenis, :judul, :file_path, :status, :hasil, :generated, NOW(), NOW())
                 """),
                 {
                     "prodi_id": prodi_id,
                     "periode_id": periode_id,
                     "jenis": jenis_dokumen,
                     "judul": f"{jenis_dokumen.upper()} - {nama_prodi} - {nama_periode}",
+                    "file_path": docx_path,
+                    "status": "selesai",
                     "hasil": result,
+                    "generated": "agent",
                 },
             )
             db.commit()
@@ -139,3 +149,36 @@ class GeneratorAgent(BaseAgent):
             skor = r.skor_tercapai if r.skor_tercapai else "-"
             lines.append(f"| {r.kode_indikator} | {r.nama_indikator} | {target} | {skor} | {r.status} |")
         return "\n".join(lines)
+
+    def _create_docx(self, prodi: str, periode: str, sections: list, jenis: str) -> str:
+        doc = Document()
+        
+        title = doc.add_heading(f"DOKUMEN {jenis.upper()}", 0)
+        title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        
+        doc.add_paragraph(f"Program Studi: {prodi}")
+        doc.add_paragraph(f"Periode: {periode}")
+        doc.add_paragraph(f"Tanggal: {datetime.now().strftime('%d %B %Y')}")
+        doc.add_paragraph()
+        
+        for section in sections:
+            heading = doc.add_heading(section.get("judul", ""), level=1)
+            content = section.get("isi", "")
+            
+            paragraphs = content.split("\n")
+            for para in paragraphs:
+                if para.strip():
+                    p = doc.add_paragraph(para)
+            
+            doc.add_paragraph()
+        
+        output_dir = "/tmp/akreditasi_docs"
+        os.makedirs(output_dir, exist_ok=True)
+        
+        filename = f"{jenis}_{prodi.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx"
+        filepath = os.path.join(output_dir, filename)
+        
+        doc.save(filepath)
+        logger.info(f"DOCX saved to: {filepath}")
+        
+        return filepath

@@ -47,4 +47,15 @@ class GeneratorController extends Controller
 
         return back()->with('success', 'Generator dokumen sedang dijalankan. Hasil akan muncul di history.');
     }
+
+    public function download($id)
+    {
+        $record = AgentGeneratorHistory::findOrFail($id);
+        
+        if (!$record->file_path || !file_exists($record->file_path)) {
+            return back()->with('error', 'File tidak ditemukan.');
+        }
+
+        return response()->download($record->file_path, $record->judul . '.docx');
+    }
 }
