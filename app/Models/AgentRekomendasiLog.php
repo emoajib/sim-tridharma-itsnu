@@ -9,7 +9,7 @@ class AgentRekomendasiLog extends Model
     protected $table = 'agent_rekomendasi_log';
 
     protected $fillable = [
-        'prodi_id', 'indikator_id', 'rekomendasi', 'priority', 'status'
+        'prodi_id', 'indikator_id', 'judul_rekomendasi', 'deskripsi', 'prioritas', 'target_capai', 'deadline', 'status'
     ];
 
     public function prodi()

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Http\Request;
 use App\Models\Prodi;
 use App\Models\Fakultas;
 use App\Models\Dosen;
@@ -11,7 +12,7 @@ use App\Models\AgentPeringatanLog;
 
 class DashboardExportService
 {
-    public function exportToPdf(Request $request)
+    public function exportToPdf(Request $request): array
     {
         $periodeId = $request->get('periode_id');
         $instrumenId = $request->get('instrumen_id');
@@ -50,16 +51,14 @@ class DashboardExportService
             'info' => AgentPeringatanLog::where('tingkat', 'info')->count(),
         ];
 
-        $html = view('exports.dashboard-pdf', [
+        return [
             'stats' => $stats,
             'prodis' => $prodis,
             'latestPrediction' => $latestPrediction,
             'peringatanStats' => $peringatanStats,
             'periode' => $periodeId ? PeriodeAkademik::find($periodeId)?->nama_periode : 'Semua Periode',
             'generated_at' => now()->format('d F Y H:i'),
-        ])->render();
-
-        return $html;
+        ];
     }
 
     private function getPredikat($prediction): string

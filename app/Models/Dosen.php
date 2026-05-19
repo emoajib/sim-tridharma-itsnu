@@ -15,7 +15,8 @@ class Dosen extends Model
         'nidn', 'nip', 'nama_depan', 'nama_belakang', 'gelar_depan', 'gelar_belakang',
         'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin', 'prodi_id',
         'pendidikan_terakhir', 'jabatan_fungsional', 'status_aktivitas',
-        'email', 'telepon', 'is_active'
+        'email', 'telepon', 'is_active', 'sinta_id', 'sinta_score_overall',
+        'sinta_score_3yr', 'status_verifikasi_sinta'
     ];
 
     protected function casts(): array

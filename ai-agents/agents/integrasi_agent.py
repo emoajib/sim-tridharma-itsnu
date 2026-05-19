@@ -105,15 +105,16 @@ class IntegrasiAgent(BaseAgent):
             db.execute(
                 text("""
                     INSERT INTO integrasi_log_sinkron
-                        (sumber, total_ditarik, total_konflik, status, executed_at)
+                        (sumber, jumlah_ditarik, jumlah_konflik, status, mulai_pada, jenis_data)
                     VALUES
-                        (:sumber, :total_ditarik, :total_konflik, 'completed', :executed_at)
+                        (:sumber, :jumlah_ditarik, :jumlah_konflik, 'completed', :mulai_pada, :jenis_data)
                 """),
                 {
                     "sumber": sumber,
-                    "total_ditarik": total_ditarik,
-                    "total_konflik": total_konflik,
-                    "executed_at": datetime.now(timezone.utc),
+                    "jumlah_ditarik": total_ditarik,
+                    "jumlah_konflik": total_konflik,
+                    "mulai_pada": datetime.now(timezone.utc),
+                    "jenis_data": sumber,
                 },
             )
             db.commit()

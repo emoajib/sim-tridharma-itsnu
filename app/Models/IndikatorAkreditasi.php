@@ -12,7 +12,7 @@ class IndikatorAkreditasi extends Model
     protected $table = 'm_indikator_akreditasi';
 
     protected $fillable = [
-        'kode_indikator', 'nama_indikator', 'kriteria', 'bobot', 'target', 'jenis_akreditasi', 'is_active'
+        'kode_indikator', 'nama_indikator', 'kriteria', 'bobot', 'target', 'jenis_akreditasi', 'is_active', 'instrumen_id'
     ];
 
     protected function casts(): array
@@ -21,5 +21,10 @@ class IndikatorAkreditasi extends Model
             'is_active' => 'boolean',
             'bobot' => 'decimal:2',
         ];
+    }
+
+    public function instrumen()
+    {
+        return $this->belongsTo(\App\Models\InstrumenAkreditasi::class, 'instrumen_id');
     }
 }

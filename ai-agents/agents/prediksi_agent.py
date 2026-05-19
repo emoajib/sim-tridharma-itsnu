@@ -29,7 +29,7 @@ class PrediksiAgent(BaseAgent):
             # Fetch retrospective data (TS-2 to TS) for LAMEMBA 2.0 compliance
             rows = db.execute(
                 text("""
-                    SELECT pi.periode_id, pi.skor_tercapai, i.bobot, i.kategori
+                    SELECT pi.periode_id, pi.skor_tercapai, i.bobot, i.kriteria
                     FROM trx_pemenuhan_indikator pi
                     JOIN m_indikator_akreditasi i ON i.id = pi.indikator_id
                     WHERE pi.prodi_id = :prodi_id 
@@ -96,7 +96,7 @@ class PrediksiAgent(BaseAgent):
                     "baik_sekali": round(prob_baik_sekali, 2),
                     "baik": round(prob_baik, 2),
                 },
-                "confidence_interval": "± 4.5",
+                "confidence_interval": 4.5,
                 "trend_analysis": "Positif" if trend_factor > 1 else ("Negatif" if trend_factor < 1 else "Stagnan"),
                 "historical_data_points": len(historical_scores)
             }
@@ -127,6 +127,7 @@ class PrediksiAgent(BaseAgent):
         except Exception as e:
             logger.error(f"PrediksiAgent execution failed: {e}", exc_info=True)
             db.rollback()
+            self.log_execution(self.name, None, data, {"status": "error", "message": str(e)}, status="error", error_message=str(e))
             return {"status": "error", "message": str(e)}
         finally:
             db.close()

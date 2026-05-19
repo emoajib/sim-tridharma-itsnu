@@ -68,15 +68,16 @@ class RekomendasiAgent(BaseAgent):
                 db.execute(
                     text("""
                         INSERT INTO agent_rekomendasi_log
-                            (prodi_id, indikator_id, prioritas, saran, is_read, created_at, updated_at)
+                            (prodi_id, indikator_id, prioritas, judul_rekomendasi, deskripsi, created_at, updated_at)
                         VALUES
-                            (:prodi_id, :i_id, :prio, :saran, false, NOW(), NOW())
+                            (:prodi_id, :i_id, :prioritas, :judul_rekomendasi, :deskripsi, NOW(), NOW())
                     """),
                     {
                         "prodi_id": prodi_id,
                         "i_id": rec["indikator_id"],
-                        "prio": rec["prioritas"],
-                        "saran": rec["saran"],
+                        "prioritas": rec["prioritas"],
+                        "judul_rekomendasi": rec["saran"],
+                        "deskripsi": rec["saran"],
                     },
                 )
             db.commit()
@@ -87,6 +88,7 @@ class RekomendasiAgent(BaseAgent):
         except Exception as e:
             logger.error(f"RekomendasiAgent execution failed: {e}", exc_info=True)
             db.rollback()
+            self.log_execution(self.name, None, data, {"status": "error", "message": str(e)}, status="error", error_message=str(e))
             return {"status": "error", "message": str(e)}
         finally:
             db.close()

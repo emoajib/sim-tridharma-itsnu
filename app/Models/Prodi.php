@@ -12,7 +12,7 @@ class Prodi extends Model
     protected $table = 'm_prodi';
 
     protected $fillable = [
-        'kode_prodi', 'nama_prodi', 'fakultas_id', 'lembaga_akreditasi_id', 'jenjang',
+        'kode_prodi', 'nama_prodi', 'fakultas_id', 'jenjang',
         'akreditasi', 'sk_akreditasi', 'tanggal_kadaluarsa', 'is_active'
     ];
 

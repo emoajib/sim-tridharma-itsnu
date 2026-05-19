@@ -10,14 +10,14 @@ class AgentPeringatanLog extends Model
 
     protected $fillable = [
         'prodi_id', 'dosen_id', 'jenis_peringatan', 'tingkat',
-        'pesan', 'is_read', 'read_at'
+        'pesan', 'is_read', 'dibaca_pada'
     ];
 
     protected function casts(): array
     {
         return [
             'is_read' => 'boolean',
-            'read_at' => 'datetime',
+            'dibaca_pada' => 'datetime',
         ];
     }
 

@@ -223,6 +223,10 @@ Route::middleware('auth')->group(function () {
     // Admin Settings
     Route::get('/admin/settings', [\App\Http\Controllers\Api\AdminSettingController::class, 'index'])->name('admin.settings');
     Route::post('/admin/settings', [\App\Http\Controllers\Api\AdminSettingController::class, 'updateMultiple'])->name('admin.settings.update');
+    Route::post('/admin/settings/favicon/upload', [\App\Http\Controllers\Api\AdminSettingController::class, 'uploadFavicon'])->name('admin.settings.favicon.upload');
+    Route::delete('/admin/settings/favicon/remove', [\App\Http\Controllers\Api\AdminSettingController::class, 'removeFavicon'])->name('admin.settings.favicon.remove');
+    Route::post('/admin/settings/logo/upload', [\App\Http\Controllers\Api\AdminSettingController::class, 'uploadLogo'])->name('admin.settings.logo.upload');
+    Route::delete('/admin/settings/logo/remove', [\App\Http\Controllers\Api\AdminSettingController::class, 'removeLogo'])->name('admin.settings.logo.remove');
     Route::get('/aipt', [AiptController::class, 'index'])->name('aipt.index');
 
     // Accreditation Management (Lembaga & Instrumen)

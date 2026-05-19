@@ -9,7 +9,7 @@ class AgentExecutionLog extends Model
     protected $table = 'agent_execution_log';
 
     protected $fillable = [
-        'agent_name', 'status', 'started_at', 'finished_at',
+        'agent_name', 'status', 'started_at', 'finished_at', 'duration_ms',
         'input_data', 'output_data', 'error_message', 'triggered_by'
     ];
 

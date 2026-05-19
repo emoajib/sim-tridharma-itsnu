@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from datetime import datetime
@@ -29,12 +30,12 @@ class GeneratorAgent(BaseAgent):
         db = SessionLocal()
         try:
             prodi = db.execute(
-                text("SELECT nama_prodi FROM prodi WHERE id = :prodi_id"),
+                text("SELECT nama_prodi FROM m_prodi WHERE id = :prodi_id"),
                 {"prodi_id": prodi_id},
             ).fetchone()
 
             periode = db.execute(
-                text("SELECT nama_periode FROM periode WHERE id = :periode_id"),
+                text("SELECT nama_periode FROM m_periode_akademik WHERE id = :periode_id"),
                 {"periode_id": periode_id},
             ).fetchone()
 
@@ -45,7 +46,7 @@ class GeneratorAgent(BaseAgent):
                 text("""
                     SELECT i.kode_indikator, i.nama_indikator, i.target, pi.skor_tercapai, pi.status
                     FROM trx_pemenuhan_indikator pi
-                    JOIN indikator i ON i.id = pi.indikator_id
+                    JOIN m_indikator_akreditasi i ON i.id = pi.indikator_id
                     WHERE pi.prodi_id = :prodi_id AND pi.periode_id = :periode_id
                     ORDER BY i.kode_indikator
                 """),
@@ -79,7 +80,7 @@ class GeneratorAgent(BaseAgent):
                     "judul": f"{jenis_dokumen.upper()} - {nama_prodi} - {nama_periode}",
                     "file_path": docx_path,
                     "status": "selesai",
-                    "hasil": result,
+                    "hasil": json.dumps(result),
                     "generated": "agent",
                 },
             )

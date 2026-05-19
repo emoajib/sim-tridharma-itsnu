@@ -26,6 +26,12 @@ PLAN → BUILD → TES KODE → GIT COMMIT → PUSH GITHUB → TES KODE DI GITHU
 - Build frontend: `npm run build`
 - Cek Routes: `php artisan route:list`
 - Test manually via browser
+Let me do a comprehensive audit of the codebase to find:
+1. Code errors and bugs
+2. Missing logic
+3. Data/process synchronization issues
+4. Inconsistencies across modules
+5. Non-uniform code patterns
 
 ### 4. GIT COMMIT
 - Commit dengan pesan yang jelas:
