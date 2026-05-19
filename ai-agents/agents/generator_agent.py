@@ -59,6 +59,22 @@ class GeneratorAgent(BaseAgent):
                 "periode": nama_periode,
             }
 
+            db.execute(
+                text("""
+                    INSERT INTO agent_generator_history 
+                        (prodi_id, periode_id, jenis_dokumen, judul, status, hasil_text, generated_by, created_at, updated_at)
+                    VALUES (:prodi_id, :periode_id, :jenis, :judul, 'selesai', :hasil, 'agent', NOW(), NOW())
+                """),
+                {
+                    "prodi_id": prodi_id,
+                    "periode_id": periode_id,
+                    "jenis": jenis_dokumen,
+                    "judul": f"{jenis_dokumen.upper()} - {nama_prodi} - {nama_periode}",
+                    "hasil": result,
+                },
+            )
+            db.commit()
+
             self.log_execution(self.name, None, data, result)
             return result
 

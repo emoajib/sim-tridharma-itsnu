@@ -105,7 +105,7 @@ class PrediksiAgent(BaseAgent):
             db.execute(
                 text("""
                     INSERT INTO agent_prediction_history
-                        (prodi_id, periode_id, skor_prediksi, prob_unggul, prob_baik_sekali, prob_baik, confidence_interval, created_at, updated_at)
+                        (prodi_id, periode_id, skor_prediksi, probabilitas_unggul, probabilitas_baik_sekali, probabilitas_baik, confidence_interval, created_at, updated_at)
                     VALUES
                         (:prodi_id, :periode_id, :skor, :p_unggul, :p_bs, :p_baik, :ci, NOW(), NOW())
                 """),

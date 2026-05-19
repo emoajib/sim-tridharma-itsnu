@@ -11,6 +11,7 @@ interface Props {
     data: KriteriaItem[];
     title?: string;
     showTarget?: boolean;
+    onSelectKriteria?: (kriteria: KriteriaItem) => void;
 }
 
 const defaultData = [
@@ -25,7 +26,7 @@ const defaultData = [
     { kode: 'C9', nama: 'PKM', skor: 70, target: 100 },
 ];
 
-export default function RadarChart({ data, title = 'Capaian per Kriteria (C1-C9)', showTarget = true }: Props) {
+export default function RadarChart({ data, title = 'Capaian per Kriteria (C1-C9)', showTarget = true, onSelectKriteria }: Props) {
     const chartData = (data && data.length > 0) ? data : defaultData;
 
     const terpenuhi = chartData.filter(d => (d.skor / d.target) * 100 >= 100).length;
@@ -95,6 +96,29 @@ export default function RadarChart({ data, title = 'Capaian per Kriteria (C1-C9)
                     <div className="text-xs text-gray-500">Kurang</div>
                 </div>
             </div>
+
+            {onSelectKriteria && (
+                <div className="mt-4 pt-4 border-t">
+                    <div className="text-xs text-gray-500 mb-2">Klik untuk lihat detail:</div>
+                    <div className="flex flex-wrap gap-1">
+                        {chartData.map((item) => (
+                            <button
+                                key={item.kode}
+                                onClick={() => onSelectKriteria(item)}
+                                className={`px-2 py-1 text-xs rounded transition-colors ${
+                                    (item.skor / item.target) * 100 >= 100
+                                        ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                        : (item.skor / item.target) * 100 >= 60
+                                        ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                                        : 'bg-red-100 text-red-700 hover:bg-red-200'
+                                }`}
+                            >
+                                {item.kode}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

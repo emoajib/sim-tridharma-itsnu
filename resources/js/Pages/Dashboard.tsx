@@ -4,6 +4,7 @@ import { useState } from 'react';
 import PeringatanBadge from '@/Components/Agent/PeringatanBadge';
 import PrediksiWidget from '@/Components/Agent/PrediksiWidget';
 import RadarChart from '@/Components/Agent/RadarChart';
+import KriteriaDetailModal from '@/Components/Agent/KriteriaDetailModal';
 
 interface Periode {
     id: number;
@@ -107,6 +108,18 @@ export default function Dashboard({ stats, portofolioStats, bkdStats, recentPend
     const { props } = usePage();
     const appSettings = props.appSettings as any;
     const isTheme3 = appSettings?.theme_mode === 'theme3';
+    const [selectedKriteria, setSelectedKriteria] = useState<any>(null);
+
+    const handleSelectKriteria = (kriteria: any) => {
+        setSelectedKriteria({
+            ...kriteria,
+            indikator: [
+                { id: 1, kode: `${kriteria.kode}.1`, nama: 'Indikator 1', target: 100, tercapai: kriteria.skor, status: kriteria.skor >= 100 ? 'hijau' : kriteria.skor >= 60 ? 'kuning' : 'merah' },
+                { id: 2, kode: `${kriteria.kode}.2`, nama: 'Indikator 2', target: 100, tercapai: Math.floor(kriteria.skor * 0.9), status: kriteria.skor >= 90 ? 'hijau' : kriteria.skor >= 54 ? 'kuning' : 'merah' },
+                { id: 3, kode: `${kriteria.kode}.3`, nama: 'Indikator 3', target: 100, tercapai: Math.floor(kriteria.skor * 0.8), status: kriteria.skor >= 80 ? 'hijau' : kriteria.skor >= 48 ? 'kuning' : 'merah' },
+            ]
+        });
+    };
 
     function changeFilter(key: string, value: string) {
         router.get(route('dashboard'), 
@@ -310,7 +323,12 @@ export default function Dashboard({ stats, portofolioStats, bkdStats, recentPend
 
                             <div className="lg:col-span-5">
                                 <div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100 h-full flex flex-col items-center justify-center">
-                                    <RadarChart data={[]} title="Capaian Kriteria (9 Kriteria / 4 Aspek)" showTarget={true} />
+                                    <RadarChart 
+                                        data={[]} 
+                                        title="Capaian Kriteria (9 Kriteria / 4 Aspek)" 
+                                        showTarget={true}
+                                        onSelectKriteria={handleSelectKriteria}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -340,6 +358,12 @@ export default function Dashboard({ stats, portofolioStats, bkdStats, recentPend
                     </div>
                 </div>
             </div>
+
+            <KriteriaDetailModal 
+                kriteria={selectedKriteria} 
+                isOpen={!!selectedKriteria} 
+                onClose={() => setSelectedKriteria(null)} 
+            />
         </AuthenticatedLayout>
     );
 }
