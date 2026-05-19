@@ -28,4 +28,14 @@ class AgentGeneratorHistory extends Model
     {
         return $this->belongsTo(PeriodeAkademik::class);
     }
+
+    public function getNarasiAttribute(): ?string
+    {
+        return $this->hasil_text['narasi'] ?? null;
+    }
+
+    public function getFilePathExistsAttribute(): bool
+    {
+        return $this->file_path && file_exists($this->file_path);
+    }
 }

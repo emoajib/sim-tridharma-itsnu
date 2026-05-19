@@ -17,7 +17,9 @@ interface HistoryItem {
     prodi_id: number;
     periode_id: number;
     jenis_dokumen: string;
-    narasi: string;
+    judul: string;
+    narasi?: string;
+    file_path: string | null;
     status: string;
     created_at: string;
     prodi?: { id: number; nama_prodi: string };
@@ -187,20 +189,32 @@ export default function Index({ prodi_list, periode_list, history, filters }: Pr
                                                     <span className="text-sm font-medium text-gray-900">
                                                         {item.prodi?.nama_prodi}
                                                     </span>
+                                                    {item.status === 'selesai' && (
+                                                        <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                                                            Selesai
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <p className="mt-1 text-xs text-gray-500">
                                                     {item.periode?.nama_periode} • {new Date(item.created_at).toLocaleString('id-ID')}
                                                 </p>
-                                                <p className="mt-2 text-sm text-gray-600 line-clamp-2">
-                                                    {item.narasi?.substring(0, 150)}...
-                                                </p>
                                             </div>
-                                            <button
-                                                onClick={() => setSelectedDoc(item)}
-                                                className="ml-4 rounded border border-gray-300 px-3 py-1 text-sm text-gray-700 hover:bg-gray-50"
-                                            >
-                                                Lihat
-                                            </button>
+                                            <div className="ml-4 flex gap-2">
+                                                {item.file_path && (
+                                                    <a
+                                                        href={route('generator.download', item.id)}
+                                                        className="rounded bg-green-600 px-3 py-1 text-sm text-white hover:bg-green-700"
+                                                    >
+                                                        Download DOCX
+                                                    </a>
+                                                )}
+                                                <button
+                                                    onClick={() => setSelectedDoc(item)}
+                                                    className="rounded border border-gray-300 px-3 py-1 text-sm text-gray-700 hover:bg-gray-50"
+                                                >
+                                                    Lihat
+                                                </button>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -249,19 +263,30 @@ export default function Index({ prodi_list, periode_list, history, filters }: Pr
                             </button>
                         </div>
                         <div className="prose max-w-none whitespace-pre-wrap text-sm text-gray-700">
-                            {selectedDoc.narasi}
+                            {selectedDoc.narasi || 'Tidak ada narasi. Silakan download file DOCX.'}
                         </div>
                         <div className="mt-4 flex justify-end gap-2">
+                            {selectedDoc.file_path && (
+                                <a
+                                    href={route('generator.download', selectedDoc.id)}
+                                    className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+                                >
+                                    Download DOCX
+                                </a>
+                            )}
                             <button
                                 onClick={() => {
-                                    const blob = new Blob([selectedDoc.narasi], { type: 'text/plain' });
-                                    const url = URL.createObjectURL(blob);
-                                    const a = document.createElement('a');
-                                    a.href = url;
-                                    a.download = `${selectedDoc.jenis_dokumen}_${selectedDoc.prodi?.nama_prodi}.txt`;
-                                    a.click();
+                                    if (selectedDoc.narasi) {
+                                        const blob = new Blob([selectedDoc.narasi], { type: 'text/plain' });
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `${selectedDoc.jenis_dokumen}_${selectedDoc.prodi?.nama_prodi}.txt`;
+                                        a.click();
+                                    }
                                 }}
-                                className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                disabled={!selectedDoc.narasi}
+                                className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                             >
                                 Download TXT
                             </button>
