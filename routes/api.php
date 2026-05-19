@@ -13,5 +13,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Agent AI
     Route::post('/agents/{agent}/run', [\App\Http\Controllers\Api\AgentController::class, 'run']);
     Route::get('/agents/status', [\App\Http\Controllers\Api\AgentController::class, 'status']);
+    Route::get('/agents/latest', [\App\Http\Controllers\Api\AgentController::class, 'latestResults']);
 });
 

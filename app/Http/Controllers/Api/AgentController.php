@@ -42,4 +42,26 @@ class AgentController extends Controller
             'recent_logs' => $recent,
         ]);
     }
+
+    public function latestResults(Request $request)
+    {
+        $after = $request->get('after');
+        
+        $logs = \App\Models\AgentExecutionLog::where('status', 'success')
+            ->when($after, fn($q) => $q->where('created_at', '>', $after))
+            ->orderByDesc('created_at')
+            ->limit(10)
+            ->get();
+
+        $predictions = \App\Models\AgentPredictionHistory::orderByDesc('created_at')->limit(5)->get();
+        $warnings = \App\Models\AgentPeringatanLog::where('is_read', false)->orderByDesc('created_at')->limit(5)->get();
+        $generations = \App\Models\AgentGeneratorHistory::orderByDesc('created_at')->limit(5)->get();
+
+        return response()->json([
+            'logs' => $logs,
+            'predictions' => $predictions,
+            'warnings' => $warnings,
+            'generations' => $generations,
+        ]);
+    }
 }
