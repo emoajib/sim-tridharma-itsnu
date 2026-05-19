@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\RoleSwitchController;
 use App\Http\Controllers\Api\AiptController;
 use App\Http\Controllers\Api\TemplateController;
 use App\Http\Controllers\Api\KnowledgeBaseController;
+use App\Http\Controllers\Api\PrediksiController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -204,6 +205,10 @@ Route::middleware('auth')->group(function () {
     // Generator Dokumen
     Route::get('/generator', [\App\Http\Controllers\Api\GeneratorController::class, 'index'])->name('generator');
     Route::post('/generator/generate', [\App\Http\Controllers\Api\GeneratorController::class, 'generate'])->name('generator.generate');
+
+    // Prediksi Akreditasi
+    Route::get('/prediksi', [PrediksiController::class, 'index'])->name('prediksi');
+    Route::post('/prediksi/run', [PrediksiController::class, 'runAgent'])->name('prediksi.run');
 
     // SINTA Import Routes
     Route::post('/import/sinta/publikasi', [\App\Http\Controllers\Api\SintaImportController::class, 'importPublikasi'])->name('import.sinta.publikasi');

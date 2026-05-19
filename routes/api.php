@@ -9,5 +9,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // RAG
     Route::post('/rag/ask', [\App\Http\Controllers\Api\KnowledgeBaseController::class, 'ask']);
     Route::get('/rag/status', [\App\Http\Controllers\Api\KnowledgeBaseController::class, 'status']);
+
+    // Agent AI
+    Route::post('/agents/{agent}/run', [\App\Http\Controllers\Api\AgentController::class, 'run']);
+    Route::get('/agents/status', [\App\Http\Controllers\Api\AgentController::class, 'status']);
 });
 

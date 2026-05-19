@@ -9,13 +9,13 @@ class AgentGeneratorHistory extends Model
     protected $table = 'agent_generator_history';
 
     protected $fillable = [
-        'prodi_id', 'periode_id', 'jenis_dokumen', 'narasi', 'status'
+        'prodi_id', 'periode_id', 'jenis_dokumen', 'judul', 'file_path', 'status', 'prompt_text', 'hasil_text', 'generated_by'
     ];
 
     protected function casts(): array
     {
         return [
-            'narasi' => 'array',
+            'hasil_text' => 'array',
         ];
     }
 

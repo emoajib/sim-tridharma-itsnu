@@ -98,6 +98,7 @@ export default function Authenticated({
     ];
 
     const aiAgentLinks = [
+        { name: 'Prediksi Akreditasi', route: 'prediksi', icon: '📊' },
         { name: 'Peringatan Dini', route: 'peringatan', icon: '🚨' },
         { name: 'Verifikasi Dokumen', route: 'verifikasi', icon: '✔️' },
         { name: 'Generator Dokumen', route: 'generator', icon: '🤖' },
