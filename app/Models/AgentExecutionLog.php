@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Observers\AgentExecutionLogObserver;
 
 class AgentExecutionLog extends Model
 {
@@ -21,5 +22,11 @@ class AgentExecutionLog extends Model
             'input_data' => 'array',
             'output_data' => 'array',
         ];
+    }
+
+    protected static function boot(): void
+    {
+        parent::boot();
+        self::observe(AgentExecutionLogObserver::class);
     }
 }

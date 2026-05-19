@@ -14,6 +14,11 @@ class DatabaseSeeder extends Seeder
             AccreditationSeeder::class,
             DosenSeeder::class,
             SettingsSeeder::class,
+            KnowledgeBaseCategorySeeder::class,
+            AiptSeeder::class,
+            DocumentSeeder::class,
+            MasterDataSeeder::class,
+            AlumniSeeder::class,
         ]);
     }
 }

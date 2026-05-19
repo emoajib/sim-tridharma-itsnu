@@ -1,9 +1,11 @@
 import asyncio
 import logging
+import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
+from typing import Optional
 
 from config import AGENT_API_PORT
 from rabbitmq import RabbitMQConsumer
@@ -12,6 +14,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelna
 logger = logging.getLogger("main")
 
 consumer: RabbitMQConsumer | None = None
+
+API_KEY = os.getenv("AGENT_API_KEY", "default-secret-key-change-in-production")
 
 
 @asynccontextmanager
@@ -42,17 +46,24 @@ app.add_middleware(
 )
 
 
+async def verify_api_key(x_api_key: Optional[str] = Header(None)):
+    if x_api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid or missing API key")
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok", "agent": "akreditasi-ai"}
 
 
 @app.post("/api/v1/agents/{agent_name}/run")
-async def run_agent(agent_name: str, data: dict):
+async def run_agent(agent_name: str, data: dict, x_api_key: Optional[str] = Header(None)):
+    await verify_api_key(x_api_key)
+    
     from agents import get_agent
     agent = get_agent(agent_name)
     if agent is None:
-        return {"error": f"Agent '{agent_name}' not found"}, 404
+        raise HTTPException(status_code=404, detail=f"Agent '{agent_name}' not found")
     result = agent.execute(data)
     return {"agent": agent_name, "result": result}
 

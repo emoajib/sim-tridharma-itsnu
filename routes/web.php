@@ -45,7 +45,8 @@ Route::get('/', function () {
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', \App\Http\Middleware\PermissionMiddleware::class])->group(function () {
+    
     Route::post('/role/switch', [RoleSwitchController::class, 'switch'])->name('role.switch');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -210,6 +211,15 @@ Route::middleware('auth')->group(function () {
     // Prediksi Akreditasi
     Route::get('/prediksi', [PrediksiController::class, 'index'])->name('prediksi');
     Route::post('/prediksi/run', [PrediksiController::class, 'runAgent'])->name('prediksi.run');
+
+    // Rekomendasi Agent
+    Route::get('/rekomendasi', [\App\Http\Controllers\Api\RekomendasiController::class, 'index'])->name('rekomendasi');
+    Route::post('/rekomendasi/run', [\App\Http\Controllers\Api\RekomendasiController::class, 'run'])->name('rekomendasi.run');
+
+    // Integrasi Agent
+    Route::get('/integrasi', [\App\Http\Controllers\Api\IntegrasiController::class, 'index'])->name('integrasi');
+    Route::post('/integrasi/run', [\App\Http\Controllers\Api\IntegrasiController::class, 'run'])->name('integrasi.run');
+    Route::post('/integrasi/sync', [\App\Http\Controllers\Api\IntegrasiController::class, 'sync'])->name('integrasi.sync');
 
     // SINTA Import Routes
     Route::post('/import/sinta/publikasi', [\App\Http\Controllers\Api\SintaImportController::class, 'importPublikasi'])->name('import.sinta.publikasi');
