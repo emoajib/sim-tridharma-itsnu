@@ -352,6 +352,12 @@ export default function Dashboard({ stats, portofolioStats, bkdStats, recentPend
                     {/* Action Bar / Quick Access */}
                     <div className="mt-8 border-t border-gray-100 pt-8">
                         <div className="flex flex-wrap gap-4">
+                            <button
+                                onClick={() => window.print()}
+                                className="px-6 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
+                            >
+                                Export PDF
+                            </button>
                             <Link href={route('admin.templates.index')} className="px-6 py-2.5 rounded-xl bg-gray-900 text-white text-xs font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-gray-200">Download Template XL</Link>
                             <Link href={route('portofolio.publikasi')} className="px-6 py-2.5 rounded-xl bg-rose-600 text-white text-xs font-black uppercase tracking-widest hover:bg-rose-700 transition-all shadow-lg shadow-rose-200">Import SINTA Massal</Link>
                         </div>
