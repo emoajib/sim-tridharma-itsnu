@@ -30,9 +30,7 @@ class PermissionMiddleware
                 ], 403);
             }
             
-            return response()->view('errors.403', [
-                'message' => 'Anda tidak memiliki izin untuk mengakses halaman ini.'
-            ], 403);
+            abort(403, 'Anda tidak memiliki izin untuk mengakses halaman ini.');
         }
 
         return $next($request);
@@ -42,12 +40,45 @@ class PermissionMiddleware
     {
         $segments = explode('.', $routeName);
         
-        if (count($segments) < 2) {
-            return null;
+        // Handle single segment route names (e.g., 'prediksi', 'dashboard')
+        if (count($segments) === 1) {
+            $module = $segments[0];
+            
+            // Map AI agents to agent-ai module
+            if (in_array($module, ['prediksi', 'peringatan', 'verifikasi', 'generator', 'rekomendasi', 'integrasi'])) {
+                return "agent-ai.view";
+            }
+            
+            // Other single segment routes that don't need permission enforcement
+            if (in_array($module, ['dashboard', 'welcome', 'profile'])) {
+                return null;
+            }
+            
+            return "{$module}.view";
         }
 
-        $action = end($segments);
         $module = $segments[0];
+        $action = end($segments);
+
+        // Map AI agent sub-routes to agent-ai module
+        if (in_array($module, ['prediksi', 'peringatan', 'verifikasi', 'generator', 'rekomendasi', 'integrasi'])) {
+            $module = 'agent-ai';
+        }
+
+        // Map import routes to portofolio module
+        if ($module === 'import') {
+            return "portofolio.create";
+        }
+
+        // Map dokumen actions to upload
+        if ($module === 'dokumen' && in_array($action, ['store', 'create'])) {
+            return "dokumen.upload";
+        }
+
+        // Map ai-resolve action to agent-ai module
+        if ($action === 'ai-resolve') {
+            return "agent-ai.trigger";
+        }
 
         $actionMap = [
             'index' => 'view',
@@ -67,6 +98,8 @@ class PermissionMiddleware
             'latest' => 'view',
             'ask' => 'view',
             'reindex' => 'trigger',
+            'sync' => 'trigger',
+            'ai-resolve' => 'trigger',
         ];
 
         if (isset($actionMap[$action])) {

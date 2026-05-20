@@ -33,15 +33,23 @@ class MasterDataSeeder extends Seeder
             $selectedMk = array_rand(array_flip($mkNames), min($mkCount, count($mkNames)));
 
             foreach ($selectedMk as $index => $mkName) {
-                $mkId = DB::table('m_mata_kuliah')->insertGetId([
-                    'prodi_id' => $prodi->id,
-                    'kode_mk' => $prodi->kode_prodi . str_pad($index + 1, 3, '0', STR_PAD_LEFT),
-                    'nama_mk' => $mkName,
-                    'sks' => rand(2, 4),
-                    'semester' => ($index % 8) + 1,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+                $existingMk = DB::table('m_mata_kuliah')
+                    ->where('kode_mk', $prodi->kode_prodi . str_pad($index + 1, 3, '0', STR_PAD_LEFT))
+                    ->first();
+                
+                if ($existingMk) {
+                    $mkId = $existingMk->id;
+                } else {
+                    $mkId = DB::table('m_mata_kuliah')->insertGetId([
+                        'prodi_id' => $prodi->id,
+                        'kode_mk' => $prodi->kode_prodi . str_pad($index + 1, 3, '0', STR_PAD_LEFT),
+                        'nama_mk' => $mkName,
+                        'sks' => rand(2, 4),
+                        'semester' => ($index % 8) + 1,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
                 $mkData[$prodi->id][] = $mkId;
             }
         }

@@ -19,7 +19,9 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\SetActiveRole::class,
         ]);
 
-        //
+        $middleware->alias([
+            'api.key' => \App\Http\Middleware\ApiKeyMiddleware::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

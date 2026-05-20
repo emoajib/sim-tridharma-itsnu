@@ -3,13 +3,15 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AgentRunRequest;
 use App\Jobs\AgentDispatchJob;
 use App\Models\AgentExecutionLog;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class AgentController extends Controller
 {
-    public function run(string $agent)
+    public function run(string $agent, AgentRunRequest $request)
     {
         $allowed = ['verifikasi', 'prediksi', 'rekomendasi', 'peringatan', 'generator', 'integrasi'];
 
@@ -17,12 +19,34 @@ class AgentController extends Controller
             return response()->json(['error' => 'Invalid agent name'], 400);
         }
 
-        AgentDispatchJob::dispatch($agent, 'run', request()->all());
+        AgentDispatchJob::dispatch($agent, 'run', $request->validated());
 
         return response()->json([
             'message' => "Agent {$agent} dispatched",
             'agent' => $agent,
             'status' => 'queued',
+        ]);
+    }
+
+    public function logInternal(Request $request)
+    {
+        $validated = $request->validate([
+            'agent_name' => 'required|string',
+            'status' => 'required|string',
+            'started_at' => 'required|date',
+            'finished_at' => 'required|date',
+            'duration_ms' => 'required|integer',
+            'input_data' => 'nullable|array',
+            'output_data' => 'nullable|array',
+            'error_message' => 'nullable|string',
+            'triggered_by' => 'nullable|string',
+        ]);
+
+        $log = AgentExecutionLog::create($validated);
+
+        return response()->json([
+            'success' => true,
+            'log_id' => $log->id,
         ]);
     }
 

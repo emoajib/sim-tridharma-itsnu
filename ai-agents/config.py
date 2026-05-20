@@ -13,3 +13,6 @@ RABBITMQ_PASSWORD: str = os.getenv("RABBITMQ_PASSWORD", "guest")
 RABBITMQ_EXCHANGE: str = os.getenv("RABBITMQ_EXCHANGE", "akreditasi")
 RABBITMQ_QUEUE: str = os.getenv("RABBITMQ_QUEUE", "agent_tasks")
 AGENT_API_PORT: int = int(os.getenv("AGENT_API_PORT", "8001"))
+
+LARAVEL_URL: str = os.getenv("LARAVEL_URL", "http://localhost:8000")
+INTERNAL_KEY: str = os.getenv("AI_INTERNAL_KEY", "default-internal-key")

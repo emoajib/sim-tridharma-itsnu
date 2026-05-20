@@ -11,16 +11,21 @@ class IntegrasiController extends Controller
 {
     public function index(Request $request)
     {
-        $prodis = Prodi::with('fakultas')->get();
+        $prodi_list = Prodi::select('id', 'nama_prodi', 'kode_prodi')->get();
 
         $logs = IntegrasiLogSinkron::when($request->sumber, fn($q) => $q->where('sumber', $request->sumber))
             ->when($request->status, fn($q) => $q->where('status', $request->status))
             ->orderBy('waktu_mulai', 'desc')
-            ->paginate(20);
+            ->paginate(20)
+            ->withQueryString();
 
         return inertia('Agent/Integrasi/Index', [
             'logs' => $logs,
-            'prodis' => $prodis,
+            'prodi_list' => $prodi_list,
+            'filters' => [
+                'sumber' => $request->sumber,
+                'status' => $request->status,
+            ],
         ]);
     }
 

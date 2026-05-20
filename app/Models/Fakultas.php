@@ -26,4 +26,17 @@ class Fakultas extends Model
     {
         return $this->hasMany(Prodi::class, 'fakultas_id');
     }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleting(function ($fakultas) {
+            if ($fakultas->isForceDeleting()) {
+                $fakultas->prodis()->forceDelete();
+            } else {
+                $fakultas->prodis()->delete();
+            }
+        });
+    }
 }

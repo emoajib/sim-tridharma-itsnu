@@ -27,6 +27,5 @@ class AgentExecutionLog extends Model
     protected static function boot(): void
     {
         parent::boot();
-        self::observe(AgentExecutionLogObserver::class);
     }
 }

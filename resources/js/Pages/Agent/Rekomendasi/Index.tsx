@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, router, usePage, useForm, useError, useRemember } from '@inertiajs/react';
+import { Head, router, usePage, useForm, useRemember } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import { Spinner, Input, Button, Select, Table, Checkbox, Tag, Badge, Modal } from '@/Components';
 
@@ -9,8 +9,8 @@ interface RekomendasiItem {
     indikator_id: number;
     judul_rekomendasi: string;
     deskripsi: string | null;
-    prioritas: 1 | 2 | 3;
-    status: 'pending' | 'in_progress' | 'completed' | 'rejected';
+    prioritas: string;
+    status: 'baru' | 'pending' | 'in_progress' | 'completed' | 'rejected';
     target_capai: string | null;
     deadline: string | null;
     created_at: string;
@@ -22,6 +22,7 @@ interface RekomendasiItem {
 interface Prodi {
     id: number;
     nama_prodi: string;
+    kode_prodi: string;
 }
 
 interface PaginatedData<T> {
@@ -44,20 +45,25 @@ interface Props {
     };
 }
 
-const statusColors = {
+const statusColors: Record<string, string> = {
+    baru: 'bg-indigo-100 text-indigo-800',
     pending: 'bg-yellow-100 text-yellow-800',
     in_progress: 'bg-blue-100 text-blue-800',
     completed: 'bg-green-100 text-green-800',
     rejected: 'bg-red-100 text-red-800',
 };
 
-const prioritasColors = {
-    1: 'bg-red-100 text-red-800',
-    2: 'bg-orange-100 text-orange-800',
-    3: 'bg-yellow-100 text-yellow-800',
+const prioritasColors: Record<string, string> = {
+    'Tinggi': 'bg-red-100 text-red-800',
+    'Sedang': 'bg-orange-100 text-orange-800',
+    'Rendah': 'bg-yellow-100 text-yellow-800',
+    '1': 'bg-red-100 text-red-800',
+    '2': 'bg-orange-100 text-orange-800',
+    '3': 'bg-yellow-100 text-yellow-800',
 };
 
-const statusLabels = {
+const statusLabels: Record<string, string> = {
+    baru: 'Baru',
     pending: 'Menunggu',
     in_progress: 'Sedang Diproses',
     completed: 'Selesai',
@@ -71,229 +77,209 @@ export default function Index({ rekomendasis, prodi_list, filters }: Props) {
     const { data: form, setData, post, processing, errors, reset } = useForm({
         prodi_id: '',
     });
-    const { data: remember } = useRemember('filters-rekomendasi', {
-        prodi_id: '',
-        status: '',
-    });
-    const flashSuccess = (usePage().props as any).flash?.success;
-    const flashError = (usePage().props as any).flash?.error;
+
+    const flash: any = usePage().props.flash || {};
 
     useEffect(() => {
-        if (remember.prodi_id !== undefined) setSelectedProdi(remember.prodi_id);
-        if (remember.status !== undefined) setSelectedStatus(remember.status);
-        setData('prodi_id', remember.prodi_id || '');
-    }, [remember]);
-
-    useEffect(() => {
-        router.get(router.route('rekomendasi'), {
-            prodi_id: selectedProdi === '' ? null : Number(selectedProdi),
-            status: selectedStatus === '' ? null : selectedStatus,
-        }, {
-            preserveState: true,
-            onSuccess: () => {
-                setData('prodi_id', remember.prodi_id || '');
-            }
-        });
+        const timer = setTimeout(() => {
+            router.get(route('rekomendasi'), {
+                prodi_id: selectedProdi === '' ? null : Number(selectedProdi),
+                status: selectedStatus === '' ? null : selectedStatus,
+            }, {
+                preserveState: true,
+                replace: true
+            });
+        }, 500);
+        return () => clearTimeout(timer);
     }, [selectedProdi, selectedStatus]);
 
     const handleRun = () => {
         post(route('rekomendasi.run'), {
             onSuccess: () => {
-                setShowRunModal(false);
+                setShowRunModal(true);
                 reset();
             },
-            onError: () => {
-                // Error handled by form
-            }
         });
-        setShowRunModal(true);
     };
 
     return (
-        <AuthenticatedLayout title="Agent Rekomendasi">
-            <Head>
-                <title>Agent Rekomendasi - SIM Tridharma ITSNU</title>
-            </Head>
+        <AuthenticatedLayout header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Agent Rekomendasi AI</h2>}>
+            <Head title="Agent Rekomendasi" />
 
-            {flashSuccess && (
-                <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded">
-                    {flashSuccess}
-                </div>
-            )}
-            {flashError && (
-                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded">
-                    {flashError}
-                </div>
-            )}
-
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">Agent Rekomendasi</h1>
-                <div className="flex space-x-3">
-                    <Button 
-                        variant="primary" 
-                        onClick={handleRun}
-                        disabled={processing}
-                    >
-                        {processing ? 'Sedang Menjalankan...' : 'Jalankan Agent Rekomendasi'}
-                    </Button>
-                </div>
-            </div>
-
-            <div className="space-y-6">
-                <div className="bg-white p-6 rounded-lg shadow">
-                    <div className="flex flex-wrap items-center gap-4 mb-4">
-                        <div className="flex-1 min-w-[200px]">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Program Studi</label>
-                            <Select
-                                value={selectedProdi}
-                                onValueChange={setSelectedProdi}
-                                options={[
-                                    { label: 'Semua Program Studi', value: '' },
-                                    ...prodi_list.map(p => ({ 
-                                        label: `${p.kode_prodi} - ${p.nama_prodi}`, 
-                                        value: p.id 
-                                    }))
-                                ]}
-                                placeholder="Pilih program studi..."
-                            />
+            <div className="py-12">
+                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                    {flash.success && (
+                        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded text-green-700 text-sm font-medium">
+                            {flash.success}
                         </div>
-                        <div className="flex-1 min-w-[200px]">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                            <Select
-                                value={selectedStatus}
-                                onValueChange={setSelectedStatus}
-                                options={[
-                                    { label: 'Semua Status', value: '' },
-                                    { label: 'Menunggu', value: 'pending' },
-                                    { label: 'Sedang Diproses', value: 'in_progress' },
-                                    { label: 'Selesai', value: 'completed' },
-                                    { label: 'Ditolak', value: 'rejected' },
-                                ]}
-                                placeholder="Pilih status..."
-                            />
+                    )}
+
+                    {flash.error && (
+                        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded text-red-700 text-sm font-medium">
+                            {flash.error}
+                        </div>
+                    )}
+
+                    <div className="flex justify-between items-center mb-6">
+                        <h1 className="text-2xl font-bold text-gray-900">Rekomendasi Strategis AI</h1>
+                        <div className="flex space-x-3">
+                            <Button 
+                                variant="primary" 
+                                onClick={handleRun}
+                                disabled={processing}
+                            >
+                                {processing ? <><Spinner className="mr-2 h-4 w-4" /> Memproses...</> : 'Jalankan Agent Rekomendasi'}
+                            </Button>
                         </div>
                     </div>
-                </div>
 
-                <Table>
-                    <thead>
-                        <tr className="border-b">
-                            <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">No</th>
-                            <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">Program Studi</th>
-                            <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">Indikator</th>
-                            <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">Judul Rekomendasi</th>
-                            <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">Prioritas</th>
-                            <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">Status</th>
-                            <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">Target Capai</th>
-                            <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">Deadline</th>
-                            <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">Tanggal Dibuat</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {rekomendasis.data.length === 0 ? (
-                            <tr>
-                                <td className="px-6 py-4 text-center text-gray-500" colSpan="9">
-                                    Belum ada rekomendasi yang dihasilkan.
-                                </td>
-                            </tr>
-                        ) : (
-                            rekomendasis.data.map((item, index) => (
-                                <tr key={item.id} className="border-t">
-                                    <td className="px-6 py-4 text-sm text-gray-600">
-                                        {rekomendasis.from + index}
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-gray-600">
-                                        {item.prodi?.kode_prodi} - {item.prodi?.nama_prodi}
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-gray-600">
-                                        {item.indikator?.kode_indikator} - {item.indikator?.nama_indikator}
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-gray-600">
-                                        <div className="max-w-[300px]">
-                                            {item.judul_rekomendasi}
-                                            {item.deskripsi && (
-                                                <div className="mt-1 text-xs text-gray-500">
-                                                    {item.deskripsi}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-gray-600">
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${prioritasColors[item.prioritas]}`}>
-                                            Prioritas {item.prioritas}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-gray-600">
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[item.status]}`}>
-                                            {statusLabels[item.status]}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-gray-600">
-                                        {item.target_capai || '-'}
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-gray-600">
-                                        {item.deadline || '-'}
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-gray-600">
-                                        {new Date(item.created_at).toLocaleDateString('id-ID')}
-                                    </td>
+                    <div className="space-y-6">
+                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+                            <div className="flex flex-wrap items-center gap-4">
+                                <div className="flex-1 min-w-[200px]">
+                                    <label className="block text-xs font-black uppercase tracking-widest text-gray-500 mb-2">Filter Program Studi</label>
+                                    <Select
+                                        value={selectedProdi}
+                                        onValueChange={setSelectedProdi}
+                                        options={[
+                                            { label: 'Semua Program Studi', value: '' },
+                                            ...prodi_list.map(p => ({ 
+                                                label: `${p.kode_prodi} - ${p.nama_prodi}`, 
+                                                value: p.id 
+                                            }))
+                                        ]}
+                                    />
+                                </div>
+                                <div className="flex-1 min-w-[200px]">
+                                    <label className="block text-xs font-black uppercase tracking-widest text-gray-500 mb-2">Filter Status</label>
+                                    <Select
+                                        value={selectedStatus}
+                                        onValueChange={setSelectedStatus}
+                                        options={[
+                                            { label: 'Semua Status', value: '' },
+                                            { label: 'Baru', value: 'baru' },
+                                            { label: 'Menunggu', value: 'pending' },
+                                            { label: 'Sedang Diproses', value: 'in_progress' },
+                                            { label: 'Selesai', value: 'completed' },
+                                            { label: 'Ditolak', value: 'rejected' },
+                                        ]}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <Table>
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="text-left px-6 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500">No</th>
+                                    <th className="text-left px-6 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500">Program Studi</th>
+                                    <th className="text-left px-6 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500">Indikator</th>
+                                    <th className="text-left px-6 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500">Rekomendasi</th>
+                                    <th className="text-left px-6 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500">Prioritas</th>
+                                    <th className="text-left px-6 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500">Status</th>
+                                    <th className="text-left px-6 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500">Tanggal</th>
                                 </tr>
-                            ))
+                            </thead>
+                            <tbody className="divide-y divide-gray-200 bg-white">
+                                {rekomendasis.data.length === 0 ? (
+                                    <tr>
+                                        <td className="px-6 py-12 text-center text-gray-500 text-sm" colSpan={7}>
+                                            Belum ada rekomendasi yang dihasilkan. Klik "Jalankan Agent" untuk memulai analisis.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    rekomendasis.data.map((item, index) => (
+                                        <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                                            <td className="px-6 py-4 text-sm text-gray-600 font-medium">
+                                                {rekomendasis.from + index}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-900 font-bold">
+                                                {item.prodi?.nama_prodi}
+                                                <div className="text-[10px] text-gray-400 font-black">{item.prodi?.kode_prodi}</div>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-600">
+                                                <Badge className="bg-gray-100 text-gray-600">{item.indikator?.kode_indikator}</Badge>
+                                                <div className="mt-1 text-xs truncate max-w-[150px]">{item.indikator?.nama_indikator}</div>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-700">
+                                                <div className="max-w-[400px]">
+                                                    <div className="font-bold mb-1">{item.judul_rekomendasi}</div>
+                                                    {item.deskripsi && (
+                                                        <div className="text-xs text-gray-500 leading-relaxed italic">
+                                                            "{item.deskripsi}"
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm">
+                                                <Badge className={prioritasColors[item.prioritas] || 'bg-gray-100 text-gray-800'}>
+                                                    {item.prioritas}
+                                                </Badge>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm">
+                                                <Badge className={statusColors[item.status] || 'bg-gray-100 text-gray-800'}>
+                                                    {statusLabels[item.status] || item.status}
+                                                </Badge>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-500 tabular-nums font-medium">
+                                                {new Date(item.created_at).toLocaleDateString('id-ID')}
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </Table>
+
+                        {rekomendasis.last_page > 1 && (
+                            <div className="flex items-center justify-between pt-4">
+                                <p className="text-sm text-gray-500 font-medium">
+                                    Menampilkan <span className="text-gray-900">{rekomendasis.from} - {rekomendasis.to}</span> dari <span className="text-gray-900 font-bold">{rekomendasis.total}</span> rekomendasi
+                                </p>
+                                <div className="flex space-x-1">
+                                    {rekomendasis.links.map((link, i) => (
+                                        <Button 
+                                            key={i}
+                                            variant={link.active ? 'primary' : 'secondary'}
+                                            size="sm"
+                                            onClick={() => link.url && router.visit(link.url)}
+                                            disabled={!link.url}
+                                            className="min-w-[40px]"
+                                        >
+                                            <span dangerouslySetInnerHTML={{ __html: link.label }} />
+                                        </Button>
+                                    ))}
+                                </div>
+                            </div>
                         )}
-                    </tbody>
-                </Table>
-
-                {rekomendasis.links.length > 0 && (
-                    <div className="flex items-center justify-between pt-4">
-                        <p className="text-sm text-gray-500">
-                            Menampilkan {rekomendasis.from} - {rekomendasis.to} dari {rekomendasis.total} data
-                        </p>
-                        <div className="flex space-x-1">
-                            {rekomendasis.links.map((link, i) => (
-                                <Button 
-                                    key={i}
-                                    variant={link.active ? 'secondary' : 'outline'}
-                                    size="sm"
-                                    onClick={() => {
-                                        if (link.url) {
-                                            router.visit(link.url);
-                                        }
-                                    }}
-                                    disabled={!link.url}
-                                >
-                                    {link.label}
-                                </Button>
-                            ))}
-                        </div>
-                    </div>
-                )}
-            </div>
-        </AuthenticatedLayout>
-
-        <Modal show={showRunModal} onClose={() => setShowRunModal(false)}>
-            <div className="space-y-4">
-                <div className="text-center">
-                    <div className="flex items-center justify-center h-12 w-12 bg-blue-100 rounded-full mb-3">
-                        <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                                d="M12 8v4m0 0h4m-4-4h4m-2-3a4.5 4.5 0 01-6.364 3.636l-1.414 1.414A5.5 5.5 0 0016.5 9.5h1.5a4.5 4.5 0 015.364 2.364l1.414-1.414A4.5 4.5 0 0014 6.5h-1.5a4.5 4.5 0 01-6.364-3.636z" />
-                        </svg>
-                    </div>
-                    <h3 className="font-semibold text-gray-800 mb-2">Agent Rekomendasi Sedang Berjalan</h3>
-                    <p className="text-sm text-gray-500">
-                        Proses pencarian indikator yang perlu perbaikan dan pembuatan rekomendasi sedang berjalan.
-                        Silakan tunggu beberapa saat hingga proses selesai.
-                    </p>
-                    <div className="mt-4">
-                        <Button 
-                            variant="outline" 
-                            onClick={() => setShowRunModal(false)}
-                        >
-                            Tutup
-                        </Button>
                     </div>
                 </div>
             </div>
-        </Modal>
+
+            <Modal show={showRunModal} onClose={() => setShowRunModal(false)}>
+                <div className="p-6">
+                    <div className="text-center">
+                        <div className="flex items-center justify-center h-16 w-16 bg-indigo-100 rounded-full mb-4 mx-auto">
+                            <svg className="h-8 w-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">Agent AI Sedang Bekerja</h3>
+                        <p className="text-sm text-gray-500 leading-relaxed mb-6">
+                            Agent Rekomendasi sedang menganalisis data indikator akreditasi untuk Program Studi pilihan Anda. 
+                            Rekomendasi strategis akan muncul di daftar setelah proses selesai.
+                        </p>
+                        <div className="flex justify-center">
+                            <Button 
+                                variant="primary" 
+                                onClick={() => setShowRunModal(false)}
+                                className="w-full"
+                            >
+                                Mengerti, Saya Akan Menunggu
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </Modal>
+        </AuthenticatedLayout>
     );
 }

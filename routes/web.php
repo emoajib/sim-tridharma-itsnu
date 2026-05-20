@@ -138,12 +138,19 @@ Route::middleware(['auth', \App\Http\Middleware\PermissionMiddleware::class])->g
     Route::get('/spmi/audit', [\App\Http\Controllers\Api\AuditMutuController::class, 'index'])->name('spmi.audit');
     Route::post('/spmi/audit', [\App\Http\Controllers\Api\AuditMutuController::class, 'store'])->name('spmi.audit.store');
     Route::put('/spmi/audit/{auditMutu}', [\App\Http\Controllers\Api\AuditMutuController::class, 'update'])->name('spmi.audit.update');
+    Route::post('/spmi/audit/{auditMutu}/ai-resolve', [\App\Http\Controllers\Api\AuditMutuController::class, 'aiResolve'])->name('spmi.audit.ai-resolve');
     Route::delete('/spmi/audit/{auditMutu}', [\App\Http\Controllers\Api\AuditMutuController::class, 'destroy'])->name('spmi.audit.destroy');
 
     Route::get('/spmi/risk', [\App\Http\Controllers\Api\RiskRegisterController::class, 'index'])->name('spmi.risk');
-    Route::post('/spmi/risk', [\App\Http\Controllers\Api\RiskRegisterController::class, 'store'])->name('spmi.risk.store');
-    Route::put('/spmi/risk/{riskRegister}', [\App\Http\Controllers\Api\RiskRegisterController::class, 'update'])->name('spmi.risk.update');
-    Route::delete('/spmi/risk/{riskRegister}', [\App\Http\Controllers\Api\RiskRegisterController::class, 'destroy'])->name('spmi.risk.destroy');
+    Route::post('/spmi/risk', [\App\Http\Controllers\Api\RiskRegisterController::class, 'store'])
+        ->name('spmi.risk.store')
+        ->middleware('throttle:30,1');
+    Route::put('/spmi/risk/{riskRegister}', [\App\Http\Controllers\Api\RiskRegisterController::class, 'update'])
+        ->name('spmi.risk.update')
+        ->middleware('throttle:30,1');
+    Route::delete('/spmi/risk/{riskRegister}', [\App\Http\Controllers\Api\RiskRegisterController::class, 'destroy'])
+        ->name('spmi.risk.destroy')
+        ->middleware('throttle:10,1');
 
     // Kurikulum Mapping + RPS Routes
     Route::get('/kurikulum/mapping', [\App\Http\Controllers\Api\KurikulumMappingController::class, 'index'])->name('kurikulum.mapping');

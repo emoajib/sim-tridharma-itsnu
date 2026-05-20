@@ -16,3 +16,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/agents/latest', [\App\Http\Controllers\Api\AgentController::class, 'latestResults']);
 });
 
+// Internal API for AI Microservice (FastAPI)
+Route::post('/internal/agents/log', [\App\Http\Controllers\Api\AgentController::class, 'logInternal'])
+    ->middleware(['auth:sanctum', 'throttle:60,1']);

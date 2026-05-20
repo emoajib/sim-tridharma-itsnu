@@ -1,9 +1,10 @@
 import asyncio
 import logging
 import os
+import threading
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Header
+from fastapi import FastAPI, HTTPException, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 
@@ -18,13 +19,23 @@ consumer: RabbitMQConsumer | None = None
 API_KEY = os.getenv("AGENT_API_KEY", "default-secret-key-change-in-production")
 
 
+async def verify_api_key(x_api_key: Optional[str] = Header(None)):
+    if not x_api_key or x_api_key != API_KEY:
+        logger.warning(f"Unauthorized access attempt with key: {x_api_key}")
+        raise HTTPException(status_code=401, detail="Invalid or missing API key")
+    return x_api_key
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global consumer
     logger.info("Starting AI Agent microservice...")
     consumer = RabbitMQConsumer()
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, consumer.start_consuming)
+    
+    # Run RabbitMQ consumer in a separate thread
+    thread = threading.Thread(target=consumer.start_consuming, daemon=True)
+    thread.start()
+    
     yield
     logger.info("Shutting down AI Agent microservice...")
     if consumer:
@@ -39,16 +50,11 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8000", "http://localhost:5173"],
+    allow_origins=["*"], # In production, restrict this
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-async def verify_api_key(x_api_key: Optional[str] = Header(None)):
-    if x_api_key != API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid or missing API key")
 
 
 @app.get("/health")
@@ -56,14 +62,14 @@ async def health():
     return {"status": "ok", "agent": "akreditasi-ai"}
 
 
-@app.post("/api/v1/agents/{agent_name}/run")
-async def run_agent(agent_name: str, data: dict, x_api_key: Optional[str] = Header(None)):
-    await verify_api_key(x_api_key)
-    
+@app.post("/api/v1/agents/{agent_name}/run", dependencies=[Depends(verify_api_key)])
+async def run_agent(agent_name: str, data: dict):
     from agents import get_agent
     agent = get_agent(agent_name)
     if agent is None:
         raise HTTPException(status_code=404, detail=f"Agent '{agent_name}' not found")
+    
+    # Run synchronously for the HTTP API
     result = agent.execute(data)
     return {"agent": agent_name, "result": result}
 

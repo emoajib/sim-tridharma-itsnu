@@ -78,6 +78,7 @@ interface Props {
     selectedInstrumenId: number;
     peringatanStats?: PeringatanStats;
     latestPrediction?: LatestPrediction | null;
+    kriteriaStats: any[];
     prodiAccreditation: ProdiAccreditation[];
     institutionAccreditation: InstitutionAccreditation | null;
     filters: { periode_id?: string; instrumen_id?: string };
@@ -104,7 +105,7 @@ function StatCard({ label, value, color, href, isTheme3 }: { label: string; valu
     return href ? <Link href={href} className="block transition-transform hover:-translate-y-1">{card}</Link> : card;
 }
 
-export default function Dashboard({ stats, portofolioStats, bkdStats, recentPendidikan, recentPenelitian, periode_list, selectedPeriode, lembaga_list, selectedInstrumenId, peringatanStats, latestPrediction, prodiAccreditation, institutionAccreditation, filters }: Props) {
+export default function Dashboard({ stats, portofolioStats, bkdStats, recentPendidikan, recentPenelitian, periode_list, selectedPeriode, lembaga_list, selectedInstrumenId, peringatanStats, latestPrediction, kriteriaStats, prodiAccreditation, institutionAccreditation, filters }: Props) {
     const { props } = usePage();
     const appSettings = props.appSettings as any;
     const isTheme3 = appSettings?.theme_mode === 'theme3';
@@ -324,7 +325,7 @@ export default function Dashboard({ stats, portofolioStats, bkdStats, recentPend
                             <div className="lg:col-span-5">
                                 <div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100 h-full flex flex-col items-center justify-center">
                                     <RadarChart 
-                                        data={[]} 
+                                        data={kriteriaStats} 
                                         title="Capaian Kriteria (9 Kriteria / 4 Aspek)" 
                                         showTarget={true}
                                         onSelectKriteria={handleSelectKriteria}

@@ -34,8 +34,11 @@ class PenelitianController extends Controller
             'dosen_id' => 'required|exists:m_dosen,id',
             'prodi_id' => 'required|exists:m_prodi,id',
             'periode_id' => 'required|exists:m_periode_akademik,id',
-            'judul_penelitian' => 'required',
-            'jenis_penelitian' => 'required',
+            'judul_penelitian' => 'required|string',
+            'jenis_penelitian' => 'required|string',
+            'sumber_dana' => 'nullable|string',
+            'jumlah_dana' => 'nullable|numeric|min:0',
+            'tahun_pelaksanaan' => 'required|string|size:4',
         ]);
 
         Penelitian::create($validated);

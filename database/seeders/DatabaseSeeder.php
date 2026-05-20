@@ -19,6 +19,10 @@ class DatabaseSeeder extends Seeder
             DocumentSeeder::class,
             MasterDataSeeder::class,
             AlumniSeeder::class,
+            MahasiswaSeeder::class,
+            AkreditasiSeeder::class,
+            AgentHistorySeeder::class,
+            TransaksiPortofolioSeeder::class,
         ]);
     }
 }

@@ -15,6 +15,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        \App\Models\AgentExecutionLog::observe(\App\Observers\AgentExecutionLogObserver::class);
+
         try {
             $settings = [
                 'layout_type' => Setting::get('layout_type', 'navbar'),

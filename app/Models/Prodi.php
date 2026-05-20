@@ -12,7 +12,7 @@ class Prodi extends Model
     protected $table = 'm_prodi';
 
     protected $fillable = [
-        'kode_prodi', 'nama_prodi', 'fakultas_id', 'jenjang',
+        'kode_prodi', 'nama_prodi', 'fakultas_id', 'lembaga_akreditasi_id', 'jenjang',
         'akreditasi', 'sk_akreditasi', 'tanggal_kadaluarsa', 'is_active'
     ];
 
@@ -37,5 +37,37 @@ class Prodi extends Model
     public function dosens()
     {
         return $this->hasMany(Dosen::class, 'prodi_id');
+    }
+
+    public function mahasiswas()
+    {
+        return $this->hasMany(Mahasiswa::class, 'prodi_id');
+    }
+
+    public function mataKuliahs()
+    {
+        return $this->hasMany(MataKuliah::class, 'prodi_id');
+    }
+
+    public function kurikulums()
+    {
+        return $this->hasMany(Kurikulum::class, 'prodi_id');
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleting(function ($prodi) {
+            $relationMethods = ['dosens', 'mahasiswas', 'mataKuliahs', 'kurikulums'];
+            
+            foreach ($relationMethods as $method) {
+                if ($prodi->isForceDeleting()) {
+                    $prodi->{$method}()->forceDelete();
+                } else {
+                    $prodi->{$method}()->delete();
+                }
+            }
+        });
     }
 }

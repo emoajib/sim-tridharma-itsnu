@@ -33,10 +33,11 @@ class PublikasiController extends Controller
         $validated = $request->validate([
             'dosen_id' => 'required|exists:m_dosen,id',
             'prodi_id' => 'required|exists:m_prodi,id',
-            'periode_id' => 'required|exists:m_periode_akademik,id',
-            'judul_publikasi' => 'required',
-            'jenis_publikasi' => 'required',
-            'tingkat' => 'required',
+            'periode_id' => 'nullable|exists:m_periode_akademik,id',
+            'judul_publikasi' => 'required|string',
+            'jenis_publikasi' => 'required|string',
+            'tingkat' => 'required|string',
+            'tahun' => 'required|string|size:4',
         ]);
 
         Publikasi::create($validated);

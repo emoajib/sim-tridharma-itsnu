@@ -9,7 +9,7 @@ class AgentExecutionLogObserver
 {
     public function created(AgentExecutionLog $log): void
     {
-        if (in_array($log->status, ['success', 'failed'])) {
+        if (in_array($log->status, ['success', 'failed', 'warning'])) {
             event(new AgentCompleted(
                 agent: $log->agent_name,
                 status: $log->status,

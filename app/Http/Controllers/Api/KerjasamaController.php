@@ -34,7 +34,7 @@ class KerjasamaController extends Controller
             'jenis_kerjasama' => 'required|string|max:50',
             'nomor_mou' => 'required|string|max:100',
             'tanggal_mulai' => 'required|date',
-            'tanggal_selesai' => 'required|date',
+            'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
             'status' => 'nullable|string|max:30',
             'is_active' => 'nullable|boolean',
         ]);

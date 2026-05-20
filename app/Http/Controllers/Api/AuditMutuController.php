@@ -66,6 +66,30 @@ class AuditMutuController extends Controller
         return redirect()->back()->with('success', 'Audit mutu berhasil diperbarui.');
     }
 
+    public function aiResolve(AuditMutu $auditMutu)
+    {
+        // In a real scenario, this would call the AI Agent service
+        // For now, we generate a smart recommendation based on keywords in 'temuan'
+        
+        $temuan = strtolower($auditMutu->temuan);
+        $saran = "Berdasarkan analisis AI: ";
+        
+        if (str_contains($temuan, 'kurikulum') || str_contains($temuan, 'rps')) {
+            $saran .= "Lakukan revisi RPS dan pemutakhiran kurikulum sesuai standar OBE. Koordinasikan dengan KBK untuk pemetaan CPL yang lebih akurat.";
+        } elseif (str_contains($temuan, 'sdm') || str_contains($temuan, 'dosen')) {
+            $saran .= "Tingkatkan rasio dosen dan mahasiswa melalui rekrutmen atau tugas belajar. Dorong dosen untuk meningkatkan sertifikasi kompetensi industri.";
+        } elseif (str_contains($temuan, 'sarana') || str_contains($temuan, 'fasilitas')) {
+            $saran .= "Segera ajukan pengadaan inventaris pendukung laboratorium dan perbaikan fasilitas ruang kelas untuk mendukung kenyamanan belajar.";
+        } else {
+            $saran .= "Lakukan koordinasi dengan unit terkait untuk menindaklanjuti temuan ini sesuai dengan standar SPMI yang berlaku. Buat timeline perbaikan dalam 3 bulan kedepan.";
+        }
+
+        return response()->json([
+            'success' => true,
+            'suggestion' => $saran,
+        ]);
+    }
+
     public function destroy(AuditMutu $auditMutu)
     {
         $auditMutu->delete();

@@ -29,7 +29,7 @@ class PrediksiAgent(BaseAgent):
             # Fetch retrospective data (TS-2 to TS) for LAMEMBA 2.0 compliance
             rows = db.execute(
                 text("""
-                    SELECT pi.periode_id, pi.skor_tercapai, i.bobot, i.kriteria
+                    SELECT pi.periode_id, pi.nilai, i.bobot, i.kriteria
                     FROM trx_pemenuhan_indikator pi
                     JOIN m_indikator_akreditasi i ON i.id = pi.indikator_id
                     WHERE pi.prodi_id = :prodi_id 
@@ -40,10 +40,12 @@ class PrediksiAgent(BaseAgent):
             ).fetchall()
 
             if not rows:
-                return {
+                result = {
                     "status": "warning",
                     "message": "Data indikator tidak ditemukan untuk prodi ini.",
                 }
+                self.log_execution(self.name, "system", data, result, status="warning")
+                return result
 
             # Group by periode to calculate trend
             period_scores = {}
@@ -51,7 +53,7 @@ class PrediksiAgent(BaseAgent):
                 p_id = r.periode_id
                 if p_id not in period_scores:
                     period_scores[p_id] = {'skor': 0, 'bobot': 0}
-                period_scores[p_id]['skor'] += r.skor_tercapai * r.bobot
+                period_scores[p_id]['skor'] += float(r.nilai) * r.bobot
                 period_scores[p_id]['bobot'] += r.bobot
 
             # Calculate historical scores

@@ -39,8 +39,10 @@ class KegiatanPendidikanController extends Controller
             'dosen_id' => 'required|exists:m_dosen,id',
             'prodi_id' => 'required|exists:m_prodi,id',
             'periode_id' => 'required|exists:m_periode_akademik,id',
-            'nama_kegiatan' => 'required',
-            'jenis_kegiatan' => 'required',
+            'nama_kegiatan' => 'required|string',
+            'jenis_kegiatan' => 'required|string',
+            'sks' => 'required|integer|min:1|max:12',
+            'mata_kuliah_id' => 'nullable|exists:m_mata_kuliah,id',
         ]);
 
         KegiatanPendidikan::create($validated);

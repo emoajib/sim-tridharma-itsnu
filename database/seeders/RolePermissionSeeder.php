@@ -28,6 +28,7 @@ class RolePermissionSeeder extends Seeder
             'agent-ai' => ['view', 'trigger', 'configure'],
             'laporan' => ['view', 'export', 'generate'],
             'users' => ['view', 'create', 'edit', 'delete'],
+            'admin' => ['view', 'create', 'edit', 'delete', 'upload'],
         ];
 
         foreach ($permissionsByModule as $module => $actions) {

@@ -62,15 +62,17 @@ class AkreditasiSeeder extends Seeder
                 }
 
                 $skorAkhir = $count > 0 ? round($totalSkor / ($count / 100), 2) : 0;
-                $predikat = $skorAkhir >= 85 ? 'Unggul' : ($skorAkhir >= 70 ? 'Baik Sekali' : ($skorAkhir >= 50 ? 'Baik' : 'Tidak Terakreditasi'));
 
                 DB::table('trx_skor_akreditasi')->insert([
                     'prodi_id' => $prodi->id,
                     'periode_id' => $periode->id,
                     'skor_total' => $skorAkhir,
-                    'skor_simulasi' => $skorAkhir + rand(-5, 5),
-                    'predikat' => $predikat,
-                    'lembaga_akreditasi' => 'BAN-PT',
+                    'skor_prediksi' => $skorAkhir + rand(-5, 5),
+                    'probabilitas_unggul' => rand(0, 100) / 100,
+                    'probabilitas_baik_sekali' => rand(0, 100) / 100,
+                    'probabilitas_baik' => rand(0, 100) / 100,
+                    'sumber_data' => 'seeder',
+                    'is_final' => true,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -79,20 +81,22 @@ class AkreditasiSeeder extends Seeder
                     DB::table('trx_audit_mutu')->insert([
                         'prodi_id' => $prodi->id,
                         'periode_id' => $periode->id,
-                        'temuan' => 'Temuan Audit #' . ($i + 1) . ': ' . Str::random(50),
-                        'kategori_temuan' => ['Ketidaksesuaian Minor', 'Ketidaksesuaian Major', 'Observasi'][rand(0, 2)],
-                        'rekomendasi' => 'Rekomendasi perbaikan untuk temuan #' . ($i + 1),
-                        'status' => ['Open', 'In Progress', 'Closed'][rand(0, 2)],
+                        'judul_audit' => 'Audit Mutu Internal Semester #' . ($i + 1),
                         'tanggal_audit' => now()->subDays(rand(1, 60)),
+                        'auditor' => 'Auditor #' . rand(1, 5),
+                        'temuan' => 'Temuan Audit #' . ($i + 1) . ': ' . Str::random(50),
+                        'rekomendasi' => 'Rekomendasi perbaikan untuk temuan #' . ($i + 1),
+                        'status' => ['open', 'closed'][rand(0, 1)],
+                        'tindak_lanjut' => 'Rencana tindak lanjut #' . ($i + 1),
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
                 }
 
                 for ($i = 0; $i < rand(3, 6); $i++) {
-                    $dampak = rand(1, 5);
-                    $probabilitas = rand(1, 5);
-                    $tingkatRisiko = $dampak * $probabilitas;
+                    $dampak = (string)rand(1, 5);
+                    $probabilitas = (string)rand(1, 5);
+                    $tingkatRisiko = (int)$dampak * (int)$probabilitas;
 
                     DB::table('trx_risk_register')->insert([
                         'prodi_id' => $prodi->id,
@@ -101,9 +105,10 @@ class AkreditasiSeeder extends Seeder
                         'kategori' => ['Akademik', 'Keuangan', 'SDM', 'Sarana', 'Mutu'][rand(0, 4)],
                         'dampak' => $dampak,
                         'probabilitas' => $probabilitas,
-                        'tingkat_risiko' => $tingkatRisiko,
+                        'skor_risiko' => (string)$tingkatRisiko,
                         'mitigasi' => 'Rencana mitigasi untuk risiko #' . ($i + 1),
-                        'status_risiko' => ['Teridentifikasi', 'Dalam Mitigasi', 'Terealisasi'][rand(0, 2)],
+                        'status' => ['open', 'closed'][rand(0, 1)],
+                        'penanggung_jawab' => 'PIC #' . rand(1, 5),
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);

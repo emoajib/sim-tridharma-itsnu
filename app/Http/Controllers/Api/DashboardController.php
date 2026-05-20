@@ -122,6 +122,24 @@ class DashboardController extends Controller
         }
 
         $latestPrediction = AgentPredictionHistory::latest()->first();
+        
+        // --- Radar Chart Data Calculation ---
+        $kriteriaStats = DB::table('trx_pemenuhan_indikator as pi')
+            ->join('m_indikator_akreditasi as i', 'i.id', '=', 'pi.indikator_id')
+            ->join('m_instrumen_akreditasi as ins', 'ins.id', '=', 'i.instrumen_id')
+            ->where('ins.lembaga_id', $instrumenId)
+            ->select('i.kriteria as kode', DB::raw('AVG(pi.nilai) as skor'))
+            ->when($periodeId, fn($q) => $q->where('pi.periode_id', $periodeId))
+            ->groupBy('i.kriteria')
+            ->orderBy('i.kriteria')
+            ->get()
+            ->map(fn($item) => [
+                'kode' => $item->kode,
+                'nama' => 'Kriteria ' . $item->kode,
+                'skor' => round((float)$item->skor, 2),
+                'target' => 100,
+            ]);
+
         $periode_list = PeriodeAkademik::select('id', 'nama_periode')->get();
         $selectedPeriode = $periodeId ? PeriodeAkademik::find($periodeId) : null;
         $lembaga_list = LembagaAkreditasi::where('is_active', true)->get();
@@ -143,6 +161,7 @@ class DashboardController extends Controller
             'dashboardDefaultTab' => $defaultTab,
             'peringatanStats' => $peringatanStats,
             'latestPrediction' => $latestPrediction,
+            'kriteriaStats' => $kriteriaStats,
             'prodiAccreditation' => $prodiAccreditation,
             'institutionAccreditation' => $institutionAccreditation,
         ]);

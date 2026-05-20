@@ -102,6 +102,8 @@ export default function Authenticated({
         { name: 'Peringatan Dini', route: 'peringatan', icon: '🚨' },
         { name: 'Verifikasi Dokumen', route: 'verifikasi', icon: '✔️' },
         { name: 'Generator Dokumen', route: 'generator', icon: '🤖' },
+        { name: 'Rekomendasi Strategis', route: 'rekomendasi', icon: '💡' },
+        { name: 'Integrasi Data', route: 'integrasi', icon: '🔄' },
     ];
 
     const adminLinks = [

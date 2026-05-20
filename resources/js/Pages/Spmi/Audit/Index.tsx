@@ -317,7 +317,29 @@ export default function Index({ audit, prodi_list, periode_list, success }: Prop
                             {editing && (
                                 <>
                                     <div className="mb-4">
-                                        <label className="mb-1 block text-sm font-medium text-gray-700">Tindak Lanjut</label>
+                                        <div className="flex justify-between items-center mb-1">
+                                            <label className="block text-sm font-medium text-gray-700">Tindak Lanjut</label>
+                                            <button 
+                                                type="button"
+                                                onClick={async () => {
+                                                    if (!editing) return;
+                                                    const res = await fetch(route('spmi.audit.ai-resolve', editing.id), {
+                                                        method: 'POST',
+                                                        headers: {
+                                                            'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as any)?.content,
+                                                            'Accept': 'application/json',
+                                                        }
+                                                    });
+                                                    const json = await res.json();
+                                                    if (json.success) {
+                                                        setData('tindak_lanjut', json.suggestion);
+                                                    }
+                                                }}
+                                                className="text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-900 bg-indigo-50 px-2 py-1 rounded border border-indigo-200"
+                                            >
+                                                ✨ BUAT SARAN VIA AI
+                                            </button>
+                                        </div>
                                         <textarea value={data.tindak_lanjut} onChange={(e) => setData('tindak_lanjut', e.target.value)} rows={3} className="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
                                         {errors.tindak_lanjut && <p className="mt-1 text-xs text-red-600">{errors.tindak_lanjut}</p>}
                                     </div>
