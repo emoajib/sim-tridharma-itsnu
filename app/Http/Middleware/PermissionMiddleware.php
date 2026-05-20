@@ -22,7 +22,7 @@ class PermissionMiddleware
 
         $permission = $this->extractPermission($routeName);
         
-        if ($permission && !$request->user()->can($permission)) {
+        if ($permission && !$request->user()->hasPermissionTo($permission)) {
             if ($request->expectsJson() || $request->is('api/*')) {
                 return response()->json([
                     'message' => 'Unauthorized',
