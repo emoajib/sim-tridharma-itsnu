@@ -22,7 +22,7 @@ class PermissionMiddleware
 
         $permission = $this->extractPermission($routeName);
         
-        if ($permission && !$request->user()->hasPermissionTo($permission)) {
+        if ($permission && !$request->user()->can($permission)) {
             if ($request->expectsJson() || $request->is('api/*')) {
                 return response()->json([
                     'message' => 'Unauthorized',
@@ -63,6 +63,11 @@ class PermissionMiddleware
         // Map AI agent sub-routes to agent-ai module
         if (in_array($module, ['prediksi', 'peringatan', 'verifikasi', 'generator', 'rekomendasi', 'integrasi'])) {
             $module = 'agent-ai';
+        }
+
+        // Routes that don't need specific permission
+        if (in_array($module, ['role'])) {
+            return null;
         }
 
         // Map import routes to portofolio module
