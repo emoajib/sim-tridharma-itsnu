@@ -91,5 +91,32 @@ Catatan: Menjalankan sistem AI langsung di Windows native (tanpa WSL2) tidak dis
 Setiap perubahan wajib melalui tahapan:
 PLAN -> BUILD -> TES KODE -> GIT COMMIT -> PUSH GITHUB -> TES KODE DI GITHUB
 
+STABILITY PROTOCOL (Wajib dijalankan setelah git pull atau update modul):
+Untuk mencegah error login dan sinkronisasi database, jalankan satu perintah ini:
+$ php artisan system:refresh --seed-users
+
+================================================================================
+                    DAFTAR AKUN USER (BLUEPRINT TEST ACCOUNTS)
+================================================================================
+
+Semua akun di bawah ini menggunakan password default: password
+
+1.  Super Admin      : superadmin@itsnu.ac.id       (Akses penuh & kelola Agent)
+2.  Rektor           : rektor@itsnu.ac.id           (Dashboard Institusi & Prediksi)
+3.  Wakil Rektor 1   : wr1@itsnu.ac.id              (Tridharma Institusi)
+4.  Wakil Rektor 2   : wr2@itsnu.ac.id              (Peringatan Sarpras & Keuangan)
+5.  LPM              : lpm@itsnu.ac.id              (Audit & LED Institusi)
+6.  Kepala LPPM      : lppm.kepala@itsnu.ac.id      (Verifikasi Penelitian/PkM)
+7.  Staf LPPM        : lppm.staf@itsnu.ac.id        (Kelola data SINTA)
+8.  Kepala Kerjasama : kerjasama.kepala@itsnu.ac.id (Rekomendasi Mitra)
+9.  Staf Kerjasama   : kerjasama.staf@itsnu.ac.id   (Input Data Kerjasama)
+10. Dekan            : dekan@itsnu.ac.id            (Dashboard Fakultas)
+11. Kaprodi          : kaprodi@itsnu.ac.id          (Dashboard Prodi & LKPT)
+12. Staf Prodi       : prodi.staf@itsnu.ac.id       (Read-only Rekomendasi)
+13. Dosen            : dosen@itsnu.ac.id            (Portofolio & BKD Personal)
+14. Asesor Tamu      : asesor@itsnu.ac.id           (Akses Terbatas - Read Only)
+15. Bagian Akademik  : akademik@itsnu.ac.id         (Verifikasi Kurikulum)
+
+================================================================================
 "Integrity is the Foundation, Efficiency is the Goal."
 Vetted by AI - Manual Review Required by Senior Engineer/Manager
