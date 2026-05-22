@@ -3,25 +3,60 @@
           Sistem Informasi Manajemen Tridharma Dosen
 ================================================================================
 
-Generated: 2026-05-20
-Framework: Laravel 13.9.0
+Terakhir Diperbarui: 2026-05-23 (Sprint 2.0 - Stability & M13 Integration)
+Framework: Laravel 11.x (Latest Stable)
 PHP: 8.4.1
-Database: PostgreSQL
-Frontend: Vue 3 + Inertia.js + TailwindCSS
+Database: PostgreSQL 16 + pgvector
+Frontend: React + Inertia.js + TailwindCSS + Vite v8
 
 ================================================================================
-                          OVERVIEW SISTEM
+                          OVERVIEW SISTEM (V2.0)
 ================================================================================
 
 STATISTIK SISTEM:
-- 14 Modul Utama
-- 50 Eloquent Models
-- 45 Controllers
-- 68 Database Tables
-- 190 Routes
-- 15 Roles
-- 60 Permissions
-- 6 AI Agents
-- 4 AI Services
+- 14 Modul Utama (Termasuk M13: E-RKAT & Cascading IKU)
+- 56 Eloquent Models
+- 57 Controllers
+- 74 Database Tables (Teroptimasi pgvector)
+- 197 Routes API & Web
+- 6 AI Agents (Verifikasi, Prediksi, Rekomendasi, Peringatan, Integrasi, Generator)
+- 3 AI Services (FastAPI RAG, FastAPI Agents, RabbitMQ Worker)
 
-[... rest of documentation auto-generated ...]
+================================================================================
+                          ARSITEKTUR BARU (SPRINT 2.0)
+================================================================================
+
+1. STABILITAS AI (Fase 1.5):
+   - Implementasi ModelManager Singleton di AI Service untuk efisiensi memori.
+   - Pembatasan TORCH_THREADS=2 untuk mencegah CPU Spike 99% di environment VPS.
+   - Endpoint /status untuk monitoring kesehatan model AI secara real-time.
+
+2. MODUL PERENCANAAN M13 (Fase 2):
+   - E-RKAT: Digitalisasi usulan anggaran Tridharma per unit (Prodi/Fakultas).
+   - CASCADING IKU: Penurunan target 8 IKU Kemdiktisaintek dari Rektor ke Kaprodi.
+   - VALIDASI PAGU: Sistem pencegahan approval usulan anggaran yang melebihi pagu unit.
+
+3. RAG REFINEMENT & GUARDRAILS (Fase 4):
+   - SIMILARITY THRESHOLD: Chatbot asisten hanya menjawab jika tingkat relevansi > 0.65.
+   - HALLUCINATION BLOCK: Instruksi ketat (Guardrails) untuk hanya menjawab berbasis data lokal.
+   - CHAT ANALYTICS: Logging pertanyaan dan jawaban ke trx_chat_history untuk evaluasi LPM.
+
+================================================================================
+                          INFRASTRUKTUR MINIMUM
+================================================================================
+
+- Server: VPS (Mandatory - No Shared Hosting)
+- CPU: Min 4 Cores
+- RAM: Min 4GB (Recommended 8GB)
+- Storage: Min 40GB SSD
+- Services: PostgreSQL 16, pgvector, MinIO, RabbitMQ, Redis, Python 3.11+
+
+================================================================================
+                          DEVELOPMENT WORKFLOW
+================================================================================
+
+Setiap perubahan wajib melalui tahapan:
+PLAN -> BUILD -> TES KODE -> GIT COMMIT -> PUSH GITHUB -> TES KODE DI GITHUB
+
+"Integrity is the Foundation, Efficiency is the Goal."
+Vetted by AI - Manual Review Required by Senior Engineer/Manager
