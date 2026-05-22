@@ -60,16 +60,29 @@ HARDWARE REKOMENDASI (Recommended for Production):
 - RAM: 8 GB - 16 GB (Untuk performa chatbot RAG yang lebih responsif).
 - Storage: 80 GB SSD / NVMe.
 
-SOFTWARE STACK & ENVIRONMENT:
-- OS: Ubuntu 22.04 / 24.04 LTS (Direkomendasikan).
-- Database: PostgreSQL 16 dengan ekstensi 'pgvector' aktif.
-- Web Server: Nginx atau Apache (sebagai Reverse Proxy).
-- PHP Runtime: PHP 8.4+ dengan ekstensi (pdo_pgsql, gd, zip, intl, bcmath).
-- Python Runtime: Python 3.11+ (Venv terisolasi untuk ai-service & ai-agents).
-- Process Manager: PM2 atau Supervisor (Untuk menjaga daemon Python & Queue tetap hidup).
-- Message Broker: RabbitMQ (Untuk AI Task Queue).
-- Cache Memory: Redis.
-- Object Storage: MinIO (Bisa di-install lokal di VPS yang sama).
+================================================================================
+                    SPESIFIKASI PC (LOCAL DEVELOPMENT - WINDOWS)
+================================================================================
+
+Agar sistem AI berjalan lancar di PC lokal (Windows), gunakan spesifikasi berikut:
+
+HARDWARE MINIMUM:
+- CPU: Intel Core i5 / AMD Ryzen 5 (Gen 10+).
+- RAM: 16 GB (WAJIB: Karena WSL2 + Docker + Laravel + AI Services memakan banyak RAM).
+- Storage: SSD (Wajib, minimal 50GB ruang kosong).
+
+SOFTWARE ENVIRONMENT:
+- Windows 10/11 Pro/Enterprise.
+- WSL2 (Windows Subsystem for Linux) - WAJIB (Disarankan Ubuntu 22.04 di dalam WSL).
+- Docker Desktop (Opsional, tapi disarankan untuk PostgreSQL & RabbitMQ).
+- Node.js v20+ & PHP 8.4+ (Bisa via Laravel Herd atau manual di WSL).
+- Python 3.11+ di dalam lingkungan WSL.
+
+Catatan: Menjalankan sistem AI langsung di Windows native (tanpa WSL2) tidak disarankan karena kesulitan instalasi ekstensi PostgreSQL tertentu dan manajemen library Python.
+
+================================================================================
+                          SOFTWARE STACK & ENVIRONMENT
+================================================================================
 
 ================================================================================
                           DEVELOPMENT WORKFLOW
