@@ -1,3 +1,4 @@
+# Vetted by AI - Manual Review Required by Senior Engineer/Manager
 import logging
 from datetime import date, datetime
 
@@ -11,7 +12,7 @@ logger = logging.getLogger("agent.peringatan")
 
 class PeringatanAgent(BaseAgent):
     name = "peringatan"
-    version = "1.0.0"
+    version = "1.1.0"
 
     def execute(self, data: dict) -> dict:
         if isinstance(data, list):
@@ -23,6 +24,7 @@ class PeringatanAgent(BaseAgent):
             warnings.extend(self._check_bkd(db, prodi_id))
             warnings.extend(self._check_kalibrasi(db, prodi_id))
             warnings.extend(self._check_akreditasi(db, prodi_id))
+            warnings.extend(self._check_rkat_absorption(db, prodi_id))
 
             for w in warnings:
                 db.execute(
@@ -51,6 +53,47 @@ class PeringatanAgent(BaseAgent):
             return result
         finally:
             db.close()
+
+    def _check_rkat_absorption(self, db, prodi_id: int | None) -> list:
+        """Check for low RKAT budget absorption (Dana Mandek)."""
+        if not prodi_id:
+            return []
+            
+        sql = """
+            SELECT pagu_total, terpakai, periode_id
+            FROM trx_rkat_pagu
+            WHERE unit_type = 'Prodi' AND unit_id = :prodi_id
+            ORDER BY created_at DESC LIMIT 1
+        """
+        row = db.execute(text(sql), {"prodi_id": prodi_id}).first()
+        
+        if not row or row.pagu_total <= 0:
+            return []
+            
+        absorption = (float(row.terpakai) / float(row.pagu_total)) * 100
+        today = date.today()
+        month = today.month
+        
+        warnings = []
+        # Logic: If after June (month > 6) and absorption < 40%, it's a warning
+        if month > 6 and absorption < 40:
+            warnings.append({
+                "level": "warning" if absorption > 20 else "critical",
+                "kategori": "rkat",
+                "judul": "Dana RKAT Mandek",
+                "deskripsi": f"Penyerapan anggaran baru {absorption:.1f}% pada bulan ke-{month}. Segera lakukan eksekusi program.",
+                "dosen_id": None,
+            })
+        elif absorption < 10 and month > 3:
+            warnings.append({
+                "level": "warning",
+                "kategori": "rkat",
+                "judul": "Penyerapan RKAT Rendah",
+                "deskripsi": f"Penyerapan anggaran sangat rendah ({absorption:.1f}%) di kuartal pertama.",
+                "dosen_id": None,
+            })
+            
+        return warnings
 
     def _check_bkd(self, db, prodi_id: int | None) -> list:
         sql = """

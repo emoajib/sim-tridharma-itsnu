@@ -111,11 +111,18 @@ class TestPrediksiSkor:
 
     @patch("agents_mcp.tools.execute_query", new_callable=AsyncMock)
     async def test_computes_prediction_from_data(self, mock_query):
-        mock_query.return_value = [
-            {"periode_id": 1, "nilai": 3.0, "bobot": 4},
-            {"periode_id": 1, "nilai": 2.5, "bobot": 3},
-            {"periode_id": 2, "nilai": 3.5, "bobot": 4},
-            {"periode_id": 2, "nilai": 3.0, "bobot": 3},
+        # Mock historical data and budget data
+        mock_query.side_effect = [
+            [
+                {"periode_id": 1, "nilai": 3.0, "bobot": 4},
+                {"periode_id": 1, "nilai": 2.5, "bobot": 3},
+                {"periode_id": 2, "nilai": 3.5, "bobot": 4},
+                {"periode_id": 2, "nilai": 3.0, "bobot": 3},
+            ],
+            [
+                {"total_biaya": 10000000, "periode_id": 1},
+                {"total_biaya": 12000000, "periode_id": 2},
+            ]
         ]
 
         result = await prediksi_skor(prodi_id=1)
@@ -125,6 +132,7 @@ class TestPrediksiSkor:
         assert result["predicted_category"] in ["Unggul", "Baik Sekali", "Baik"]
         assert "probabilities" in result
         assert "trend_analysis" in result
+        assert "budget_impact" in result
 
 
 class TestVerifikasiDokumen:
@@ -204,7 +212,7 @@ class TestVerifikasiDokumen:
 class TestPeringatanCheck:
     @patch("agents_mcp.tools.execute_query", new_callable=AsyncMock)
     async def test_returns_zero_warnings_when_no_issues(self, mock_query):
-        mock_query.side_effect = [[], [], []]
+        mock_query.side_effect = [[], [], [], []]
 
         result = await peringatan_check(prodi_id=1)
 
@@ -216,6 +224,7 @@ class TestPeringatanCheck:
         mock_query.side_effect = [
             [{"id": 1, "nama_depan": "John", "nama_belakang": "Doe",
               "nidn": "123456", "total_sks": 8}],
+            [],
             [],
             [],
         ]
@@ -233,6 +242,7 @@ class TestPeringatanCheck:
               "nidn": "123456", "total_sks": 4}],
             [],
             [],
+            [],
         ]
 
         result = await peringatan_check(prodi_id=1)
@@ -245,6 +255,7 @@ class TestPeringatanCheck:
             [],
             [{"nama_sarana": "Mikroskop", "tanggal_kalibrasi": "2024-01-01",
               "tanggal_kalibrasi_berikut": "2025-01-01"}],
+            [],
             [],
         ]
 

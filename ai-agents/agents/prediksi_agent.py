@@ -1,3 +1,4 @@
+# Vetted by AI - Manual Review Required by Senior Engineer/Manager
 import logging
 
 from sqlalchemy import text
@@ -11,7 +12,7 @@ logger = logging.getLogger("agent.prediksi")
 
 class PrediksiAgent(BaseAgent):
     name = "prediksi"
-    version = "1.0.0"
+    version = "1.1.0"
 
     def execute(self, data: dict) -> dict:
         if isinstance(data, list):
@@ -25,6 +26,7 @@ class PrediksiAgent(BaseAgent):
 
         db = SessionLocal()
         try:
+            # 1. Get indicator scores
             rows = db.execute(
                 text("""
                     SELECT pi.periode_id, pi.nilai, i.bobot, i.kriteria
@@ -45,6 +47,19 @@ class PrediksiAgent(BaseAgent):
                 self.log_execution(self.name, "system", data, result, status="warning")
                 return result
 
+            # 2. Get Budget Data (RKAT)
+            budget_rows = db.execute(
+                text("""
+                    SELECT SUM(estimasi_biaya) as total_biaya, periode_id
+                    FROM trx_usulan_rkat
+                    WHERE prodi_id = :prodi_id AND status = 'approved'
+                    GROUP BY periode_id
+                """),
+                {"prodi_id": prodi_id}
+            ).fetchall()
+            
+            budgets = {b.periode_id: float(b.total_biaya) for b in budget_rows}
+
             period_scores = {}
             for r in rows:
                 p_id = r.periode_id
@@ -61,13 +76,26 @@ class PrediksiAgent(BaseAgent):
             historical_scores = historical_scores[-3:]
 
             pred = calculate_prediction(historical_scores)
+            
+            # 3. Analyze Budget Correlation
+            budget_impact = "netral"
+            if periode_id in budgets:
+                current_budget = budgets[periode_id]
+                prev_budget = sum(budgets.values()) / len(budgets) if budgets else current_budget
+                if current_budget > prev_budget * 1.2:
+                    budget_impact = "positif (peningkatan investasi)"
+                    pred["skor_prediksi"] += 0.5 # Small boost for high investment
+                elif current_budget < prev_budget * 0.8:
+                    budget_impact = "negatif (pengurangan anggaran)"
+                    pred["skor_prediksi"] -= 0.3
 
             result = {
-                "skor_prediksi": pred["skor_prediksi"],
+                "skor_prediksi": round(pred["skor_prediksi"], 2),
                 "probabilitas": pred["probabilitas"],
                 "confidence_interval": 4.5,
                 "trend_analysis": pred["trend_analysis"],
                 "historical_data_points": len(historical_scores),
+                "budget_analysis": budget_impact,
             }
 
             db.execute(
@@ -99,3 +127,4 @@ class PrediksiAgent(BaseAgent):
             return {"status": "error", "message": str(e)}
         finally:
             db.close()
+

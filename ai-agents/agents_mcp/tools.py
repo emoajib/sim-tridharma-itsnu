@@ -1,3 +1,4 @@
+# Vetted by AI - Manual Review Required by Senior Engineer/Manager
 """
 MCP Tools for AI Agents - Akreditasi System
 Registers all agent tools with the MCP server
@@ -6,7 +7,7 @@ from mcp.server.fastmcp import FastMCP, Context
 from pydantic import Field
 from typing import Optional
 
-from datetime import datetime
+from datetime import datetime, date
 import os
 from agents_mcp.config import MCP_SERVER_NAME, MCP_SERVER_VERSION
 from agents_mcp.auth import verify_mcp_auth
@@ -83,16 +84,17 @@ async def peringatan_check(
     - BKD < 12 SKS per dosen
     - Kalibrasi sarana expired/near-expiry
     - Akreditasi expiring
+    - Low RKAT budget absorption (Dana Mandek)
     Returns list of warnings with level (critical/warning/info).
     """
     warnings = []
 
     # Check BKD
-    await _ctx(ctx).report_progress(1, 3, "Memeriksa BKD dosen...")
+    await _ctx(ctx).report_progress(1, 4, "Memeriksa BKD dosen...")
     bkd_query = """
         SELECT d.id, d.nama_depan, d.nama_belakang, d.nidn, b.total_sks
         FROM m_dosen d
-        LEFT JOIN trx_bkd b ON d.id = b.dosen_id
+        LEFT JOIN trx_bkd b ON d.id = b.dosen_id AND b.status = 'disetujui'
         WHERE d.prodi_id = $1 AND (b.total_sks IS NULL OR b.total_sks < 12)
     """
     bkd_rows = await execute_query(bkd_query, [prodi_id])
@@ -106,7 +108,7 @@ async def peringatan_check(
         })
 
     # Check Kalibrasi
-    await _ctx(ctx).report_progress(2, 3, "Memeriksa kalibrasi sarana...")
+    await _ctx(ctx).report_progress(2, 4, "Memeriksa kalibrasi sarana...")
     kalibrasi_query = """
         SELECT s.nama_sarana, s.tanggal_kalibrasi, s.tanggal_kalibrasi_berikut
         FROM m_sarana s
@@ -126,7 +128,7 @@ async def peringatan_check(
         })
 
     # Check Akreditasi
-    await _ctx(ctx).report_progress(3, 3, "Memperingatkan akreditasi...")
+    await _ctx(ctx).report_progress(3, 4, "Memperingatkan akreditasi...")
     akreditasi_query = """
         SELECT p.id, p.nama_prodi, p.akreditasi, p.tanggal_kadaluarsa
         FROM m_prodi p
@@ -141,6 +143,27 @@ async def peringatan_check(
             "tingkat": "critical" if row.get("tanggal_kadaluarsa") else "info",
             "pesan": f"Prodi {row['nama_prodi']} akreditasi {row.get('akreditasi', 'N/A')} berlaku sampai {row.get('tanggal_kadaluarsa')}",
         })
+
+    # Check RKAT Absorption (Dana Mandek)
+    await _ctx(ctx).report_progress(4, 4, "Memeriksa penyerapan anggaran...")
+    rkat_query = """
+        SELECT pagu_total, terpakai
+        FROM trx_rkat_pagu
+        WHERE unit_type = 'Prodi' AND unit_id = $1
+        ORDER BY created_at DESC LIMIT 1
+    """
+    rkat_rows = await execute_query(rkat_query, [prodi_id])
+    if rkat_rows:
+        row = rkat_rows[0]
+        pagu = float(row['pagu_total'])
+        if pagu > 0:
+            absorption = (float(row['terpakai']) / pagu) * 100
+            if date.today().month > 6 and absorption < 40:
+                warnings.append({
+                    "jenis": "rkat",
+                    "tingkat": "critical" if absorption < 20 else "warning",
+                    "pesan": f"Penyerapan anggaran RKAT rendah ({absorption:.1f}%) di atas semester 1.",
+                })
 
     await _ctx(ctx).info(f"Peringatan check complete: {len(warnings)} warnings found")
     return {
@@ -289,11 +312,11 @@ async def prediksi_skor(
     ctx: Context = None,
 ) -> dict:
     """
-    Predict accreditation score for a program studi using historical data.
-    Uses weighted scores (nilai * bobot) per periode + linear regression trend.
+    Predict accreditation score for a program studi using historical data and budget analysis.
+    Uses weighted scores (nilai * bobot) per periode + linear regression trend + budget impact.
     Returns predicted score + probabilities for 3 categories.
     """
-    await _ctx(ctx).report_progress(1, 3, "Fetching historical data...")
+    await _ctx(ctx).report_progress(1, 4, "Fetching historical data...")
 
     query = """
         SELECT pi.periode_id, pi.nilai, i.bobot
@@ -311,7 +334,17 @@ async def prediksi_skor(
             "predicted_score": None,
         }
 
-    await _ctx(ctx).report_progress(2, 3, "Computing prediction...")
+    await _ctx(ctx).report_progress(2, 4, "Fetching budget data...")
+    budget_query = """
+        SELECT SUM(estimasi_biaya) as total_biaya, periode_id
+        FROM trx_usulan_rkat
+        WHERE prodi_id = $1 AND status = 'approved'
+        GROUP BY periode_id
+    """
+    budget_rows = await execute_query(budget_query, [prodi_id])
+    budgets = {b['periode_id']: float(b['total_biaya']) for b in budget_rows}
+
+    await _ctx(ctx).report_progress(3, 4, "Computing prediction...")
 
     period_scores = {}
     for r in rows:
@@ -330,19 +363,32 @@ async def prediksi_skor(
 
     pred = calculate_prediction(historical_scores)
 
-    await _ctx(ctx).report_progress(3, 3, "Prediction complete")
+    # Analyze Budget Impact
+    budget_impact = "netral"
+    if budgets:
+        latest_period = max(period_scores.keys())
+        if latest_period in budgets:
+            current_budget = budgets[latest_period]
+            avg_budget = sum(budgets.values()) / len(budgets)
+            if current_budget > avg_budget * 1.2:
+                budget_impact = "positif"
+                pred["skor_prediksi"] += 0.5
+            elif current_budget < avg_budget * 0.8:
+                budget_impact = "negatif"
+                pred["skor_prediksi"] -= 0.3
+
+    await _ctx(ctx).report_progress(4, 4, "Prediction complete")
 
     predicted_category = "Unggul" if pred["probabilitas"]["unggul"] > 0.5 else "Baik Sekali" if pred["probabilitas"]["baik_sekali"] > 0.5 else "Baik"
 
     await _ctx(ctx).info(f"Prediksi complete: {pred['skor_prediksi']:.2f} ({predicted_category})")
     return {
         "prodi_id": prodi_id,
-        "predicted_score": pred["skor_prediksi"],
+        "predicted_score": round(pred["skor_prediksi"], 2),
         "predicted_category": predicted_category,
         "probabilities": pred["probabilitas"],
         "trend_analysis": pred["trend_analysis"],
-        "trend_factor": pred["trend_factor"],
-        "confidence_interval": 4.5,
+        "budget_impact": budget_impact,
         "historical_data_points": len(historical_scores),
     }
 
@@ -421,7 +467,7 @@ async def generator_dokumen(
     # Detail per indikator
     doc.add_heading("Detail Indikator", level=2)
     for ind in indikator_rows:
-        doc.add_heading(f"{ind['kode']} - {ind['nama_indikator']}", level=3)
+        doc.add_heading(f"{ind.get('kode', 'N/A')} - {ind['nama_indikator']}", level=3)
         doc.add_paragraph(f"Status: {ind.get('status', 'N/A')}")
         doc.add_paragraph(f"Nilai: {ind.get('nilai', 'N/A')}")
         if ind.get("catatan"):
