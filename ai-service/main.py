@@ -1,6 +1,9 @@
+# Vetted by AI - Manual Review Required by Senior Engineer/Manager
 import re
 import os
 import logging
+import gc
+import torch
 import numpy as np
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
@@ -8,58 +11,92 @@ from sentence_transformers import SentenceTransformer
 from transformers import pipeline
 from contextlib import asynccontextmanager
 
-logging.basicConfig(level=logging.INFO)
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(name)s] %(levelname)s: %(message)s"
+)
 logger = logging.getLogger("ai-service")
 
-# Global models
-embedding_model = None
-qa_pipeline = None
-EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL", "intfloat/multilingual-e5-small")
-QA_MODEL_NAME = os.getenv("QA_MODEL", "distilbert-base-cased-distilled-squad")
-QA_ENABLED = os.getenv("QA_ENABLED", "true").lower() == "true"
+# Optimization: Limit torch threads to prevent CPU exhaustion
+TORCH_THREADS = int(os.getenv("TORCH_THREADS", "2"))
+torch.set_num_threads(TORCH_THREADS)
+logger.info(f"Torch threads limited to {TORCH_THREADS}")
 
+class ModelManager:
+    """Singleton manager for AI models to ensure stability and resource control."""
+    _instance = None
+    
+    def __init__(self):
+        self.embedding_model = None
+        self.qa_pipeline = None
+        self.embedding_model_name = os.getenv("EMBEDDING_MODEL", "intfloat/multilingual-e5-small")
+        self.qa_model_name = os.getenv("QA_MODEL", "distilbert-base-cased-distilled-squad")
+        self.qa_enabled = os.getenv("QA_ENABLED", "true").lower() == "true"
+        self.is_ready = False
+
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+
+    def load_models(self):
+        try:
+            logger.info(f"Loading embedding model: {self.embedding_model_name}")
+            self.embedding_model = SentenceTransformer(self.embedding_model_name)
+            logger.info("Embedding model loaded successfully")
+
+            if self.qa_enabled:
+                logger.info(f"Loading QA model: {self.qa_model_name}")
+                # Use CPU for stability unless GPU is explicitly requested and available
+                device = -1 # CPU
+                self.qa_pipeline = pipeline("question-answering", model=self.qa_model_name, device=device)
+                logger.info("QA model loaded successfully")
+            
+            self.is_ready = True
+        except Exception as e:
+            logger.error(f"Failed to load models: {e}")
+            self.is_ready = False
+            raise e
+
+    def unload_models(self):
+        logger.info("Unloading models and clearing memory...")
+        self.embedding_model = None
+        self.qa_pipeline = None
+        self.is_ready = False
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        logger.info("Memory cleared")
+
+model_manager = ModelManager.get_instance()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Load models on startup, clean up on shutdown"""
-    global embedding_model, qa_pipeline
-    logger.info(f"Loading embedding model: {EMBEDDING_MODEL_NAME}")
-    embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
-    logger.info("Embedding model loaded")
-
-    if QA_ENABLED:
-        try:
-            logger.info(f"Loading QA model: {QA_MODEL_NAME}")
-            qa_pipeline = pipeline("question-answering", model=QA_MODEL_NAME)
-            logger.info("QA model loaded")
-        except Exception as e:
-            logger.warning(f"QA model not loaded: {e}")
-            logger.warning("Falling back to sentence-only mode")
-    else:
-        logger.info("QA is disabled, using sentence-only mode")
-
+    """Lifecycle management for the FastAPI application."""
+    model_manager.load_models()
     yield
+    model_manager.unload_models()
 
-    logger.info("Shutting down AI Service...")
+app = FastAPI(
+    title="RAG AI Service - Akreditasi",
+    version="2.1.0",
+    lifespan=lifespan
+)
 
-
-app = FastAPI(title="RAG AI Service", version="2.0.0", lifespan=lifespan)
-
-
+# Requests/Response Models
 class EmbedRequest(BaseModel):
     texts: list[str]
-
 
 class EmbedResponse(BaseModel):
     embeddings: list[list[float]]
     dimension: int
 
-
 class AnswerRequest(BaseModel):
     question: str
     chunks: list[dict]
     top_k: int = 5
-
 
 class AnswerResponse(BaseModel):
     answer: str
@@ -67,38 +104,40 @@ class AnswerResponse(BaseModel):
     sentences_used: int
     mode: str
 
-
-class HealthResponse(BaseModel):
-    status: str
-    embedding_model: str
-    qa_model: str
-    qa_enabled: bool
-
-
-@app.get("/health", response_model=HealthResponse)
+@app.get("/health")
 def health():
-    return HealthResponse(
-        status="ok",
-        embedding_model=EMBEDDING_MODEL_NAME,
-        qa_model=QA_MODEL_NAME,
-        qa_enabled=QA_ENABLED,
-    )
+    return {
+        "status": "ok" if model_manager.is_ready else "initializing",
+        "ready": model_manager.is_ready
+    }
 
+@app.get("/status")
+def status():
+    return {
+        "status": "ok" if model_manager.is_ready else "error",
+        "embedding_model": model_manager.embedding_model_name,
+        "qa_enabled": model_manager.qa_enabled,
+        "qa_model": model_manager.qa_model_name if model_manager.qa_enabled else None,
+        "torch_threads": TORCH_THREADS,
+        "device": str(torch.get_num_threads())
+    }
 
 @app.post("/embed", response_model=EmbedResponse)
 def embed(req: EmbedRequest):
-    if embedding_model is None:
-        raise HTTPException(503, "Embedding model not loaded")
-    logger.info(f"Embedding {len(req.texts)} texts")
-    vectors = embedding_model.encode(req.texts, normalize_embeddings=True).tolist()
-    dim = len(vectors[0]) if vectors else 0
-    return EmbedResponse(embeddings=vectors, dimension=dim)
-
+    if not model_manager.is_ready:
+        raise HTTPException(503, "Models are not ready")
+    
+    try:
+        vectors = model_manager.embedding_model.encode(req.texts, normalize_embeddings=True).tolist()
+        dim = len(vectors[0]) if vectors else 0
+        return EmbedResponse(embeddings=vectors, dimension=dim)
+    except Exception as e:
+        logger.error(f"Embedding error: {e}")
+        raise HTTPException(500, str(e))
 
 def _split_sentences(text: str) -> list[str]:
     sentences = re.split(r'(?<=[.!?])\s+', text)
     return [s.strip() for s in sentences if len(s.strip()) > 10]
-
 
 def _classify_question(question: str) -> str:
     q = question.lower().strip()
@@ -118,12 +157,11 @@ def _classify_question(question: str) -> str:
         return 'lokasi'
     return 'default'
 
-
 def _qa_extractive(question: str, context: str) -> dict | None:
-    if qa_pipeline is None:
+    if not model_manager.qa_pipeline:
         return None
     try:
-        result = qa_pipeline(question=question, context=context)
+        result = model_manager.qa_pipeline(question=question, context=context)
         if result['score'] > 0.3:
             return {
                 'answer': result['answer'],
@@ -134,7 +172,6 @@ def _qa_extractive(question: str, context: str) -> dict | None:
     except Exception as e:
         logger.warning(f"QA extraction failed: {e}")
     return None
-
 
 def _format_answer(question: str, top_sentences: list[dict]) -> str:
     qtype = _classify_question(question)
@@ -151,8 +188,7 @@ def _format_answer(question: str, top_sentences: list[dict]) -> str:
 
         sim_pct = round(s['similarity'] * 100, 1)
         if s.get('is_span'):
-            prefix = "•" if qtype in ('default', 'definisi', 'entitas') else "•"
-            lines.append(f"{prefix} **{s['text']}** (relevansi {sim_pct}%)")
+            lines.append(f"• **{s['text']}** (relevansi {sim_pct}%)")
         else:
             lines.append(f"• {s['text']} (relevansi {sim_pct}%)")
 
@@ -178,7 +214,6 @@ def _format_answer(question: str, top_sentences: list[dict]) -> str:
 
     return answer
 
-
 def _build_sentence_scores(question_embedding: np.ndarray, chunks: list[dict], top_k: int) -> list[dict]:
     all_sentences = []
     for chunk in chunks:
@@ -192,32 +227,30 @@ def _build_sentence_scores(question_embedding: np.ndarray, chunks: list[dict], t
                 'document_judul': chunk.get('document_judul', 'Dokumen'),
                 'document_sumber': chunk.get('document_sumber', ''),
                 'chunk_similarity': chunk.get('similarity', 0),
-                'embedding': None,
+                'similarity': 0.0
             })
 
     if not all_sentences:
         return []
 
     texts = [s['text'] for s in all_sentences]
-    sentence_embs = embedding_model.encode(texts, normalize_embeddings=True)
+    sentence_embs = model_manager.embedding_model.encode(texts, normalize_embeddings=True)
     q_norm = question_embedding / np.linalg.norm(question_embedding)
 
     for i, s in enumerate(all_sentences):
         s_emb = sentence_embs[i]
         sim = float(np.dot(q_norm, s_emb))
         sim = max(0, min(1, sim))
-        s['similarity'] = round((sim + s['chunk_similarity']) / 2, 4)
+        # Weighted similarity: 70% sentence relevance, 30% chunk relevance
+        s['similarity'] = round((sim * 0.7) + (s['chunk_similarity'] * 0.3), 4)
 
     all_sentences.sort(key=lambda x: x['similarity'], reverse=True)
     return all_sentences[:top_k]
 
-
 @app.post("/answer", response_model=AnswerResponse)
 def answer(req: AnswerRequest):
-    if embedding_model is None:
-        raise HTTPException(503, "Embedding model not loaded")
-
-    logger.info(f"Answering question: {req.question[:80]}... with {len(req.chunks)} chunks")
+    if not model_manager.is_ready:
+        raise HTTPException(503, "Models are not ready")
 
     if not req.chunks:
         return AnswerResponse(
@@ -227,46 +260,49 @@ def answer(req: AnswerRequest):
             mode="no-chunks",
         )
 
-    q_emb = embedding_model.encode([req.question], normalize_embeddings=True)[0]
-    top_sentences = _build_sentence_scores(q_emb, req.chunks, req.top_k)
+    try:
+        q_emb = model_manager.embedding_model.encode([req.question], normalize_embeddings=True)[0]
+        top_sentences = _build_sentence_scores(q_emb, req.chunks, req.top_k)
 
-    if not top_sentences:
+        if not top_sentences:
+            return AnswerResponse(
+                answer="Maaf, tidak ditemukan kalimat yang relevan dalam dokumen.",
+                sources=[],
+                sentences_used=0,
+                mode="no-sentences",
+            )
+
+        if model_manager.qa_pipeline:
+            top_context = " ".join([s['text'] for s in top_sentences[:3]])
+            qa_result = _qa_extractive(req.question, top_context)
+            if qa_result and qa_result['score'] > 0.4:
+                top_sentences[0]['text'] = qa_result['answer']
+                top_sentences[0]['is_span'] = True
+
+        sources = []
+        seen_sources = set()
+        for s in top_sentences:
+            key = f"{s['document_judul']}|{s['document_sumber']}"
+            if key not in seen_sources:
+                seen_sources.add(key)
+                sources.append({
+                    'judul': s['document_judul'],
+                    'sumber': s['document_sumber'],
+                    'skor': round(s.get('chunk_similarity', 0) * 100, 1),
+                })
+
+        answer_text = _format_answer(req.question, top_sentences)
+        mode = "qa-extractive" if any(s.get('is_span') for s in top_sentences) else "sentence-only"
+
         return AnswerResponse(
-            answer="Maaf, tidak ditemukan kalimat yang relevan dalam dokumen.",
-            sources=[],
-            sentences_used=0,
-            mode="no-sentences",
+            answer=answer_text,
+            sources=sources,
+            sentences_used=len(top_sentences),
+            mode=mode,
         )
-
-    if QA_ENABLED and qa_pipeline is not None:
-        top_context = " ".join([s['text'] for s in top_sentences[:3]])
-        qa_result = _qa_extractive(req.question, top_context)
-        if qa_result and qa_result['score'] > 0.3:
-            top_sentences[0]['text'] = qa_result['answer']
-            top_sentences[0]['is_span'] = True
-
-    sources = []
-    seen_sources = set()
-    for s in top_sentences:
-        key = f"{s['document_judul']}|{s['document_sumber']}"
-        if key not in seen_sources:
-            seen_sources.add(key)
-            sources.append({
-                'judul': s['document_judul'],
-                'sumber': s['document_sumber'],
-                'skor': round(s.get('chunk_similarity', 0) * 100, 1),
-            })
-
-    answer_text = _format_answer(req.question, top_sentences)
-    mode = "qa-extractive" if any(s.get('is_span') for s in top_sentences) else "sentence-only"
-
-    return AnswerResponse(
-        answer=answer_text,
-        sources=sources,
-        sentences_used=len(top_sentences),
-        mode=mode,
-    )
-
+    except Exception as e:
+        logger.error(f"Answer processing error: {e}")
+        raise HTTPException(500, str(e))
 
 # =============================================================================
 # MCP Server Integration
@@ -279,62 +315,17 @@ rag_mcp = FastMCP(
     json_response=True,
 )
 
-
 @rag_mcp.tool()
 async def rag_embed_text(
     text: str = Field(description="Text to embed"),
     ctx: Context = None,
 ) -> list[float]:
-    """Embed a single text into a vector using the loaded sentence transformer model."""
-    if embedding_model is None:
-        raise RuntimeError("Embedding model not loaded")
-
-    await ctx.info(f"Embedding text: {text[:50]}...")
-    vector = embedding_model.encode([text], normalize_embeddings=True)[0]
+    """Embed a single text into a vector."""
+    if not model_manager.is_ready:
+        raise RuntimeError("Models not ready")
+    
+    vector = model_manager.embedding_model.encode([text], normalize_embeddings=True)[0]
     return vector.tolist()
-
-
-@rag_mcp.tool()
-async def rag_embed_texts(
-    texts: list[str] = Field(description="List of texts to embed"),
-    ctx: Context = None,
-) -> list[list[float]]:
-    """Embed multiple texts into vectors using the loaded sentence transformer model."""
-    if embedding_model is None:
-        raise RuntimeError("Embedding model not loaded")
-
-    await ctx.info(f"Embedding {len(texts)} texts")
-    vectors = embedding_model.encode(texts, normalize_embeddings=True)
-    return vectors.tolist()
-
-
-@rag_mcp.tool()
-async def rag_search(
-    question: str = Field(description="Question to search for"),
-    chunks: list[dict] = Field(description="List of chunks with 'content' field"),
-    top_k: int = Field(default=5, description="Number of top results"),
-    ctx: Context = None,
-) -> dict:
-    """
-    Search for relevant sentences in chunks based on a question.
-    Returns ranked sentences with similarity scores.
-    """
-    if embedding_model is None:
-        raise RuntimeError("Embedding model not loaded")
-
-    await ctx.report_progress(1, 3, "Embedding question...")
-    q_emb = embedding_model.encode([question], normalize_embeddings=True)[0]
-
-    await ctx.report_progress(2, 3, "Scoring sentences...")
-    top_sentences = _build_sentence_scores(q_emb, chunks, top_k)
-
-    await ctx.report_progress(3, 3, "Returning results...")
-    return {
-        "question": question,
-        "results": top_sentences,
-        "count": len(top_sentences),
-    }
-
 
 @rag_mcp.tool()
 async def rag_answer(
@@ -343,73 +334,24 @@ async def rag_answer(
     top_k: int = Field(default=5, description="Number of top chunks to use"),
     ctx: Context = None,
 ) -> dict:
-    """
-    Answer a question based on provided document chunks.
-    Returns formatted answer with sources and mode (qa-extractive or sentence-only).
-    """
-    if embedding_model is None:
-        raise RuntimeError("Embedding model not loaded")
+    """Answer a question based on document chunks using RAG logic."""
+    if not model_manager.is_ready:
+        raise RuntimeError("Models not ready")
 
-    await ctx.report_progress(1, 4, "Embedding question...")
-    q_emb = embedding_model.encode([question], normalize_embeddings=True)[0]
-
-    if not chunks:
-        return {
-            "answer": "Maaf, tidak ada dokumen yang relevan ditemukan.",
-            "sources": [],
-            "mode": "no-chunks",
-        }
-
-    await ctx.report_progress(2, 4, "Scoring sentences...")
+    q_emb = model_manager.embedding_model.encode([question], normalize_embeddings=True)[0]
     top_sentences = _build_sentence_scores(q_emb, chunks, top_k)
 
     if not top_sentences:
-        return {
-            "answer": "Maaf, tidak ditemukan kalimat yang relevan dalam dokumen.",
-            "sources": [],
-            "mode": "no-sentences",
-        }
-
-    await ctx.report_progress(3, 4, "Generating answer...")
-
-    if QA_ENABLED and qa_pipeline is not None:
-        top_context = " ".join([s['text'] for s in top_sentences[:3]])
-        qa_result = _qa_extractive(question, top_context)
-        if qa_result and qa_result['score'] > 0.3:
-            top_sentences[0]['text'] = qa_result['answer']
-            top_sentences[0]['is_span'] = True
-
-    sources = []
-    seen_sources = set()
-    for s in top_sentences:
-        key = f"{s['document_judul']}|{s['document_sumber']}"
-        if key not in seen_sources:
-            seen_sources.add(key)
-            sources.append({
-                'judul': s['document_judul'],
-                'sumber': s['document_sumber'],
-                'skor': round(s.get('chunk_similarity', 0) * 100, 1),
-            })
+        return {"answer": "Maaf, data tidak ditemukan.", "sources": [], "mode": "none"}
 
     answer_text = _format_answer(question, top_sentences)
-    mode = "qa-extractive" if any(s.get('is_span') for s in top_sentences) else "sentence-only"
+    return {"answer": answer_text, "count": len(top_sentences)}
 
-    await ctx.report_progress(4, 4, "Answer generated")
-    return {
-        "answer": answer_text,
-        "sources": sources,
-        "mode": mode,
-        "sentences_used": len(top_sentences),
-    }
-
-
-# Mount RAG MCP server into FastAPI
-rag_mcp_app = rag_mcp.streamable_http_app()
-app.mount("/mcp", rag_mcp_app)
-logger.info("RAG MCP server mounted at /mcp")
-
+# Mount RAG MCP server
+app.mount("/mcp", rag_mcp.streamable_http_app())
 
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("AI_SERVICE_PORT", "5001"))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False, workers=1)
+

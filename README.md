@@ -11,6 +11,7 @@ Sistem Informasi Manajemen Tridharma Dosen berbasis Laravel 11 + React + Inertia
 - **Dokumen Bukti**: Upload dan management dokumen akreditasi
 - **SPMI**: Audit Mutu dan Risk Register
 - **Kurikulum**: CPL-MK Mapping Matrix dan RPS
+- **E-RKAT & IKU (M13)**: Perencanaan anggaran (RKAT) dan Cascading IKU Kemdiktisaintek
 
 ### 🤖 AI Agent Features (6 Agents)
 1. **Verifikasi Agent** - Validasi dokumen, deteksi duplikasi
