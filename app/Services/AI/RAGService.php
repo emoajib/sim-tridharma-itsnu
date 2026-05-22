@@ -1,13 +1,23 @@
 <?php
 
+// Vetted by AI - Manual Review Required by Senior Engineer/Manager
+
 namespace App\Services\AI;
 
+use App\Models\ChatHistory;
 use App\Models\KnowledgeBaseChunk;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class RAGService
 {
+    /**
+     * Threshold minimal relevansi (0.0 - 1.0)
+     * Jika di bawah ini, AI akan menolak menjawab untuk menghindari halusinasi.
+     */
+    const SIMILARITY_THRESHOLD = 0.65;
+
     protected string $baseUrl;
 
     protected EmbeddingService $embedding;
@@ -20,35 +30,62 @@ class RAGService
 
     public function ask(string $question, ?int $categoryId = null, int $topK = 5): array
     {
-        $questionVector = $this->embedding->embedText($question);
+        try {
+            $questionVector = $this->embedding->embedText($question);
+            $chunks = $this->searchSimilar($questionVector, $categoryId, $topK);
 
-        $chunks = $this->searchSimilar($questionVector, $categoryId, $topK);
+            $maxSimilarity = !empty($chunks) ? $chunks[0]['similarity'] : 0;
+            $mode = 'sentence-only';
+            $answer = '';
 
-        if (empty($chunks)) {
+            // Guardrail: Cek apakah relevansi mencukupi
+            if (empty($chunks) || $maxSimilarity < self::SIMILARITY_THRESHOLD) {
+                $answer = "Maaf, saya tidak menemukan informasi yang cukup relevan dalam pedoman ITSNU untuk menjawab pertanyaan tersebut. Silakan hubungi unit terkait untuk informasi lebih lanjut.";
+                $mode = 'no-context';
+                $chunks = []; // Kosongkan chunks agar tidak tampil di sumber
+            } else {
+                // Panggil AI Generation (Python Service)
+                $pythonResponse = $this->askPythonAnswer($question, $chunks);
+                if ($pythonResponse) {
+                    $answer = $pythonResponse['answer'];
+                    $mode = $pythonResponse['mode'] ?? 'qa-extractive';
+                } else {
+                    $answer = $this->formatFallback($chunks);
+                }
+            }
+
+            $sources = array_map(fn ($c) => [
+                'judul' => $c['document_judul'],
+                'sumber' => $c['document_sumber'],
+                'skor' => round($c['similarity'] * 100, 1),
+            ], $chunks);
+
+            // Simpan ke Riwayat Chat (Analitik LPM)
+            $history = ChatHistory::create([
+                'user_id' => Auth::id() ?? 1, // Default ke ID 1 jika tidak login (untuk sistem/guest)
+                'question' => $question,
+                'answer' => $answer,
+                'sources' => array_unique($sources, SORT_REGULAR),
+                'max_similarity' => $maxSimilarity,
+                'mode' => $mode,
+            ]);
+
             return [
-                'answer' => 'Maaf, tidak ditemukan dokumen yang relevan untuk pertanyaan Anda.',
+                'id' => $history->id,
+                'answer' => $answer,
+                'sources' => $history->sources,
+                'max_similarity' => $maxSimilarity,
+                'mode' => $mode,
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('RAGService Error', ['message' => $e->getMessage()]);
+            return [
+                'answer' => 'Terjadi kesalahan teknis pada layanan asisten AI. Silakan coba beberapa saat lagi.',
                 'sources' => [],
-                'chunks_used' => 0,
+                'error' => true
             ];
         }
-
-        $answer = $this->askPythonAnswer($question, $chunks);
-
-        if ($answer === null) {
-            $answer = $this->formatFallback($chunks);
-        }
-
-        $sources = array_map(fn ($c) => [
-            'judul' => $c['document_judul'],
-            'sumber' => $c['document_sumber'],
-            'skor' => round($c['similarity'] * 100, 1),
-        ], $chunks);
-
-        return [
-            'answer' => $answer,
-            'sources' => array_unique($sources, SORT_REGULAR),
-            'chunks_used' => count($chunks),
-        ];
     }
 
     public function searchSimilar(array $vector, ?int $categoryId = null, int $topK = 5): array
@@ -68,7 +105,7 @@ class RAGService
         $scored = [];
         foreach ($chunks as $chunk) {
             $chunkVector = $chunk->embedding;
-            if (! $chunkVector) {
+            if (!$chunkVector || !is_array($chunkVector)) {
                 continue;
             }
 
@@ -95,17 +132,16 @@ class RAGService
         $len = min(count($a), count($b));
 
         for ($i = 0; $i < $len; $i++) {
-            $dot += $a[$i] * $b[$i];
-            $normA += $a[$i] * $a[$i];
-            $normB += $b[$i] * $b[$i];
+            $dot += (float)$a[$i] * (float)$b[$i];
+            $normA += (float)$a[$i] * (float)$a[$i];
+            $normB += (float)$b[$i] * (float)$b[$i];
         }
 
         $denom = sqrt($normA) * sqrt($normB);
-
         return $denom > 0 ? $dot / $denom : 0;
     }
 
-    protected function askPythonAnswer(string $question, array $chunks): ?string
+    protected function askPythonAnswer(string $question, array $chunks): ?array
     {
         try {
             $response = Http::timeout(30)->post("{$this->baseUrl}/answer", [
@@ -115,7 +151,7 @@ class RAGService
             ]);
 
             if ($response->successful()) {
-                return $response->json()['answer'];
+                return $response->json();
             }
 
             Log::warning('Python /answer failed', ['status' => $response->status()]);
@@ -129,27 +165,12 @@ class RAGService
     protected function formatFallback(array $chunks): string
     {
         $parts = [];
-        foreach ($chunks as $i => $chunk) {
+        foreach ($chunks as $chunk) {
             $sim = round($chunk['similarity'] * 100, 1);
-            $label = match (true) {
-                $chunk['similarity'] >= 0.9 => '📌',
-                $chunk['similarity'] >= 0.7 => '📄',
-                default => '📝',
-            };
-            $parts[] = "{$label} {$chunk['document_judul']} (relevansi {$sim}%)\n{$chunk['content']}";
+            $parts[] = "📄 **{$chunk['document_judul']}** (Relevansi {$sim}%):\n{$chunk['content']}";
         }
 
-        return 'Ditemukan '.count($parts)." bagian dokumen relevan:\n\n".implode("\n\n---\n\n", $parts);
-    }
-
-    public function health(): array
-    {
-        try {
-            $response = Http::timeout(5)->get("{$this->baseUrl}/health");
-
-            return $response->json();
-        } catch (\Exception $e) {
-            return ['status' => 'offline', 'error' => $e->getMessage()];
-        }
+        return "Berdasarkan dokumen internal yang ditemukan:\n\n" . implode("\n\n---\n\n", $parts);
     }
 }
+
