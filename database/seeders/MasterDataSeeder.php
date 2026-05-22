@@ -15,6 +15,7 @@ class MasterDataSeeder extends Seeder
 
         if ($prodis->isEmpty()) {
             $this->command->warn('Prodi kosong, lewati seeding master data.');
+
             return;
         }
 
@@ -34,15 +35,15 @@ class MasterDataSeeder extends Seeder
 
             foreach ($selectedMk as $index => $mkName) {
                 $existingMk = DB::table('m_mata_kuliah')
-                    ->where('kode_mk', $prodi->kode_prodi . str_pad($index + 1, 3, '0', STR_PAD_LEFT))
+                    ->where('kode_mk', $prodi->kode_prodi.str_pad($index + 1, 3, '0', STR_PAD_LEFT))
                     ->first();
-                
+
                 if ($existingMk) {
                     $mkId = $existingMk->id;
                 } else {
                     $mkId = DB::table('m_mata_kuliah')->insertGetId([
                         'prodi_id' => $prodi->id,
-                        'kode_mk' => $prodi->kode_prodi . str_pad($index + 1, 3, '0', STR_PAD_LEFT),
+                        'kode_mk' => $prodi->kode_prodi.str_pad($index + 1, 3, '0', STR_PAD_LEFT),
                         'nama_mk' => $mkName,
                         'sks' => rand(2, 4),
                         'semester' => ($index % 8) + 1,
@@ -59,7 +60,7 @@ class MasterDataSeeder extends Seeder
             $kurikulumId = DB::table('m_kurikulum')->insertGetId([
                 'prodi_id' => $prodi->id,
                 'nama_kurikulum' => $kurikulumNama,
-                'tahun_berlaku' => (string)(now()->year - rand(0, 4)),
+                'tahun_berlaku' => (string) (now()->year - rand(0, 4)),
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -80,8 +81,8 @@ class MasterDataSeeder extends Seeder
             for ($i = 0; $i < rand(8, 12); $i++) {
                 DB::table('m_cpl')->insert([
                     'prodi_id' => $prodi->id,
-                    'kode_cpl' => 'CPL' . ($i + 1),
-                    'deskripsi' => 'CPL ' . ($i + 1) . ': ' . Str::random(40),
+                    'kode_cpl' => 'CPL'.($i + 1),
+                    'deskripsi' => 'CPL '.($i + 1).': '.Str::random(40),
                     'jenis' => $cplJenis[array_rand($cplJenis)],
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -117,7 +118,7 @@ class MasterDataSeeder extends Seeder
             }
         }
 
-        if ($periodes->isNotEmpty() && !empty($mkData)) {
+        if ($periodes->isNotEmpty() && ! empty($mkData)) {
             foreach ($prodis as $prodi) {
                 $mks = DB::table('m_mata_kuliah')->where('prodi_id', $prodi->id)->get();
                 $periode = $periodes->first();
@@ -128,7 +129,7 @@ class MasterDataSeeder extends Seeder
                         'mata_kuliah_id' => $mk->id,
                         'periode_id' => $periode->id,
                         'status' => 'approved',
-                        'file_path' => '/storage/rps/' . Str::random(20) . '.pdf',
+                        'file_path' => '/storage/rps/'.Str::random(20).'.pdf',
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
@@ -158,11 +159,11 @@ class MasterDataSeeder extends Seeder
         $mitraJenis = ['Industri', 'Perusahaan', 'Institut', 'Pemerintah', 'NGO'];
         for ($i = 0; $i < rand(15, 30); $i++) {
             $mitraId = DB::table('m_mitra')->insertGetId([
-                'nama_mitra' => 'Mitra ' . Str::random(20),
+                'nama_mitra' => 'Mitra '.Str::random(20),
                 'jenis_mitra' => $mitraJenis[array_rand($mitraJenis)],
-                'alamat' => 'Jl. ' . Str::random(30),
-                'telepon' => '021-' . rand(1000000, 9999999),
-                'email' => 'info@mitra' . $i . '.com',
+                'alamat' => 'Jl. '.Str::random(30),
+                'telepon' => '021-'.rand(1000000, 9999999),
+                'email' => 'info@mitra'.$i.'.com',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -175,9 +176,9 @@ class MasterDataSeeder extends Seeder
                 'mitra_id' => $mitraId,
                 'prodi_id' => $prodi->id,
                 'jenis_kerjasama' => ['Pendidikan', 'Penelitian', 'PKM', 'Magang'][rand(0, 3)],
-                'nomor_mou' => 'MoU/' . $tahunMulai . '/ITSNU/' . rand(100, 999),
-                'tanggal_mulai' => $tahunMulai . '-01-01',
-                'tanggal_selesai' => ($tahunMulai + 3) . '-12-31',
+                'nomor_mou' => 'MoU/'.$tahunMulai.'/ITSNU/'.rand(100, 999),
+                'tanggal_mulai' => $tahunMulai.'-01-01',
+                'tanggal_selesai' => ($tahunMulai + 3).'-12-31',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -187,7 +188,7 @@ class MasterDataSeeder extends Seeder
             for ($i = 0; $i < rand(5, 15); $i++) {
                 DB::table('m_sarana')->insert([
                     'prodi_id' => $prodi->id,
-                    'nama_sarana' => 'Sarana ' . ($i + 1) . ': ' . Str::random(20),
+                    'nama_sarana' => 'Sarana '.($i + 1).': '.Str::random(20),
                     'jenis_sarana' => ['Lab', 'Ruang Kelas', 'Perpustakaan', 'Gedung'][rand(0, 3)],
                     'jumlah' => rand(1, 50),
                     'kondisi' => ['Baik', 'Rusak Ringan', 'Rusak Berat'][rand(0, 2)],

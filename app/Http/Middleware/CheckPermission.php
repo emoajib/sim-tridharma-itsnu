@@ -5,21 +5,20 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Spatie\Permission\Exceptions\UnauthorizedException;
 
 class CheckPermission
 {
     public function handle(Request $request, Closure $next, string $permission): Response
     {
-        if (!$request->user()) {
+        if (! $request->user()) {
             return redirect()->route('login');
         }
 
-        if (!$request->user()->can($permission)) {
+        if (! $request->user()->can($permission)) {
             if ($request->expectsJson() || $request->is('api/*')) {
-                return response()->json(['message' => 'Unauthorized - Permission: ' . $permission], 403);
+                return response()->json(['message' => 'Unauthorized - Permission: '.$permission], 403);
             }
-            
+
             abort(403, 'Unauthorized - Anda tidak memiliki izin untuk mengakses halaman ini.');
         }
 

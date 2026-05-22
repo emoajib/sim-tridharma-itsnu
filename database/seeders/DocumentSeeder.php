@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\DokumenBukti;
 use App\Models\Prodi;
-use App\Models\Dosen;
 use Illuminate\Database\Seeder;
 
 class DocumentSeeder extends Seeder
@@ -12,7 +11,7 @@ class DocumentSeeder extends Seeder
     public function run(): void
     {
         $prodi = Prodi::first();
-        
+
         DokumenBukti::create([
             'prodi_id' => $prodi->id,
             'nama_dokumen' => 'Sertifikat Akreditasi 2024',

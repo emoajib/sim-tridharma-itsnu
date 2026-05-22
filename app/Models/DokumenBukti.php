@@ -2,20 +2,24 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class DokumenBukti extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'doc_bukti';
 
     protected $fillable = [
-        'dosen_id', 'prodi_id', 'nama_dokumen', 'file_path', 'file_type',
-        'file_size', 'hash', 'keterangan',
-        'documentable_type', 'documentable_id', 'is_verified'
+        'nama_dokumen', 'file_path', 'file_type', 'file_size', 'hash',
+        'dosen_id', 'prodi_id', 'keterangan',
+        'documentable_type', 'documentable_id',
     ];
+
+    protected $guarded = ['is_verified'];
 
     protected function casts(): array
     {
@@ -30,12 +34,12 @@ class DokumenBukti extends Model
         return $this->morphTo();
     }
 
-    public function dosen()
+    public function dosen(): BelongsTo
     {
         return $this->belongsTo(Dosen::class);
     }
 
-    public function prodi()
+    public function prodi(): BelongsTo
     {
         return $this->belongsTo(Prodi::class);
     }

@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Prodi;
-use App\Models\PeriodeAkademik;
 use App\Models\AgentGeneratorHistory;
+use App\Models\PeriodeAkademik;
+use App\Models\Prodi;
+use App\Services\MCP\MCPClientService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -15,9 +16,9 @@ class GeneratorController extends Controller
     {
         $prodi_list = Prodi::select('id', 'nama_prodi')->get();
         $periode_list = PeriodeAkademik::select('id', 'nama_periode')->orderByDesc('tanggal_mulai')->get();
-        
+
         $history = AgentGeneratorHistory::with(['prodi', 'periode'])
-            ->when($request->prodi_id, fn($q) => $q->where('prodi_id', $request->prodi_id))
+            ->when($request->prodi_id, fn ($q) => $q->where('prodi_id', $request->prodi_id))
             ->orderByDesc('created_at')
             ->paginate(10);
 
@@ -39,23 +40,33 @@ class GeneratorController extends Controller
             'jenis_dokumen' => 'required|in:led,lkpt',
         ]);
 
-        \App\Jobs\AgentDispatchJob::dispatch('generator', 'run', [
-            'prodi_id' => $request->prodi_id,
-            'periode_id' => $request->periode_id,
-            'jenis_dokumen' => $request->jenis_dokumen,
-        ]);
+        $mcpClient = app(MCPClientService::class);
 
-        return back()->with('success', 'Generator dokumen sedang dijalankan. Hasil akan muncul di history.');
+        try {
+            $result = $mcpClient->runGeneratorDokumen(
+                $request->prodi_id,
+                $request->periode_id,
+                strtoupper($request->jenis_dokumen)
+            );
+
+            if (isset($result['error'])) {
+                return back()->with('error', $result['error']);
+            }
+
+            return back()->with('success', "Dokumen {$result['jenis_dokumen']} berhasil dibuat: {$result['filename']}");
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal membuat dokumen: '.$e->getMessage());
+        }
     }
 
     public function download($id)
     {
         $record = AgentGeneratorHistory::findOrFail($id);
-        
-        if (!$record->file_path || !file_exists($record->file_path)) {
+
+        if (! $record->file_path || ! file_exists($record->file_path)) {
             return back()->with('error', 'File tidak ditemukan.');
         }
 
-        return response()->download($record->file_path, $record->judul . '.docx');
+        return response()->download($record->file_path, $record->judul.'.docx');
     }
 }

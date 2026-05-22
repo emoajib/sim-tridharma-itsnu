@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\KerjasamaRequest;
 use App\Models\Kerjasama;
 use App\Models\Mitra;
 use App\Models\Prodi;
@@ -26,38 +27,16 @@ class KerjasamaController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(KerjasamaRequest $request)
     {
-        $validated = $request->validate([
-            'mitra_id' => 'required|exists:m_mitra,id',
-            'prodi_id' => 'required|exists:m_prodi,id',
-            'jenis_kerjasama' => 'required|string|max:50',
-            'nomor_mou' => 'required|string|max:100',
-            'tanggal_mulai' => 'required|date',
-            'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
-            'status' => 'nullable|string|max:30',
-            'is_active' => 'nullable|boolean',
-        ]);
-
-        Kerjasama::create($validated);
+        Kerjasama::create($request->validated());
 
         return redirect()->back()->with('success', 'Kerjasama berhasil ditambahkan.');
     }
 
-    public function update(Request $request, Kerjasama $kerjasama)
+    public function update(KerjasamaRequest $request, Kerjasama $kerjasama)
     {
-        $validated = $request->validate([
-            'mitra_id' => 'required|exists:m_mitra,id',
-            'prodi_id' => 'required|exists:m_prodi,id',
-            'jenis_kerjasama' => 'required|string|max:50',
-            'nomor_mou' => 'required|string|max:100',
-            'tanggal_mulai' => 'required|date',
-            'tanggal_selesai' => 'required|date',
-            'status' => 'nullable|string|max:30',
-            'is_active' => 'nullable|boolean',
-        ]);
-
-        $kerjasama->update($validated);
+        $kerjasama->update($request->validated());
 
         return redirect()->back()->with('success', 'Kerjasama berhasil diperbarui.');
     }

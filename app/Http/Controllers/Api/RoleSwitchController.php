@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 
 class RoleSwitchController extends Controller
 {
@@ -16,18 +15,19 @@ class RoleSwitchController extends Controller
 
         $user = $request->user();
 
-        if (!$user->hasRole($validated['role'])) {
+        if (! $user->hasRole($validated['role'])) {
             return redirect()->back()->with('error', 'Anda tidak memiliki role tersebut.');
         }
 
         $user->setActiveRole($validated['role']);
 
-        return redirect()->back()->with('success', 'Role berhasil diganti ke ' . $validated['role']);
+        return redirect()->back()->with('success', 'Role berhasil diganti ke '.$validated['role']);
     }
 
     public function roles(Request $request)
     {
         $user = $request->user();
+
         return response()->json([
             'roles' => $user->roleList(),
             'active_role' => $user->activeRole(),

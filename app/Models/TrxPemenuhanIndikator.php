@@ -2,16 +2,22 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TrxPemenuhanIndikator extends Model
 {
+    use HasFactory;
+
     protected $table = 'trx_pemenuhan_indikator';
-    
+
     protected $fillable = [
-        'prodi_id', 'periode_id', 'indikator_id', 'capaian', 'nilai', 'status', 'catatan', 'is_verified'
+        'prodi_id', 'periode_id', 'indikator_id', 'capaian', 'nilai', 'status', 'catatan',
     ];
-    
+
+    protected $guarded = ['is_verified'];
+
     protected function casts(): array
     {
         return [
@@ -19,19 +25,19 @@ class TrxPemenuhanIndikator extends Model
             'is_verified' => 'boolean',
         ];
     }
-    
-    public function prodi()
+
+    public function prodi(): BelongsTo
     {
         return $this->belongsTo(Prodi::class);
     }
-    
-    public function periode()
+
+    public function periode(): BelongsTo
     {
         return $this->belongsTo(PeriodeAkademik::class);
     }
-    
-    public function indikator()
+
+    public function indikator(): BelongsTo
     {
-        return $this->belongsTo(MIndikatorAkreditasi::class, 'indikator_id');
+        return $this->belongsTo(IndikatorAkreditasi::class, 'indikator_id');
     }
 }

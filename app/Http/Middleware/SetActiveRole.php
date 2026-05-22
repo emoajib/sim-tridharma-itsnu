@@ -13,6 +13,7 @@ class SetActiveRole
         if ($user = $request->user()) {
             $user->activeRole();
         }
+
         return $next($request);
     }
 }

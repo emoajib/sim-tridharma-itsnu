@@ -18,6 +18,11 @@ auth.json
 Thumbs.db
 *.log
 ai-agents/venv/
+ai-service/venv/
+ai-service/venv/**
+sim_tridharma_itsnu*
+.kilo/
+storage/pail/
 **/__pycache__/
 *.pyc
 .idea/

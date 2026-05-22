@@ -2,13 +2,16 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Str;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
 
 class RabbitMQService
 {
     protected AMQPStreamConnection $connection;
+
     protected string $exchange;
+
     protected string $queue;
 
     public function __construct()
@@ -37,7 +40,7 @@ class RabbitMQService
         $channel->queue_bind($this->queue, $this->exchange, $routingKey);
 
         $msg = new AMQPMessage(json_encode(array_merge($message, [
-            'message_id' => (string) \Illuminate\Support\Str::uuid(),
+            'message_id' => (string) Str::uuid(),
             'timestamp' => now()->toIso8601String(),
         ])), [
             'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,

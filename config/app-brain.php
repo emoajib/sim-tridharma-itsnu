@@ -207,8 +207,8 @@ return [
     |
     */
     'ui' => [
-        'enabled'    => env('BRAIN_UI_ENABLED', true),
-        'prefix'     => env('BRAIN_UI_PREFIX', 'brain'),
+        'enabled' => env('BRAIN_UI_ENABLED', true),
+        'prefix' => env('BRAIN_UI_PREFIX', 'brain'),
         'middleware' => ['web', 'auth'],
     ],
 

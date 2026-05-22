@@ -3,14 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Fakultas;
-use App\Models\Prodi;
-use App\Models\Dosen;
-use App\Models\MataKuliah;
-use App\Models\Kurikulum;
 use App\Models\Cpl;
+use App\Models\Dosen;
+use App\Models\Fakultas;
+use App\Models\Kurikulum;
+use App\Models\MataKuliah;
 use App\Models\PeriodeAkademik;
-use Illuminate\Http\Request;
+use App\Models\Prodi;
 
 class MasterDataController extends Controller
 {

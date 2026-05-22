@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AuditMutuRequest;
 use App\Models\AuditMutu;
-use App\Models\Prodi;
 use App\Models\PeriodeAkademik;
+use App\Models\Prodi;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -16,7 +17,7 @@ class AuditMutuController extends Controller
         $audit = AuditMutu::with('prodi', 'periode')
             ->when($request->search, function ($q, $s) {
                 $q->where('judul_audit', 'like', "%{$s}%")
-                  ->orWhere('auditor', 'like', "%{$s}%");
+                    ->orWhere('auditor', 'like', "%{$s}%");
             })
             ->when($request->status, function ($q, $s) {
                 $q->where('status', $s);
@@ -30,38 +31,16 @@ class AuditMutuController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(AuditMutuRequest $request)
     {
-        $validated = $request->validate([
-            'prodi_id' => 'required|exists:m_prodi,id',
-            'periode_id' => 'required|exists:m_periode_akademik,id',
-            'judul_audit' => 'required|string',
-            'tanggal_audit' => 'required|date',
-            'auditor' => 'nullable|string',
-            'temuan' => 'nullable|string',
-            'rekomendasi' => 'nullable|string',
-        ]);
-
-        AuditMutu::create($validated);
+        AuditMutu::create($request->validated());
 
         return redirect()->back()->with('success', 'Audit mutu berhasil ditambahkan.');
     }
 
-    public function update(Request $request, AuditMutu $auditMutu)
+    public function update(AuditMutuRequest $request, AuditMutu $auditMutu)
     {
-        $validated = $request->validate([
-            'prodi_id' => 'required|exists:m_prodi,id',
-            'periode_id' => 'required|exists:m_periode_akademik,id',
-            'judul_audit' => 'required|string',
-            'tanggal_audit' => 'required|date',
-            'auditor' => 'nullable|string',
-            'temuan' => 'nullable|string',
-            'rekomendasi' => 'nullable|string',
-            'tindak_lanjut' => 'nullable|string',
-            'status' => 'required|string|in:open,in_progress,closed',
-        ]);
-
-        $auditMutu->update($validated);
+        $auditMutu->update($request->validated());
 
         return redirect()->back()->with('success', 'Audit mutu berhasil diperbarui.');
     }
@@ -70,18 +49,18 @@ class AuditMutuController extends Controller
     {
         // In a real scenario, this would call the AI Agent service
         // For now, we generate a smart recommendation based on keywords in 'temuan'
-        
+
         $temuan = strtolower($auditMutu->temuan);
-        $saran = "Berdasarkan analisis AI: ";
-        
+        $saran = 'Berdasarkan analisis AI: ';
+
         if (str_contains($temuan, 'kurikulum') || str_contains($temuan, 'rps')) {
-            $saran .= "Lakukan revisi RPS dan pemutakhiran kurikulum sesuai standar OBE. Koordinasikan dengan KBK untuk pemetaan CPL yang lebih akurat.";
+            $saran .= 'Lakukan revisi RPS dan pemutakhiran kurikulum sesuai standar OBE. Koordinasikan dengan KBK untuk pemetaan CPL yang lebih akurat.';
         } elseif (str_contains($temuan, 'sdm') || str_contains($temuan, 'dosen')) {
-            $saran .= "Tingkatkan rasio dosen dan mahasiswa melalui rekrutmen atau tugas belajar. Dorong dosen untuk meningkatkan sertifikasi kompetensi industri.";
+            $saran .= 'Tingkatkan rasio dosen dan mahasiswa melalui rekrutmen atau tugas belajar. Dorong dosen untuk meningkatkan sertifikasi kompetensi industri.';
         } elseif (str_contains($temuan, 'sarana') || str_contains($temuan, 'fasilitas')) {
-            $saran .= "Segera ajukan pengadaan inventaris pendukung laboratorium dan perbaikan fasilitas ruang kelas untuk mendukung kenyamanan belajar.";
+            $saran .= 'Segera ajukan pengadaan inventaris pendukung laboratorium dan perbaikan fasilitas ruang kelas untuk mendukung kenyamanan belajar.';
         } else {
-            $saran .= "Lakukan koordinasi dengan unit terkait untuk menindaklanjuti temuan ini sesuai dengan standar SPMI yang berlaku. Buat timeline perbaikan dalam 3 bulan kedepan.";
+            $saran .= 'Lakukan koordinasi dengan unit terkait untuk menindaklanjuti temuan ini sesuai dengan standar SPMI yang berlaku. Buat timeline perbaikan dalam 3 bulan kedepan.';
         }
 
         return response()->json([
@@ -93,6 +72,7 @@ class AuditMutuController extends Controller
     public function destroy(AuditMutu $auditMutu)
     {
         $auditMutu->delete();
+
         return redirect()->back()->with('success', 'Audit mutu berhasil dihapus.');
     }
 }

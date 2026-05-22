@@ -3,8 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\AiptMetric;
-use App\Models\SpmiCycle;
 use App\Models\PeriodeAkademik;
+use App\Models\SpmiCycle;
 use Illuminate\Database\Seeder;
 
 class AiptSeeder extends Seeder

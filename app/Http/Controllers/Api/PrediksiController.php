@@ -4,8 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\AgentPredictionHistory;
-use App\Models\Prodi;
 use App\Models\PeriodeAkademik;
+use App\Models\Prodi;
+use App\Services\MCP\MCPClientService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -14,8 +15,8 @@ class PrediksiController extends Controller
     public function index(Request $request)
     {
         $prediksi = AgentPredictionHistory::with(['prodi', 'periode'])
-            ->when($request->prodi_id, fn($q) => $q->where('prodi_id', $request->prodi_id))
-            ->when($request->periode_id, fn($q) => $q->where('periode_id', $request->periode_id))
+            ->when($request->prodi_id, fn ($q) => $q->where('prodi_id', $request->prodi_id))
+            ->when($request->periode_id, fn ($q) => $q->where('periode_id', $request->periode_id))
             ->orderByDesc('created_at')
             ->paginate(20);
 
@@ -50,22 +51,28 @@ class PrediksiController extends Controller
         ]);
 
         $prodiId = $request->prodi_id ?: null;
-        $periodeId = $request->periode_id ?: null;
-        
-        \App\Jobs\AgentDispatchJob::dispatch('prediksi', 'run', [
-            'prodi_id' => $prodiId,
-            'periode_id' => $periodeId,
-        ]);
 
-        return back()->with('success', 'Agent Prediksi sedang dijalankan...');
+        $mcpClient = app(MCPClientService::class);
+
+        try {
+            $result = $mcpClient->runPrediksiSkor($prodiId);
+
+            if (isset($result['error'])) {
+                return back()->with('error', $result['error']);
+            }
+
+            return back()->with('success', "Agent Prediksi selesai: Skor {$result['predicted_score']} ({$result['predicted_category']})");
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal menjalankan agent: '.$e->getMessage());
+        }
     }
 
     public function latest(Request $request)
     {
         $prodiId = $request->prodi_id;
-        
+
         $prediksi = AgentPredictionHistory::with(['prodi', 'periode'])
-            ->when($prodiId, fn($q) => $q->where('prodi_id', $prodiId))
+            ->when($prodiId, fn ($q) => $q->where('prodi_id', $prodiId))
             ->orderByDesc('created_at')
             ->first();
 

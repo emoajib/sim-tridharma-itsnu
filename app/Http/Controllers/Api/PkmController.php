@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Pkm;
+use App\Http\Requests\PkmRequest;
 use App\Models\Dosen;
-use App\Models\Prodi;
 use App\Models\PeriodeAkademik;
+use App\Models\Pkm;
+use App\Models\Prodi;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -28,32 +29,16 @@ class PkmController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(PkmRequest $request)
     {
-        $validated = $request->validate([
-            'dosen_id' => 'required|exists:m_dosen,id',
-            'prodi_id' => 'required|exists:m_prodi,id',
-            'periode_id' => 'required|exists:m_periode_akademik,id',
-            'judul_pkm' => 'required',
-            'jenis_pkm' => 'required',
-        ]);
-
-        Pkm::create($validated);
+        Pkm::create($request->validated());
 
         return redirect()->back()->with('success', 'PKM berhasil ditambahkan.');
     }
 
-    public function update(Request $request, Pkm $pkm)
+    public function update(PkmRequest $request, Pkm $pkm)
     {
-        $validated = $request->validate([
-            'dosen_id' => 'required|exists:m_dosen,id',
-            'prodi_id' => 'required|exists:m_prodi,id',
-            'periode_id' => 'required|exists:m_periode_akademik,id',
-            'judul_pkm' => 'required',
-            'jenis_pkm' => 'required',
-        ]);
-
-        $pkm->update($validated);
+        $pkm->update($request->validated());
 
         return redirect()->back()->with('success', 'PKM berhasil diperbarui.');
     }

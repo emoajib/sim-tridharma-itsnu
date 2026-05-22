@@ -2,17 +2,19 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasActiveScope;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class KuisionerTracer extends Model
 {
-    use SoftDeletes;
+    use HasActiveScope, SoftDeletes;
 
     protected $table = 'm_kuisioner_tracer';
 
     protected $fillable = [
-        'prodi_id', 'judul_kuisioner', 'tahun', 'pertanyaan', 'is_active'
+        'prodi_id', 'judul_kuisioner', 'tahun', 'pertanyaan', 'is_active',
     ];
 
     protected function casts(): array
@@ -23,7 +25,7 @@ class KuisionerTracer extends Model
         ];
     }
 
-    public function prodi()
+    public function prodi(): BelongsTo
     {
         return $this->belongsTo(Prodi::class);
     }

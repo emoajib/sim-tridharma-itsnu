@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\LembagaAkreditasiRequest;
 use App\Models\LembagaAkreditasi;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class LembagaAkreditasiController extends Controller
@@ -16,28 +16,16 @@ class LembagaAkreditasiController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(LembagaAkreditasiRequest $request)
     {
-        $validated = $request->validate([
-            'nama_lembaga' => 'required|string|max:100',
-            'singkatan' => 'required|string|max:20|unique:m_lembaga_akreditasi,singkatan',
-            'deskripsi' => 'nullable|string',
-        ]);
-
-        LembagaAkreditasi::create($validated);
+        LembagaAkreditasi::create($request->validated());
 
         return redirect()->back()->with('success', 'Lembaga akreditasi berhasil ditambahkan.');
     }
 
-    public function update(Request $request, LembagaAkreditasi $lembagaAkreditasi)
+    public function update(LembagaAkreditasiRequest $request, LembagaAkreditasi $lembagaAkreditasi)
     {
-        $validated = $request->validate([
-            'nama_lembaga' => 'required|string|max:100',
-            'singkatan' => 'required|string|max:20|unique:m_lembaga_akreditasi,singkatan,' . $lembagaAkreditasi->id,
-            'deskripsi' => 'nullable|string',
-        ]);
-
-        $lembagaAkreditasi->update($validated);
+        $lembagaAkreditasi->update($request->validated());
 
         return redirect()->back()->with('success', 'Lembaga akreditasi berhasil diperbarui.');
     }

@@ -4,22 +4,22 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AgentRunRequest;
-use App\Jobs\AgentDispatchJob;
-use App\Models\AgentExecutionLog;
+use App\Services\Agent\AgentOrchestrationService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class AgentController extends Controller
 {
+    public function __construct(
+        protected AgentOrchestrationService $orchestrator,
+    ) {}
+
     public function run(string $agent, AgentRunRequest $request)
     {
-        $allowed = ['verifikasi', 'prediksi', 'rekomendasi', 'peringatan', 'generator', 'integrasi'];
-
-        if (!in_array($agent, $allowed)) {
+        if (! $this->orchestrator->isValidAgent($agent)) {
             return response()->json(['error' => 'Invalid agent name'], 400);
         }
 
-        AgentDispatchJob::dispatch($agent, 'run', $request->validated());
+        $this->orchestrator->dispatch($agent, $request->validated());
 
         return response()->json([
             'message' => "Agent {$agent} dispatched",
@@ -42,7 +42,7 @@ class AgentController extends Controller
             'triggered_by' => 'nullable|string',
         ]);
 
-        $log = AgentExecutionLog::create($validated);
+        $log = $this->orchestrator->logExecution($validated);
 
         return response()->json([
             'success' => true,
@@ -52,40 +52,11 @@ class AgentController extends Controller
 
     public function status()
     {
-        $recent = \App\Models\AgentExecutionLog::latest()->take(20)->get();
-
-        return response()->json([
-            'agents' => [
-                'verifikasi' => ['status' => 'active', 'last_run' => null],
-                'prediksi' => ['status' => 'active', 'last_run' => null],
-                'rekomendasi' => ['status' => 'active', 'last_run' => null],
-                'peringatan' => ['status' => 'active', 'last_run' => null],
-                'generator' => ['status' => 'active', 'last_run' => null],
-                'integrasi' => ['status' => 'active', 'last_run' => null],
-            ],
-            'recent_logs' => $recent,
-        ]);
+        return response()->json($this->orchestrator->getStatus());
     }
 
     public function latestResults(Request $request)
     {
-        $after = $request->get('after');
-        
-        $logs = \App\Models\AgentExecutionLog::where('status', 'success')
-            ->when($after, fn($q) => $q->where('created_at', '>', $after))
-            ->orderByDesc('created_at')
-            ->limit(10)
-            ->get();
-
-        $predictions = \App\Models\AgentPredictionHistory::orderByDesc('created_at')->limit(5)->get();
-        $warnings = \App\Models\AgentPeringatanLog::where('is_read', false)->orderByDesc('created_at')->limit(5)->get();
-        $generations = \App\Models\AgentGeneratorHistory::orderByDesc('created_at')->limit(5)->get();
-
-        return response()->json([
-            'logs' => $logs,
-            'predictions' => $predictions,
-            'warnings' => $warnings,
-            'generations' => $generations,
-        ]);
+        return response()->json($this->orchestrator->getLatestResults($request->get('after')));
     }
 }

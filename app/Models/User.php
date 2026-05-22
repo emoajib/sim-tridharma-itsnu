@@ -2,35 +2,41 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasActiveScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
-use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Support\Facades\Session;
+use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasApiTokens, HasRoles;
+    use HasActiveScope, HasApiTokens, HasFactory, HasRoles, Notifiable;
 
     /**
      * The attributes that are mass assignable.
      *
-     * @var array<int, string>
+     * @var list<string>
      */
     protected $fillable = [
         'name',
         'email',
         'password',
+        'is_active',
+    ];
+
+    protected $guarded = [
         'dosen_id',
         'prodi_id',
-        'is_active',
     ];
 
     /**
      * The attributes that should be hidden for serialization.
      *
-     * @var array<int, string>
+     * @var list<string>
      */
     protected $hidden = [
         'password',
@@ -58,7 +64,8 @@ class User extends Authenticatable
             return $role;
         }
         $first = $this->roles->first();
-        return $first?->name;
+
+        return $first instanceof Role ? $first->name : null;
     }
 
     public function setActiveRole(string $roleName): void
@@ -78,12 +85,12 @@ class User extends Authenticatable
         return $this->roles->pluck('name')->toArray();
     }
 
-    public function dosen()
+    public function dosen(): BelongsTo
     {
         return $this->belongsTo(Dosen::class, 'dosen_id');
     }
 
-    public function prodi()
+    public function prodi(): BelongsTo
     {
         return $this->belongsTo(Prodi::class, 'prodi_id');
     }

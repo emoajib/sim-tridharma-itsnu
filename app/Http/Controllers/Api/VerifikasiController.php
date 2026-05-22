@@ -4,8 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\AgentVerifikasiHasil;
-use App\Models\Prodi;
 use App\Models\Dosen;
+use App\Models\Prodi;
+use App\Services\MCP\MCPClientService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -14,15 +15,15 @@ class VerifikasiController extends Controller
     public function index(Request $request)
     {
         $verifikasi = AgentVerifikasiHasil::with(['prodi', 'dosen', 'dokumen'])
-            ->when($request->prodi_id, fn($q) => $q->where('prodi_id', $request->prodi_id))
-            ->when($request->dosen_id, fn($q) => $q->where('dosen_id', $request->dosen_id))
-            ->when($request->status, fn($q) => $q->where('status', $request->status))
+            ->when($request->prodi_id, fn ($q) => $q->where('prodi_id', $request->prodi_id))
+            ->when($request->dosen_id, fn ($q) => $q->where('dosen_id', $request->dosen_id))
+            ->when($request->status, fn ($q) => $q->where('status', $request->status))
             ->orderByDesc('created_at')
             ->paginate(20);
 
         $prodi_list = Prodi::select('id', 'nama_prodi')->get();
         $dosen_list = Dosen::select('id', 'nama_depan', 'nama_belakang')->get();
-        
+
         $stats = [
             'total' => AgentVerifikasiHasil::count(),
             'valid' => AgentVerifikasiHasil::where('status', 'valid')->count(),
@@ -50,12 +51,17 @@ class VerifikasiController extends Controller
             'dosen_id' => 'nullable|integer',
         ]);
 
-        \App\Jobs\AgentDispatchJob::dispatch('verifikasi', 'run', [
-            'prodi_id' => $request->prodi_id,
-            'dosen_id' => $request->dosen_id,
-        ]);
+        $mcpClient = app(MCPClientService::class);
 
-        return back()->with('success', 'Agent Verifikasi sedang dijalankan...');
+        try {
+            $result = $mcpClient->runVerifikasiDokumen(
+                $request->prodi_id ?? 0,
+                $request->dosen_id
+            );
+
+            return back()->with('success', "Agent Verifikasi selesai: {$result['valid_count']} valid, {$result['need_review_count']} perlu review");
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal menjalankan agent: '.$e->getMessage());
+        }
     }
-
 }

@@ -2,14 +2,19 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/** @property array $hasil_text */
 class AgentGeneratorHistory extends Model
 {
+    use HasFactory;
+
     protected $table = 'agent_generator_history';
 
     protected $fillable = [
-        'prodi_id', 'periode_id', 'jenis_dokumen', 'judul', 'file_path', 'status', 'prompt_text', 'hasil_text', 'generated_by'
+        'prodi_id', 'periode_id', 'jenis_dokumen', 'judul', 'file_path', 'status', 'prompt_text', 'hasil_text', 'generated_by',
     ];
 
     protected function casts(): array
@@ -19,12 +24,12 @@ class AgentGeneratorHistory extends Model
         ];
     }
 
-    public function prodi()
+    public function prodi(): BelongsTo
     {
         return $this->belongsTo(Prodi::class);
     }
 
-    public function periode()
+    public function periode(): BelongsTo
     {
         return $this->belongsTo(PeriodeAkademik::class);
     }

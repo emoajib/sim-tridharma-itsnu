@@ -2,19 +2,23 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Pkm extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'trx_pkm';
 
     protected $fillable = [
         'dosen_id', 'prodi_id', 'periode_id', 'judul_pkm', 'jenis_pkm',
-        'lokasi', 'sumber_dana', 'jumlah_dana', 'tahun_pelaksanaan', 'is_verified'
+        'lokasi', 'sumber_dana', 'jumlah_dana', 'tahun_pelaksanaan',
     ];
+
+    protected $guarded = ['is_verified'];
 
     protected function casts(): array
     {
@@ -24,17 +28,17 @@ class Pkm extends Model
         ];
     }
 
-    public function dosen()
+    public function dosen(): BelongsTo
     {
         return $this->belongsTo(Dosen::class);
     }
 
-    public function prodi()
+    public function prodi(): BelongsTo
     {
         return $this->belongsTo(Prodi::class);
     }
 
-    public function periode()
+    public function periode(): BelongsTo
     {
         return $this->belongsTo(PeriodeAkademik::class, 'periode_id');
     }

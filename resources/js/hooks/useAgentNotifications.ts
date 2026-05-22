@@ -1,12 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import axios, { CancelTokenSource } from 'axios';
 
 interface AgentNotification {
     id: number;
     agent: string;
     status: string;
     created_at: string;
-    output_data?: any;
+    output_data?: Record<string, unknown>;
 }
 
 interface PredictionNotification {
@@ -50,33 +50,49 @@ interface UseAgentNotificationsReturn {
     refresh: () => Promise<void>;
 }
 
+function mergeUniqueById<T extends { id: number }>(existing: T[], incoming: T[], maxItems = 10): T[] {
+    const existingIds = new Set(existing.map(item => item.id));
+    const newItems = incoming.filter(item => !existingIds.has(item.id));
+    return [...newItems, ...existing].slice(0, maxItems);
+}
+
 export function useAgentNotifications(pollInterval = 10000): UseAgentNotificationsReturn {
     const [notifications, setNotifications] = useState<AgentNotification[]>([]);
     const [predictions, setPredictions] = useState<PredictionNotification[]>([]);
     const [warnings, setWarnings] = useState<WarningNotification[]>([]);
     const [generations, setGenerations] = useState<GenerationNotification[]>([]);
     const [isPolling, setIsPolling] = useState(false);
-    const [lastFetch, setLastFetch] = useState<string | null>(null);
-    const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null);
+
+    const lastFetchRef = useRef<string | null>(null);
+    const intervalRef = useRef<NodeJS.Timeout | null>(null);
+    const cancelRef = useRef<CancelTokenSource | null>(null);
+    const mountedRef = useRef(true);
 
     const fetchLatest = useCallback(async () => {
+        if (cancelRef.current) {
+            cancelRef.current.cancel('Request superseded by new fetch');
+        }
+        const source = axios.CancelToken.source();
+        cancelRef.current = source;
+
         try {
-            const params = lastFetch ? { after: lastFetch } : {};
-            const response = await axios.get('/api/agents/latest', { params });
+            const params = lastFetchRef.current ? { after: lastFetchRef.current } : {};
+            const response = await axios.get('/api/agents/latest', {
+                params,
+                cancelToken: source.token,
+            });
+            if (!mountedRef.current) return;
+
             const { logs, predictions: newPredictions, warnings: newWarnings, generations: newGenerations } = response.data;
 
             if (logs && logs.length > 0) {
                 setNotifications(logs);
                 const latestTime = logs[0]?.created_at;
-                if (latestTime) setLastFetch(latestTime);
+                if (latestTime) lastFetchRef.current = latestTime;
             }
 
             if (newPredictions && newPredictions.length > 0) {
-                setPredictions(prev => {
-                    const existingIds = new Set(prev.map((p: PredictionNotification) => p.id));
-                    const newItems = newPredictions.filter((p: PredictionNotification) => !existingIds.has(p.id));
-                    return [...newItems, ...prev].slice(0, 10);
-                });
+                setPredictions(prev => mergeUniqueById(prev, newPredictions));
             }
 
             if (newWarnings && newWarnings.length > 0) {
@@ -84,45 +100,51 @@ export function useAgentNotifications(pollInterval = 10000): UseAgentNotificatio
             }
 
             if (newGenerations && newGenerations.length > 0) {
-                setGenerations(prev => {
-                    const existingIds = new Set(prev.map((g: GenerationNotification) => g.id));
-                    const newItems = newGenerations.filter((g: GenerationNotification) => !existingIds.has(g.id));
-                    return [...newItems, ...prev].slice(0, 10);
-                });
+                setGenerations(prev => mergeUniqueById(prev, newGenerations));
             }
         } catch (error) {
-            console.error('Failed to fetch agent notifications:', error);
+            if (!axios.isCancel(error)) {
+                console.error('Failed to fetch agent notifications:', error);
+            }
         }
-    }, [lastFetch]);
+    }, []);
 
     const startPolling = useCallback(() => {
         if (!isPolling) {
             setIsPolling(true);
             fetchLatest();
-            const id = setInterval(fetchLatest, pollInterval);
-            setIntervalId(id);
+            intervalRef.current = setInterval(fetchLatest, pollInterval);
         }
     }, [isPolling, fetchLatest, pollInterval]);
 
     const stopPolling = useCallback(() => {
-        if (isPolling && intervalId) {
-            clearInterval(intervalId);
-            setIntervalId(null);
-            setIsPolling(false);
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
         }
-    }, [isPolling, intervalId]);
+        if (cancelRef.current) {
+            cancelRef.current.cancel('Polling stopped');
+            cancelRef.current = null;
+        }
+        setIsPolling(false);
+    }, []);
 
     const refresh = useCallback(async () => {
         await fetchLatest();
     }, [fetchLatest]);
 
     useEffect(() => {
+        mountedRef.current = true;
         return () => {
-            if (intervalId) {
-                clearInterval(intervalId);
+            mountedRef.current = false;
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+            }
+            if (cancelRef.current) {
+                cancelRef.current.cancel('Component unmounted');
             }
         };
-    }, [intervalId]);
+    }, []);
 
     return {
         notifications,

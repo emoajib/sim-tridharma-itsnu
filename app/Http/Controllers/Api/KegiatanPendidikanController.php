@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\KegiatanPendidikan;
+use App\Http\Requests\KegiatanPendidikanRequest;
 use App\Models\Dosen;
-use App\Models\Prodi;
-use App\Models\PeriodeAkademik;
+use App\Models\KegiatanPendidikan;
 use App\Models\MataKuliah;
+use App\Models\PeriodeAkademik;
+use App\Models\Prodi;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -33,34 +34,16 @@ class KegiatanPendidikanController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(KegiatanPendidikanRequest $request)
     {
-        $validated = $request->validate([
-            'dosen_id' => 'required|exists:m_dosen,id',
-            'prodi_id' => 'required|exists:m_prodi,id',
-            'periode_id' => 'required|exists:m_periode_akademik,id',
-            'nama_kegiatan' => 'required|string',
-            'jenis_kegiatan' => 'required|string',
-            'sks' => 'required|integer|min:1|max:12',
-            'mata_kuliah_id' => 'nullable|exists:m_mata_kuliah,id',
-        ]);
-
-        KegiatanPendidikan::create($validated);
+        KegiatanPendidikan::create($request->validated());
 
         return redirect()->back()->with('success', 'Kegiatan pendidikan berhasil ditambahkan.');
     }
 
-    public function update(Request $request, KegiatanPendidikan $kegiatanPendidikan)
+    public function update(KegiatanPendidikanRequest $request, KegiatanPendidikan $kegiatanPendidikan)
     {
-        $validated = $request->validate([
-            'dosen_id' => 'required|exists:m_dosen,id',
-            'prodi_id' => 'required|exists:m_prodi,id',
-            'periode_id' => 'required|exists:m_periode_akademik,id',
-            'nama_kegiatan' => 'required',
-            'jenis_kegiatan' => 'required',
-        ]);
-
-        $kegiatanPendidikan->update($validated);
+        $kegiatanPendidikan->update($request->validated());
 
         return redirect()->back()->with('success', 'Kegiatan pendidikan berhasil diperbarui.');
     }

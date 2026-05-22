@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Log;
 class RAGService
 {
     protected string $baseUrl;
+
     protected EmbeddingService $embedding;
 
     public function __construct()
@@ -37,7 +38,7 @@ class RAGService
             $answer = $this->formatFallback($chunks);
         }
 
-        $sources = array_map(fn($c) => [
+        $sources = array_map(fn ($c) => [
             'judul' => $c['document_judul'],
             'sumber' => $c['document_sumber'],
             'skor' => round($c['similarity'] * 100, 1),
@@ -67,7 +68,9 @@ class RAGService
         $scored = [];
         foreach ($chunks as $chunk) {
             $chunkVector = $chunk->embedding;
-            if (!$chunkVector) continue;
+            if (! $chunkVector) {
+                continue;
+            }
 
             $similarity = $this->cosineSimilarity($vector, $chunkVector);
             $scored[] = [
@@ -79,7 +82,7 @@ class RAGService
             ];
         }
 
-        usort($scored, fn($a, $b) => $b['similarity'] <=> $a['similarity']);
+        usort($scored, fn ($a, $b) => $b['similarity'] <=> $a['similarity']);
 
         return array_slice($scored, 0, $topK);
     }
@@ -98,6 +101,7 @@ class RAGService
         }
 
         $denom = sqrt($normA) * sqrt($normB);
+
         return $denom > 0 ? $dot / $denom : 0;
     }
 
@@ -135,13 +139,14 @@ class RAGService
             $parts[] = "{$label} {$chunk['document_judul']} (relevansi {$sim}%)\n{$chunk['content']}";
         }
 
-        return "Ditemukan " . count($parts) . " bagian dokumen relevan:\n\n" . implode("\n\n---\n\n", $parts);
+        return 'Ditemukan '.count($parts)." bagian dokumen relevan:\n\n".implode("\n\n---\n\n", $parts);
     }
 
     public function health(): array
     {
         try {
             $response = Http::timeout(5)->get("{$this->baseUrl}/health");
+
             return $response->json();
         } catch (\Exception $e) {
             return ['status' => 'offline', 'error' => $e->getMessage()];

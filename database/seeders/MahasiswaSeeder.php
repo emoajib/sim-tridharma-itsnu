@@ -19,15 +19,15 @@ class MahasiswaSeeder extends Seeder
         foreach ($prodis as $prodi) {
             for ($i = 0; $i < rand(20, 50); $i++) {
                 $angkatan = rand(2020, 2025);
-                $nim = $angkatan . str_pad($prodi->id, 2, '0', STR_PAD_LEFT) . str_pad($i + 1, 3, '0', STR_PAD_LEFT);
-                
+                $nim = $angkatan.str_pad($prodi->id, 2, '0', STR_PAD_LEFT).str_pad($i + 1, 3, '0', STR_PAD_LEFT);
+
                 DB::table('m_mahasiswa')->insert([
                     'prodi_id' => $prodi->id,
                     'nim' => $nim,
-                    'nama' => 'Mahasiswa ' . Str::random(10),
-                    'angkatan' => (string)$angkatan,
+                    'nama' => 'Mahasiswa '.Str::random(10),
+                    'angkatan' => (string) $angkatan,
                     'status' => 'aktif',
-                    'email' => Str::random(5) . '@student.itsnu.ac.id',
+                    'email' => Str::random(5).'@student.itsnu.ac.id',
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);

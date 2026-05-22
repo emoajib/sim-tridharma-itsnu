@@ -2,19 +2,23 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class MahasiswaBimbingan extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'trx_mahasiswa_bimbingan';
 
     protected $fillable = [
-        'dosen_id', 'mahasiswa_id', 'prodi_id', 'periode_id',
-        'jenis_bimbingan', 'judul', 'status', 'is_verified'
+        'dosen_id', 'prodi_id', 'periode_id', 'mahasiswa_id',
+        'jenis_bimbingan', 'judul', 'status',
     ];
+
+    protected $guarded = ['is_verified'];
 
     protected function casts(): array
     {
@@ -23,22 +27,22 @@ class MahasiswaBimbingan extends Model
         ];
     }
 
-    public function dosen()
+    public function dosen(): BelongsTo
     {
         return $this->belongsTo(Dosen::class);
     }
 
-    public function mahasiswa()
+    public function mahasiswa(): BelongsTo
     {
         return $this->belongsTo(Mahasiswa::class, 'mahasiswa_id');
     }
 
-    public function prodi()
+    public function prodi(): BelongsTo
     {
         return $this->belongsTo(Prodi::class);
     }
 
-    public function periode()
+    public function periode(): BelongsTo
     {
         return $this->belongsTo(PeriodeAkademik::class, 'periode_id');
     }

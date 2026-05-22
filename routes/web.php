@@ -1,35 +1,50 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\Api\FakultasController;
-use App\Http\Controllers\Api\ProdiController;
-use App\Http\Controllers\Api\DosenController;
-use App\Http\Controllers\Api\MataKuliahController;
-use App\Http\Controllers\Api\KurikulumController;
-use App\Http\Controllers\Api\CplController;
-use App\Http\Controllers\Api\PeriodeAkademikController;
-use App\Http\Controllers\Api\KegiatanPendidikanController;
-use App\Http\Controllers\Api\PenelitianController;
-use App\Http\Controllers\Api\PublikasiController;
-use App\Http\Controllers\Api\PkmController;
-use App\Http\Controllers\Api\PenunjangController;
-use App\Http\Controllers\Api\PortofolioController;
+use App\Http\Controllers\Api\AdminSettingController;
+use App\Http\Controllers\Api\AiptController;
+use App\Http\Controllers\Api\AlumniController;
+use App\Http\Controllers\Api\AuditMutuController;
 use App\Http\Controllers\Api\BkdController;
+use App\Http\Controllers\Api\CplController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DokumenBuktiController;
-use App\Http\Controllers\Api\MahasiswaBimbinganController;
-use App\Http\Controllers\Api\SaranaController;
-use App\Http\Controllers\Api\MitraController;
+use App\Http\Controllers\Api\DosenController;
+use App\Http\Controllers\Api\FakultasController;
+use App\Http\Controllers\Api\GeneratorController;
+use App\Http\Controllers\Api\IndikatorAkreditasiController;
+use App\Http\Controllers\Api\InstrumenAkreditasiController;
+use App\Http\Controllers\Api\IntegrasiController;
+use App\Http\Controllers\Api\KegiatanPendidikanController;
 use App\Http\Controllers\Api\KerjasamaController;
 use App\Http\Controllers\Api\KeuanganController;
-use App\Http\Controllers\Api\AlumniController;
-use App\Http\Controllers\Api\KuisionerTracerController;
-use App\Http\Controllers\Api\TracerJawabanController;
-use App\Http\Controllers\Api\DashboardController;
-use App\Http\Controllers\Api\RoleSwitchController;
-use App\Http\Controllers\Api\AiptController;
-use App\Http\Controllers\Api\TemplateController;
 use App\Http\Controllers\Api\KnowledgeBaseController;
+use App\Http\Controllers\Api\KuisionerTracerController;
+use App\Http\Controllers\Api\KurikulumController;
+use App\Http\Controllers\Api\KurikulumMappingController;
+use App\Http\Controllers\Api\LembagaAkreditasiController;
+use App\Http\Controllers\Api\MahasiswaBimbinganController;
+use App\Http\Controllers\Api\MataKuliahController;
+use App\Http\Controllers\Api\MitraController;
+use App\Http\Controllers\Api\PenelitianController;
+use App\Http\Controllers\Api\PenunjangController;
+use App\Http\Controllers\Api\PeringatanController;
+use App\Http\Controllers\Api\PeriodeAkademikController;
+use App\Http\Controllers\Api\PkmController;
+use App\Http\Controllers\Api\PortofolioController;
 use App\Http\Controllers\Api\PrediksiController;
+use App\Http\Controllers\Api\ProdiController;
+use App\Http\Controllers\Api\PublikasiController;
+use App\Http\Controllers\Api\RekomendasiController;
+use App\Http\Controllers\Api\RiskRegisterController;
+use App\Http\Controllers\Api\RoleSwitchController;
+use App\Http\Controllers\Api\RpsController;
+use App\Http\Controllers\Api\SaranaController;
+use App\Http\Controllers\Api\SintaImportController;
+use App\Http\Controllers\Api\TemplateController;
+use App\Http\Controllers\Api\TracerJawabanController;
+use App\Http\Controllers\Api\VerifikasiController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Middleware\PermissionMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -45,8 +60,8 @@ Route::get('/', function () {
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::middleware(['auth', \App\Http\Middleware\PermissionMiddleware::class])->group(function () {
-    
+Route::middleware(['auth', PermissionMiddleware::class])->group(function () {
+
     Route::post('/role/switch', [RoleSwitchController::class, 'switch'])->name('role.switch');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -135,31 +150,31 @@ Route::middleware(['auth', \App\Http\Middleware\PermissionMiddleware::class])->g
     Route::delete('/bimbingan/{mahasiswaBimbingan}', [MahasiswaBimbinganController::class, 'destroy'])->name('bimbingan.destroy');
 
     // SPMI Routes
-    Route::get('/spmi/audit', [\App\Http\Controllers\Api\AuditMutuController::class, 'index'])->name('spmi.audit');
-    Route::post('/spmi/audit', [\App\Http\Controllers\Api\AuditMutuController::class, 'store'])->name('spmi.audit.store');
-    Route::put('/spmi/audit/{auditMutu}', [\App\Http\Controllers\Api\AuditMutuController::class, 'update'])->name('spmi.audit.update');
-    Route::post('/spmi/audit/{auditMutu}/ai-resolve', [\App\Http\Controllers\Api\AuditMutuController::class, 'aiResolve'])->name('spmi.audit.ai-resolve');
-    Route::delete('/spmi/audit/{auditMutu}', [\App\Http\Controllers\Api\AuditMutuController::class, 'destroy'])->name('spmi.audit.destroy');
+    Route::get('/spmi/audit', [AuditMutuController::class, 'index'])->name('spmi.audit');
+    Route::post('/spmi/audit', [AuditMutuController::class, 'store'])->name('spmi.audit.store');
+    Route::put('/spmi/audit/{auditMutu}', [AuditMutuController::class, 'update'])->name('spmi.audit.update');
+    Route::post('/spmi/audit/{auditMutu}/ai-resolve', [AuditMutuController::class, 'aiResolve'])->name('spmi.audit.ai-resolve');
+    Route::delete('/spmi/audit/{auditMutu}', [AuditMutuController::class, 'destroy'])->name('spmi.audit.destroy');
 
-    Route::get('/spmi/risk', [\App\Http\Controllers\Api\RiskRegisterController::class, 'index'])->name('spmi.risk');
-    Route::post('/spmi/risk', [\App\Http\Controllers\Api\RiskRegisterController::class, 'store'])
+    Route::get('/spmi/risk', [RiskRegisterController::class, 'index'])->name('spmi.risk');
+    Route::post('/spmi/risk', [RiskRegisterController::class, 'store'])
         ->name('spmi.risk.store')
         ->middleware('throttle:30,1');
-    Route::put('/spmi/risk/{riskRegister}', [\App\Http\Controllers\Api\RiskRegisterController::class, 'update'])
+    Route::put('/spmi/risk/{riskRegister}', [RiskRegisterController::class, 'update'])
         ->name('spmi.risk.update')
         ->middleware('throttle:30,1');
-    Route::delete('/spmi/risk/{riskRegister}', [\App\Http\Controllers\Api\RiskRegisterController::class, 'destroy'])
+    Route::delete('/spmi/risk/{riskRegister}', [RiskRegisterController::class, 'destroy'])
         ->name('spmi.risk.destroy')
         ->middleware('throttle:10,1');
 
     // Kurikulum Mapping + RPS Routes
-    Route::get('/kurikulum/mapping', [\App\Http\Controllers\Api\KurikulumMappingController::class, 'index'])->name('kurikulum.mapping');
-    Route::post('/kurikulum/mapping/toggle', [\App\Http\Controllers\Api\KurikulumMappingController::class, 'toggleMapping'])->name('kurikulum.mapping.toggle');
+    Route::get('/kurikulum/mapping', [KurikulumMappingController::class, 'index'])->name('kurikulum.mapping');
+    Route::post('/kurikulum/mapping/toggle', [KurikulumMappingController::class, 'toggleMapping'])->name('kurikulum.mapping.toggle');
 
-    Route::get('/kurikulum/rps', [\App\Http\Controllers\Api\RpsController::class, 'index'])->name('kurikulum.rps');
-    Route::post('/kurikulum/rps', [\App\Http\Controllers\Api\RpsController::class, 'store'])->name('kurikulum.rps.store');
-    Route::put('/kurikulum/rps/{rp}', [\App\Http\Controllers\Api\RpsController::class, 'update'])->name('kurikulum.rps.update');
-    Route::delete('/kurikulum/rps/{rp}', [\App\Http\Controllers\Api\RpsController::class, 'destroy'])->name('kurikulum.rps.destroy');
+    Route::get('/kurikulum/rps', [RpsController::class, 'index'])->name('kurikulum.rps');
+    Route::post('/kurikulum/rps', [RpsController::class, 'store'])->name('kurikulum.rps.store');
+    Route::put('/kurikulum/rps/{rp}', [RpsController::class, 'update'])->name('kurikulum.rps.update');
+    Route::delete('/kurikulum/rps/{rp}', [RpsController::class, 'destroy'])->name('kurikulum.rps.destroy');
 
     // Sarpras Routes
     Route::get('/sarpras', [SaranaController::class, 'index'])->name('sarpras');
@@ -202,72 +217,75 @@ Route::middleware(['auth', \App\Http\Middleware\PermissionMiddleware::class])->g
     Route::delete('/tracer/jawaban/{tracerJawaban}', [TracerJawabanController::class, 'destroy'])->name('tracer.jawaban.destroy');
 
     // AI Agent Pages
-    Route::get('/peringatan', [\App\Http\Controllers\Api\PeringatanController::class, 'index'])->name('peringatan');
-    Route::post('/peringatan/{id}/read', [\App\Http\Controllers\Api\PeringatanController::class, 'markAsRead'])->name('peringatan.markRead');
-    Route::post('/peringatan/mark-all-read', [\App\Http\Controllers\Api\PeringatanController::class, 'markAllAsRead'])->name('peringatan.markAllRead');
-    Route::post('/peringatan/run', [\App\Http\Controllers\Api\PeringatanController::class, 'runAgent'])->name('peringatan.run');
+    Route::get('/peringatan', [PeringatanController::class, 'index'])->name('peringatan');
+    Route::post('/peringatan/{id}/read', [PeringatanController::class, 'markAsRead'])->name('peringatan.markRead');
+    Route::post('/peringatan/mark-all-read', [PeringatanController::class, 'markAllAsRead'])->name('peringatan.markAllRead');
+    Route::post('/peringatan/run', [PeringatanController::class, 'runAgent'])->name('peringatan.run');
 
-    Route::get('/verifikasi', [\App\Http\Controllers\Api\VerifikasiController::class, 'index'])->name('verifikasi');
-    Route::post('/verifikasi/run', [\App\Http\Controllers\Api\VerifikasiController::class, 'runAgent'])->name('verifikasi.run');
+    Route::get('/verifikasi', [VerifikasiController::class, 'index'])->name('verifikasi');
+    Route::post('/verifikasi/run', [VerifikasiController::class, 'runAgent'])->name('verifikasi.run');
 
     // Generator Dokumen
-    Route::get('/generator', [\App\Http\Controllers\Api\GeneratorController::class, 'index'])->name('generator');
-    Route::post('/generator/generate', [\App\Http\Controllers\Api\GeneratorController::class, 'generate'])->name('generator.generate');
-    Route::get('/generator/download/{id}', [\App\Http\Controllers\Api\GeneratorController::class, 'download'])->name('generator.download');
+    Route::get('/generator', [GeneratorController::class, 'index'])->name('generator');
+    Route::post('/generator/generate', [GeneratorController::class, 'generate'])->name('generator.generate');
+    Route::get('/generator/download/{id}', [GeneratorController::class, 'download'])->name('generator.download');
 
     // Prediksi Akreditasi
     Route::get('/prediksi', [PrediksiController::class, 'index'])->name('prediksi');
     Route::post('/prediksi/run', [PrediksiController::class, 'runAgent'])->name('prediksi.run');
 
     // Rekomendasi Agent
-    Route::get('/rekomendasi', [\App\Http\Controllers\Api\RekomendasiController::class, 'index'])->name('rekomendasi');
-    Route::post('/rekomendasi/run', [\App\Http\Controllers\Api\RekomendasiController::class, 'run'])->name('rekomendasi.run');
+    Route::get('/rekomendasi', [RekomendasiController::class, 'index'])->name('rekomendasi');
+    Route::post('/rekomendasi/run', [RekomendasiController::class, 'run'])->name('rekomendasi.run');
 
     // Integrasi Agent
-    Route::get('/integrasi', [\App\Http\Controllers\Api\IntegrasiController::class, 'index'])->name('integrasi');
-    Route::post('/integrasi/run', [\App\Http\Controllers\Api\IntegrasiController::class, 'run'])->name('integrasi.run');
-    Route::post('/integrasi/sync', [\App\Http\Controllers\Api\IntegrasiController::class, 'sync'])->name('integrasi.sync');
+    Route::get('/integrasi', [IntegrasiController::class, 'index'])->name('integrasi');
+    Route::post('/integrasi/run', [IntegrasiController::class, 'run'])->name('integrasi.run');
+    Route::post('/integrasi/sync', [IntegrasiController::class, 'sync'])->name('integrasi.sync');
 
     // SINTA Import Routes
-    Route::post('/import/sinta/publikasi', [\App\Http\Controllers\Api\SintaImportController::class, 'importPublikasi'])->name('import.sinta.publikasi');
-    Route::post('/import/sinta/penelitian', [\App\Http\Controllers\Api\SintaImportController::class, 'importPenelitian'])->name('import.sinta.penelitian');
-    Route::post('/import/sinta/pkm', [\App\Http\Controllers\Api\SintaImportController::class, 'importPkm'])->name('import.sinta.pkm');
+    Route::post('/import/sinta/publikasi', [SintaImportController::class, 'importPublikasi'])->name('import.sinta.publikasi');
+    Route::post('/import/sinta/penelitian', [SintaImportController::class, 'importPenelitian'])->name('import.sinta.penelitian');
+    Route::post('/import/sinta/pkm', [SintaImportController::class, 'importPkm'])->name('import.sinta.pkm');
 
     // Template Routes
     Route::get('/admin/templates', [TemplateController::class, 'index'])->name('admin.templates.index');
     Route::get('/admin/templates/download/{filename}', [TemplateController::class, 'download'])->name('admin.templates.download');
 
     // Admin Settings
-    Route::get('/admin/settings', [\App\Http\Controllers\Api\AdminSettingController::class, 'index'])->name('admin.settings');
-    Route::post('/admin/settings', [\App\Http\Controllers\Api\AdminSettingController::class, 'updateMultiple'])->name('admin.settings.update');
-    Route::post('/admin/settings/favicon/upload', [\App\Http\Controllers\Api\AdminSettingController::class, 'uploadFavicon'])->name('admin.settings.favicon.upload');
-    Route::delete('/admin/settings/favicon/remove', [\App\Http\Controllers\Api\AdminSettingController::class, 'removeFavicon'])->name('admin.settings.favicon.remove');
-    Route::post('/admin/settings/logo/upload', [\App\Http\Controllers\Api\AdminSettingController::class, 'uploadLogo'])->name('admin.settings.logo.upload');
-    Route::delete('/admin/settings/logo/remove', [\App\Http\Controllers\Api\AdminSettingController::class, 'removeLogo'])->name('admin.settings.logo.remove');
+    Route::get('/admin/settings', [AdminSettingController::class, 'index'])->name('admin.settings');
+    Route::post('/admin/settings', [AdminSettingController::class, 'updateMultiple'])->name('admin.settings.update');
+    Route::post('/admin/settings/favicon/upload', [AdminSettingController::class, 'uploadFavicon'])->name('admin.settings.favicon.upload');
+    Route::delete('/admin/settings/favicon/remove', [AdminSettingController::class, 'removeFavicon'])->name('admin.settings.favicon.remove');
+    Route::post('/admin/settings/logo/upload', [AdminSettingController::class, 'uploadLogo'])->name('admin.settings.logo.upload');
+    Route::delete('/admin/settings/logo/remove', [AdminSettingController::class, 'removeLogo'])->name('admin.settings.logo.remove');
     Route::get('/aipt', [AiptController::class, 'index'])->name('aipt.index');
 
     // Accreditation Management (Lembaga & Instrumen)
-    Route::get('/admin/lembaga', [\App\Http\Controllers\Api\LembagaAkreditasiController::class, 'index'])->name('admin.lembaga.index');
-    Route::post('/admin/lembaga', [\App\Http\Controllers\Api\LembagaAkreditasiController::class, 'store'])->name('admin.lembaga.store');
-    Route::put('/admin/lembaga/{lembagaAkreditasi}', [\App\Http\Controllers\Api\LembagaAkreditasiController::class, 'update'])->name('admin.lembaga.update');
-    Route::delete('/admin/lembaga/{lembagaAkreditasi}', [\App\Http\Controllers\Api\LembagaAkreditasiController::class, 'destroy'])->name('admin.lembaga.destroy');
+    Route::get('/admin/lembaga', [LembagaAkreditasiController::class, 'index'])->name('admin.lembaga.index');
+    Route::post('/admin/lembaga', [LembagaAkreditasiController::class, 'store'])->name('admin.lembaga.store');
+    Route::put('/admin/lembaga/{lembagaAkreditasi}', [LembagaAkreditasiController::class, 'update'])->name('admin.lembaga.update');
+    Route::delete('/admin/lembaga/{lembagaAkreditasi}', [LembagaAkreditasiController::class, 'destroy'])->name('admin.lembaga.destroy');
 
-    Route::get('/admin/instrumen', [\App\Http\Controllers\Api\InstrumenAkreditasiController::class, 'index'])->name('admin.instrumen.index');
-    Route::post('/admin/instrumen', [\App\Http\Controllers\Api\InstrumenAkreditasiController::class, 'store'])->name('admin.instrumen.store');
-    Route::put('/admin/instrumen/{instrumenAkreditasi}', [\App\Http\Controllers\Api\InstrumenAkreditasiController::class, 'update'])->name('admin.instrumen.update');
-    Route::delete('/admin/instrumen/{instrumenAkreditasi}', [\App\Http\Controllers\Api\InstrumenAkreditasiController::class, 'destroy'])->name('admin.instrumen.destroy');
-    Route::post('/admin/instrumen/import-preview', [\App\Http\Controllers\Api\InstrumenAkreditasiController::class, 'importPreview'])->name('admin.instrumen.import-preview');
+    Route::get('/admin/instrumen', [InstrumenAkreditasiController::class, 'index'])->name('admin.instrumen.index');
+    Route::post('/admin/instrumen', [InstrumenAkreditasiController::class, 'store'])->name('admin.instrumen.store');
+    Route::put('/admin/instrumen/{instrumenAkreditasi}', [InstrumenAkreditasiController::class, 'update'])->name('admin.instrumen.update');
+    Route::delete('/admin/instrumen/{instrumenAkreditasi}', [InstrumenAkreditasiController::class, 'destroy'])->name('admin.instrumen.destroy');
+    Route::post('/admin/instrumen/import-preview', [InstrumenAkreditasiController::class, 'importPreview'])->name('admin.instrumen.import-preview');
 
-    Route::get('/admin/indikator', [\App\Http\Controllers\Api\IndikatorAkreditasiController::class, 'index'])->name('admin.indikator.index');
-    Route::post('/admin/indikator', [\App\Http\Controllers\Api\IndikatorAkreditasiController::class, 'store'])->name('admin.indikator.store');
-    Route::put('/admin/indikator/{indikatorAkreditasi}', [\App\Http\Controllers\Api\IndikatorAkreditasiController::class, 'update'])->name('admin.indikator.update');
-    Route::delete('/admin/indikator/{indikatorAkreditasi}', [\App\Http\Controllers\Api\IndikatorAkreditasiController::class, 'destroy'])->name('admin.indikator.destroy');
+    Route::get('/admin/indikator', [IndikatorAkreditasiController::class, 'index'])->name('admin.indikator.index');
+    Route::post('/admin/indikator', [IndikatorAkreditasiController::class, 'store'])->name('admin.indikator.store');
+    Route::put('/admin/indikator/{indikatorAkreditasi}', [IndikatorAkreditasiController::class, 'update'])->name('admin.indikator.update');
+    Route::delete('/admin/indikator/{indikatorAkreditasi}', [IndikatorAkreditasiController::class, 'destroy'])->name('admin.indikator.destroy');
 
     // Knowledge Base Routes
     Route::get('/admin/knowledge-base', [KnowledgeBaseController::class, 'index'])->name('admin.knowledge-base.index');
     Route::post('/admin/knowledge-base/upload', [KnowledgeBaseController::class, 'upload'])->name('admin.knowledge-base.upload');
+    Route::put('/admin/knowledge-base/{knowledgeBaseDocument}', [KnowledgeBaseController::class, 'update'])->name('admin.knowledge-base.update');
     Route::delete('/admin/knowledge-base/{knowledgeBaseDocument}', [KnowledgeBaseController::class, 'destroy'])->name('admin.knowledge-base.destroy');
     Route::post('/admin/knowledge-base/{knowledgeBaseDocument}/reindex', [KnowledgeBaseController::class, 'reindex'])->name('admin.knowledge-base.reindex');
+    Route::get('/admin/knowledge-base/{knowledgeBaseDocument}/chunks', [KnowledgeBaseController::class, 'getChunks'])->name('admin.knowledge-base.chunks');
+    Route::put('/admin/knowledge-base/chunks/{knowledgeBaseChunk}', [KnowledgeBaseController::class, 'updateChunk'])->name('admin.knowledge-base.chunks.update');
 });
 
 require __DIR__.'/auth.php';

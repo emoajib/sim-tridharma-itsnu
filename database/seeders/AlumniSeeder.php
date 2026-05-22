@@ -14,6 +14,7 @@ class AlumniSeeder extends Seeder
 
         if ($prodis->isEmpty()) {
             $this->command->warn('Prodi kosong, lewati seeding alumni.');
+
             return;
         }
 
@@ -24,12 +25,12 @@ class AlumniSeeder extends Seeder
             $jumlahAlumni = rand(5, 10);
             for ($i = 0; $i < $jumlahAlumni; $i++) {
                 $tahun = $tahunLulus[array_rand($tahunLulus)];
-                $nim = $prodi->kode_prodi . str_pad(rand(1000, 9999), 4, '0');
+                $nim = $prodi->kode_prodi.str_pad(rand(1000, 9999), 4, '0');
 
                 $alumniId = DB::table('m_alumni')->insertGetId([
                     'prodi_id' => $prodi->id,
                     'nim' => $nim,
-                    'nama' => 'Alumni ' . Str::random(25),
+                    'nama' => 'Alumni '.Str::random(25),
                     'tahun_lulus' => $tahun,
                     'masa_tunggu' => rand(1, 12),
                     'gaji_pertama' => rand(3000000, 15000000),
@@ -43,7 +44,7 @@ class AlumniSeeder extends Seeder
         }
 
         $periodes = DB::table('m_periode_akademik')->get();
-        if (!empty($alumniData) && $periodes->isNotEmpty()) {
+        if (! empty($alumniData) && $periodes->isNotEmpty()) {
             foreach ($alumniData as $alumniId) {
                 $kuisioners = DB::table('m_kuisioner_tracer')
                     ->get();

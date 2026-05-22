@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CplRequest;
 use App\Models\Cpl;
+use App\Models\Prodi;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -13,39 +15,26 @@ class CplController extends Controller
     {
         $cpl = Cpl::with('prodi')
             ->when($request->search, function ($query, $search) {
-                $query->where('kode_cpl', 'like', "%{$search}%")
-                    ->orWhere('deskripsi', 'like', "%{$search}%");
+                $query->where('kode_cpl', 'like', "%{$search}%");
             })
             ->paginate(10);
 
         return Inertia::render('MasterData/Cpl/Index', [
             'cpl' => $cpl,
-            'prodi_list' => \App\Models\Prodi::select('id', 'nama_prodi')->get(),
+            'prodi_list' => Prodi::select('id', 'nama_prodi')->get(),
         ]);
     }
 
-    public function store(Request $request)
+    public function store(CplRequest $request)
     {
-        $validated = $request->validate([
-            'kode_cpl' => 'required|string',
-            'prodi_id' => 'required|exists:m_prodi,id',
-            'deskripsi' => 'required|string',
-        ]);
-
-        Cpl::create($validated);
+        Cpl::create($request->validated());
 
         return redirect()->back()->with('success', 'CPL berhasil ditambahkan.');
     }
 
-    public function update(Request $request, Cpl $cpl)
+    public function update(CplRequest $request, Cpl $cpl)
     {
-        $validated = $request->validate([
-            'kode_cpl' => 'required|string',
-            'prodi_id' => 'required|exists:m_prodi,id',
-            'deskripsi' => 'required|string',
-        ]);
-
-        $cpl->update($validated);
+        $cpl->update($request->validated());
 
         return redirect()->back()->with('success', 'CPL berhasil diperbarui.');
     }

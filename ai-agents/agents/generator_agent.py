@@ -44,7 +44,7 @@ class GeneratorAgent(BaseAgent):
 
             indikator_data = db.execute(
                 text("""
-                    SELECT i.kode_indikator, i.nama_indikator, i.target, pi.skor_tercapai, pi.status
+                    SELECT i.kode_indikator, i.nama_indikator, i.target, pi.nilai, pi.status
                     FROM trx_pemenuhan_indikator pi
                     JOIN m_indikator_akreditasi i ON i.id = pi.indikator_id
                     WHERE pi.prodi_id = :prodi_id AND pi.periode_id = :periode_id
@@ -147,7 +147,7 @@ class GeneratorAgent(BaseAgent):
         lines = ["| Kode | Indikator | Target | Tercapai | Status |", "|------|-----------|--------|----------|--------|"]
         for r in rows:
             target = r.target if r.target else "-"
-            skor = r.skor_tercapai if r.skor_tercapai else "-"
+            skor = r.nilai if r.nilai else "-"
             lines.append(f"| {r.kode_indikator} | {r.nama_indikator} | {target} | {skor} | {r.status} |")
         return "\n".join(lines)
 
@@ -173,7 +173,8 @@ class GeneratorAgent(BaseAgent):
             
             doc.add_paragraph()
         
-        output_dir = "/tmp/akreditasi_docs"
+        from config import DOCS_OUTPUT_DIR
+        output_dir = DOCS_OUTPUT_DIR
         os.makedirs(output_dir, exist_ok=True)
         
         filename = f"{jenis}_{prodi.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx"

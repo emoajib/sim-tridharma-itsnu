@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Penunjang;
+use App\Http\Requests\PenunjangRequest;
 use App\Models\Dosen;
-use App\Models\Prodi;
+use App\Models\Penunjang;
 use App\Models\PeriodeAkademik;
+use App\Models\Prodi;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -28,40 +29,24 @@ class PenunjangController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(PenunjangRequest $request)
     {
-        $validated = $request->validate([
-            'dosen_id' => 'required|exists:m_dosen,id',
-            'prodi_id' => 'required|exists:m_prodi,id',
-            'periode_id' => 'required|exists:m_periode_akademik,id',
-            'nama_kegiatan' => 'required',
-            'jenis_kegiatan' => 'required',
-        ]);
+        Penunjang::create($request->validated());
 
-        Penunjang::create($validated);
-
-        return redirect()->back()->with('success', 'Penunjang berhasil ditambahkan.');
+        return redirect()->back()->with('success', 'Kegiatan penunjang berhasil ditambahkan.');
     }
 
-    public function update(Request $request, Penunjang $penunjang)
+    public function update(PenunjangRequest $request, Penunjang $penunjang)
     {
-        $validated = $request->validate([
-            'dosen_id' => 'required|exists:m_dosen,id',
-            'prodi_id' => 'required|exists:m_prodi,id',
-            'periode_id' => 'required|exists:m_periode_akademik,id',
-            'nama_kegiatan' => 'required',
-            'jenis_kegiatan' => 'required',
-        ]);
+        $penunjang->update($request->validated());
 
-        $penunjang->update($validated);
-
-        return redirect()->back()->with('success', 'Penunjang berhasil diperbarui.');
+        return redirect()->back()->with('success', 'Kegiatan penunjang berhasil diperbarui.');
     }
 
     public function destroy(Penunjang $penunjang)
     {
         $penunjang->delete();
 
-        return redirect()->back()->with('success', 'Penunjang berhasil dihapus.');
+        return redirect()->back()->with('success', 'Kegiatan penunjang berhasil dihapus.');
     }
 }

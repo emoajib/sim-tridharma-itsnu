@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\KurikulumRequest;
 use App\Models\Kurikulum;
+use App\Models\Prodi;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -19,32 +21,20 @@ class KurikulumController extends Controller
 
         return Inertia::render('MasterData/Kurikulum/Index', [
             'kurikulum' => $kurikulum,
-            'prodi_list' => \App\Models\Prodi::select('id', 'nama_prodi')->get(),
+            'prodi_list' => Prodi::select('id', 'nama_prodi')->get(),
         ]);
     }
 
-    public function store(Request $request)
+    public function store(KurikulumRequest $request)
     {
-        $validated = $request->validate([
-            'nama_kurikulum' => 'required|string',
-            'prodi_id' => 'required|exists:m_prodi,id',
-            'tahun_berlaku' => 'required|string',
-        ]);
-
-        Kurikulum::create($validated);
+        Kurikulum::create($request->validated());
 
         return redirect()->back()->with('success', 'Kurikulum berhasil ditambahkan.');
     }
 
-    public function update(Request $request, Kurikulum $kurikulum)
+    public function update(KurikulumRequest $request, Kurikulum $kurikulum)
     {
-        $validated = $request->validate([
-            'nama_kurikulum' => 'required|string',
-            'prodi_id' => 'required|exists:m_prodi,id',
-            'tahun_berlaku' => 'required|string',
-        ]);
-
-        $kurikulum->update($validated);
+        $kurikulum->update($request->validated());
 
         return redirect()->back()->with('success', 'Kurikulum berhasil diperbarui.');
     }

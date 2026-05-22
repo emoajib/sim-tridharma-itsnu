@@ -1,10 +1,9 @@
 import logging
-import random
 
-import numpy as np
 from sqlalchemy import text
 
 from agents.base_agent import BaseAgent
+from config import calculate_prediction
 from database import SessionLocal
 
 logger = logging.getLogger("agent.prediksi")
@@ -26,7 +25,6 @@ class PrediksiAgent(BaseAgent):
 
         db = SessionLocal()
         try:
-            # Fetch retrospective data (TS-2 to TS) for LAMEMBA 2.0 compliance
             rows = db.execute(
                 text("""
                     SELECT pi.periode_id, pi.nilai, i.bobot, i.kriteria
@@ -47,7 +45,6 @@ class PrediksiAgent(BaseAgent):
                 self.log_execution(self.name, "system", data, result, status="warning")
                 return result
 
-            # Group by periode to calculate trend
             period_scores = {}
             for r in rows:
                 p_id = r.periode_id
@@ -56,54 +53,23 @@ class PrediksiAgent(BaseAgent):
                 period_scores[p_id]['skor'] += float(r.nilai) * r.bobot
                 period_scores[p_id]['bobot'] += r.bobot
 
-            # Calculate historical scores
             historical_scores = []
             for p_id in sorted(period_scores.keys()):
                 ts = period_scores[p_id]
                 historical_scores.append(ts['skor'] / ts['bobot'] if ts['bobot'] > 0 else 0)
 
-            # Keep only last 3 periods (TS-2, TS-1, TS)
             historical_scores = historical_scores[-3:]
-            
-            # Base score is the latest
-            base_score = historical_scores[-1] if historical_scores else 0
 
-            # Calculate trend factor (prospektif)
-            trend_factor = 1.0
-            if len(historical_scores) >= 2:
-                # Simple linear trend
-                x = np.arange(len(historical_scores))
-                y = np.array(historical_scores)
-                slope, _ = np.polyfit(x, y, 1)
-                # If slope is positive, slight boost. If negative, slight penalty.
-                trend_factor = 1.0 + (slope / 100.0)
-
-            skor_final = base_score * trend_factor
-
-            # Calculate probabilities based on trend-adjusted score
-            prob_unggul = min(0.95, max(0.05, (skor_final - 300) / 100)) if skor_final > 300 else 0.05
-            prob_baik_sekali = min(0.9, max(0.1, (skor_final - 200) / 150))
-            prob_baik = 1.0 - prob_unggul - prob_baik_sekali
-
-            # Normalize probabilities
-            total_p = prob_unggul + prob_baik_sekali + prob_baik
-            prob_unggul /= total_p
-            prob_baik_sekali /= total_p
-            prob_baik /= total_p
+            pred = calculate_prediction(historical_scores)
 
             result = {
-                "skor_prediksi": round(skor_final, 2),
-                "probabilitas": {
-                    "unggul": round(prob_unggul, 2),
-                    "baik_sekali": round(prob_baik_sekali, 2),
-                    "baik": round(prob_baik, 2),
-                },
+                "skor_prediksi": pred["skor_prediksi"],
+                "probabilitas": pred["probabilitas"],
                 "confidence_interval": 4.5,
-                "trend_analysis": "Positif" if trend_factor > 1 else ("Negatif" if trend_factor < 1 else "Stagnan"),
-                "historical_data_points": len(historical_scores)
+                "trend_analysis": pred["trend_analysis"],
+                "historical_data_points": len(historical_scores),
             }
 
-            # Log to database
             db.execute(
                 text("""
                     INSERT INTO agent_prediction_history

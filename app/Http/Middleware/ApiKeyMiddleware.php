@@ -13,7 +13,7 @@ class ApiKeyMiddleware
         $apiKey = $request->header('X-Internal-Key');
         $expectedKey = config('ai-service.internal_key', 'default-internal-key');
 
-        if (!$apiKey || $apiKey !== $expectedKey) {
+        if (! $apiKey || $apiKey !== $expectedKey) {
             return response()->json([
                 'error' => 'Unauthorized - Invalid or missing API key',
             ], Response::HTTP_UNAUTHORIZED);

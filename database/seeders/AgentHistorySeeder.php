@@ -2,10 +2,9 @@
 
 namespace Database\Seeders;
 
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-use Carbon\Carbon;
 
 class AgentHistorySeeder extends Seeder
 {
@@ -19,6 +18,7 @@ class AgentHistorySeeder extends Seeder
 
         if ($prodis->isEmpty()) {
             $this->command->warn('Prodi kosong, lewati seeding agent history.');
+
             return;
         }
 
@@ -65,7 +65,7 @@ class AgentHistorySeeder extends Seeder
                 DB::table('agent_rekomendasi_log')->insert([
                     'prodi_id' => $prodi->id,
                     'indikator_id' => $indikator->id,
-                    'judul_rekomendasi' => 'Rekomendasi Strategis ' . $indikator->kode_indikator,
+                    'judul_rekomendasi' => 'Rekomendasi Strategis '.$indikator->kode_indikator,
                     'deskripsi' => 'Analisis AI menunjukkan perlunya peningkatan pada aspek ini.',
                     'prioritas' => rand(1, 3),
                     'status' => 'baru',

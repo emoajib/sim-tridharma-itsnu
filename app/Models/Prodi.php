@@ -2,18 +2,25 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasActiveScope;
+use App\Models\Traits\HasCascadeDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Prodi extends Model
 {
-    use SoftDeletes;
+    use HasActiveScope, HasCascadeDeletes, HasFactory, SoftDeletes;
+
+    protected array $cascadeDeletes = ['dosens', 'mahasiswas', 'mataKuliahs', 'kurikulums'];
 
     protected $table = 'm_prodi';
 
     protected $fillable = [
         'kode_prodi', 'nama_prodi', 'fakultas_id', 'lembaga_akreditasi_id', 'jenjang',
-        'akreditasi', 'sk_akreditasi', 'tanggal_kadaluarsa', 'is_active'
+        'akreditasi', 'sk_akreditasi', 'tanggal_kadaluarsa', 'is_active',
     ];
 
     protected function casts(): array
@@ -24,50 +31,33 @@ class Prodi extends Model
         ];
     }
 
-    public function fakultas()
+    public function fakultas(): BelongsTo
     {
         return $this->belongsTo(Fakultas::class);
     }
 
-    public function lembaga()
+    public function lembaga(): BelongsTo
     {
         return $this->belongsTo(LembagaAkreditasi::class, 'lembaga_akreditasi_id');
     }
 
-    public function dosens()
+    public function dosens(): HasMany
     {
         return $this->hasMany(Dosen::class, 'prodi_id');
     }
 
-    public function mahasiswas()
+    public function mahasiswas(): HasMany
     {
         return $this->hasMany(Mahasiswa::class, 'prodi_id');
     }
 
-    public function mataKuliahs()
+    public function mataKuliahs(): HasMany
     {
         return $this->hasMany(MataKuliah::class, 'prodi_id');
     }
 
-    public function kurikulums()
+    public function kurikulums(): HasMany
     {
         return $this->hasMany(Kurikulum::class, 'prodi_id');
-    }
-
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::deleting(function ($prodi) {
-            $relationMethods = ['dosens', 'mahasiswas', 'mataKuliahs', 'kurikulums'];
-            
-            foreach ($relationMethods as $method) {
-                if ($prodi->isForceDeleting()) {
-                    $prodi->{$method}()->forceDelete();
-                } else {
-                    $prodi->{$method}()->delete();
-                }
-            }
-        });
     }
 }

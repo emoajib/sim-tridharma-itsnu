@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Penelitian;
+use App\Http\Requests\PenelitianRequest;
 use App\Models\Dosen;
-use App\Models\Prodi;
+use App\Models\Penelitian;
 use App\Models\PeriodeAkademik;
+use App\Models\Prodi;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -28,35 +29,16 @@ class PenelitianController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(PenelitianRequest $request)
     {
-        $validated = $request->validate([
-            'dosen_id' => 'required|exists:m_dosen,id',
-            'prodi_id' => 'required|exists:m_prodi,id',
-            'periode_id' => 'required|exists:m_periode_akademik,id',
-            'judul_penelitian' => 'required|string',
-            'jenis_penelitian' => 'required|string',
-            'sumber_dana' => 'nullable|string',
-            'jumlah_dana' => 'nullable|numeric|min:0',
-            'tahun_pelaksanaan' => 'required|string|size:4',
-        ]);
-
-        Penelitian::create($validated);
+        Penelitian::create($request->validated());
 
         return redirect()->back()->with('success', 'Penelitian berhasil ditambahkan.');
     }
 
-    public function update(Request $request, Penelitian $penelitian)
+    public function update(PenelitianRequest $request, Penelitian $penelitian)
     {
-        $validated = $request->validate([
-            'dosen_id' => 'required|exists:m_dosen,id',
-            'prodi_id' => 'required|exists:m_prodi,id',
-            'periode_id' => 'required|exists:m_periode_akademik,id',
-            'judul_penelitian' => 'required',
-            'jenis_penelitian' => 'required',
-        ]);
-
-        $penelitian->update($validated);
+        $penelitian->update($request->validated());
 
         return redirect()->back()->with('success', 'Penelitian berhasil diperbarui.');
     }

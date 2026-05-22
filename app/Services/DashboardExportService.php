@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
-use Illuminate\Http\Request;
-use App\Models\Prodi;
-use App\Models\Fakultas;
-use App\Models\Dosen;
-use App\Models\PeriodeAkademik;
-use App\Models\AgentPredictionHistory;
 use App\Models\AgentPeringatanLog;
+use App\Models\AgentPredictionHistory;
+use App\Models\Dosen;
+use App\Models\Fakultas;
+use App\Models\PeriodeAkademik;
+use App\Models\Prodi;
+use Illuminate\Http\Request;
 
 class DashboardExportService
 {
@@ -24,24 +24,24 @@ class DashboardExportService
         ];
 
         $prodis = Prodi::with(['fakultas'])
-            ->when($instrumenId, fn($q) => $q->where('lembaga_akreditasi_id', $instrumenId))
+            ->when($instrumenId, fn ($q) => $q->where('lembaga_akreditasi_id', $instrumenId))
             ->get()
             ->map(function ($p) use ($periodeId) {
                 $latestPrediction = AgentPredictionHistory::where('prodi_id', $p->id)
-                    ->when($periodeId, fn($q) => $q->where('periode_id', $periodeId))
+                    ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
                     ->latest()
                     ->first();
 
                 return [
                     'nama_prodi' => $p->nama_prodi,
                     'fakultas' => $p->fakultas->nama_fakultas ?? '-',
-                    'skor_prediksi' => $latestPrediction?->skor_prediksi ?? '-',
+                    'skor_prediksi' => $latestPrediction ? $latestPrediction->skor_prediksi : '-',
                     'predikat' => $this->getPredikat($latestPrediction),
                 ];
             });
 
         $latestPrediction = AgentPredictionHistory::with('prodi')
-            ->when($periodeId, fn($q) => $q->where('periode_id', $periodeId))
+            ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
             ->latest()
             ->first();
 
@@ -63,12 +63,19 @@ class DashboardExportService
 
     private function getPredikat($prediction): string
     {
-        if (!$prediction) return '-';
-        
+        if (! $prediction) {
+            return '-';
+        }
+
         $probUnggul = $prediction->probabilitas_unggul ?? 0;
-        
-        if ($probUnggul >= 50) return 'UNGGUL';
-        if ($probUnggul >= 30) return 'BAIK SEKALI';
+
+        if ($probUnggul >= 50) {
+            return 'UNGGUL';
+        }
+        if ($probUnggul >= 30) {
+            return 'BAIK SEKALI';
+        }
+
         return 'BAIK';
     }
 }

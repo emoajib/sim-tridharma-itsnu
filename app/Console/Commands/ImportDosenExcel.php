@@ -10,14 +10,16 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 class ImportDosenExcel extends Command
 {
     protected $signature = 'dosen:import {file=8444.xls}';
+
     protected $description = 'Import dosen from SINTA export XLS file';
 
     public function handle(): int
     {
         $path = base_path($this->argument('file'));
 
-        if (!file_exists($path)) {
+        if (! file_exists($path)) {
             $this->error("File not found: {$path}");
+
             return Command::FAILURE;
         }
 
@@ -50,8 +52,9 @@ class ImportDosenExcel extends Command
             }
         }
 
-        if (!$headerRow) {
+        if (! $headerRow) {
             $this->error('Could not find header row (NIDN)');
+
             return Command::FAILURE;
         }
 
@@ -93,6 +96,7 @@ class ImportDosenExcel extends Command
         }
 
         $this->info("Imported {$imported} dosen records from {$path}");
+
         return Command::SUCCESS;
     }
 
@@ -121,7 +125,7 @@ class ImportDosenExcel extends Command
 
     private function splitNama(string $fullName): array
     {
-        $parts = array_values(array_filter(explode(' ', $fullName), fn($p) => $p !== ''));
+        $parts = array_values(array_filter(explode(' ', $fullName), fn ($p) => $p !== ''));
         $count = count($parts);
 
         if ($count === 0) {

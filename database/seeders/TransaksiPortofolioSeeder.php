@@ -18,14 +18,17 @@ class TransaksiPortofolioSeeder extends Seeder
 
         if ($dosens->isEmpty() || $prodis->isEmpty() || $periodes->isEmpty() || $mahasiswas->isEmpty()) {
             $this->command->warn('Master data (dosen/prodi/periode/mahasiswa) kosong. Lewati seeding portofolio.');
+
             return;
         }
 
         foreach ($dosens as $dosen) {
             foreach ($periodes->take(2) as $periode) {
                 $mkId = $mk->where('prodi_id', $dosen->prodi_id)->first()?->id;
-                
-                if (!$mkId) continue;
+
+                if (! $mkId) {
+                    continue;
+                }
 
                 DB::table('trx_kegiatan_pendidikan')->insert([
                     'dosen_id' => $dosen->id,
@@ -45,11 +48,11 @@ class TransaksiPortofolioSeeder extends Seeder
                     'dosen_id' => $dosen->id,
                     'prodi_id' => $dosen->prodi_id,
                     'periode_id' => $periode->id,
-                    'judul_penelitian' => 'Penelitian Dosen ' . $dosen->nama_depan . ' ' . $dosen->nama_belakang,
+                    'judul_penelitian' => 'Penelitian Dosen '.$dosen->nama_depan.' '.$dosen->nama_belakang,
                     'jenis_penelitian' => 'Penelitian Mandiri',
                     'sumber_dana' => ['BRIN', 'LPPM', 'Mandiri'][rand(0, 2)],
                     'jumlah_dana' => rand(10000000, 50000000),
-                    'tahun_pelaksanaan' => (string)now()->year,
+                    'tahun_pelaksanaan' => (string) now()->year,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -58,10 +61,10 @@ class TransaksiPortofolioSeeder extends Seeder
                     'dosen_id' => $dosen->id,
                     'prodi_id' => $dosen->prodi_id,
                     'periode_id' => $periode->id,
-                    'judul_publikasi' => 'Publikasi Ilmiah: ' . Str::random(30),
+                    'judul_publikasi' => 'Publikasi Ilmiah: '.Str::random(30),
                     'jenis_publikasi' => ['Jurnal Nasional', 'Jurnal Internasional', 'Prosiding'][rand(0, 2)],
                     'tingkat' => ['Nasional', 'Internasional'][rand(0, 1)],
-                    'tahun' => (string)now()->year,
+                    'tahun' => (string) now()->year,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -71,11 +74,11 @@ class TransaksiPortofolioSeeder extends Seeder
                         'dosen_id' => $dosen->id,
                         'prodi_id' => $dosen->prodi_id,
                         'periode_id' => $periode->id,
-                        'judul_pkm' => 'Pengabdian Masyarakat: ' . Str::random(25),
+                        'judul_pkm' => 'Pengabdian Masyarakat: '.Str::random(25),
                         'jenis_pkm' => 'Penyuluhan',
                         'sumber_dana' => ['LPPM', 'Mandiri'][rand(0, 1)],
                         'jumlah_dana' => rand(5000000, 20000000),
-                        'tahun_pelaksanaan' => (string)now()->year,
+                        'tahun_pelaksanaan' => (string) now()->year,
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
@@ -88,7 +91,7 @@ class TransaksiPortofolioSeeder extends Seeder
                     'nama_kegiatan' => ['Seminar', 'Workshop', 'Pelatihan', 'Organisasi'][rand(0, 3)],
                     'jenis_kegiatan' => 'Penunjang Akademik',
                     'tingkat' => ['Lokal', 'Nasional', 'Internasional'][rand(0, 2)],
-                    'tahun' => (string)now()->year,
+                    'tahun' => (string) now()->year,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -114,7 +117,7 @@ class TransaksiPortofolioSeeder extends Seeder
                     'jenis_dana' => ['Hibah', 'Kontrak', 'Lainnya'][rand(0, 2)],
                     'sumber_dana' => ['PNBP', 'LPDP', 'Lainnya'][rand(0, 2)],
                     'jumlah' => rand(10000000, 100000000),
-                    'tahun' => (string)now()->year,
+                    'tahun' => (string) now()->year,
                     'status' => 'verified',
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -132,7 +135,7 @@ class TransaksiPortofolioSeeder extends Seeder
                         'prodi_id' => $dosen->prodi_id,
                         'periode_id' => $periode->id,
                         'jenis_bimbingan' => ['Tugas Akhir', 'Skripsi', 'Tesis', 'PKL'][rand(0, 3)],
-                        'judul' => 'Judul Bimbingan ' . Str::random(20),
+                        'judul' => 'Judul Bimbingan '.Str::random(20),
                         'status' => 'aktif',
                         'created_at' => now(),
                         'updated_at' => now(),

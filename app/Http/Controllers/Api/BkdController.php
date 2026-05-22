@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\BkdRequest;
 use App\Models\Bkd;
 use App\Models\Dosen;
-use App\Models\Prodi;
 use App\Models\PeriodeAkademik;
+use App\Models\Prodi;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -32,30 +33,16 @@ class BkdController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(BkdRequest $request)
     {
-        $validated = $request->validate([
-            'dosen_id' => 'required|exists:m_dosen,id',
-            'prodi_id' => 'required|exists:m_prodi,id',
-            'periode_id' => 'required|exists:m_periode_akademik,id',
-            'total_sks' => 'required|numeric|min:0',
-        ]);
-
-        Bkd::create($validated);
+        Bkd::create($request->validated());
 
         return redirect()->back()->with('success', 'BKD berhasil ditambahkan.');
     }
 
-    public function update(Request $request, Bkd $bkd)
+    public function update(BkdRequest $request, Bkd $bkd)
     {
-        $validated = $request->validate([
-            'dosen_id' => 'required|exists:m_dosen,id',
-            'prodi_id' => 'required|exists:m_prodi,id',
-            'periode_id' => 'required|exists:m_periode_akademik,id',
-            'total_sks' => 'required|numeric|min:0',
-        ]);
-
-        $bkd->update($validated);
+        $bkd->update($request->validated());
 
         return redirect()->back()->with('success', 'BKD berhasil diperbarui.');
     }

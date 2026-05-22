@@ -4,6 +4,7 @@ namespace App\Services\AI;
 
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Smalot\PdfParser\Parser;
 
 class PDFParserService
 {
@@ -11,13 +12,13 @@ class PDFParserService
     {
         $fullPath = Storage::disk('public')->path($filePath);
 
-        if (!file_exists($fullPath)) {
+        if (! file_exists($fullPath)) {
             throw new \RuntimeException("File not found: {$fullPath}");
         }
 
         $text = $this->parseWithSmalot($fullPath);
 
-        if (!$text) {
+        if (! $text) {
             $text = $this->fallbackParse($fullPath);
         }
 
@@ -29,18 +30,20 @@ class PDFParserService
 
     protected function parseWithSmalot(string $path): ?string
     {
-        if (!class_exists(\Smalot\PdfParser\Parser::class)) {
+        if (! class_exists(Parser::class)) {
             return null;
         }
 
         try {
-            $parser = new \Smalot\PdfParser\Parser();
+            $parser = new Parser;
             $pdf = $parser->parseFile($path);
             $text = $pdf->getText();
             $text = preg_replace('/\s+/', ' ', $text);
+
             return trim($text);
         } catch (\Exception $e) {
             Log::warning('Smalot PDF parser failed', ['error' => $e->getMessage()]);
+
             return null;
         }
     }
@@ -52,6 +55,7 @@ class PDFParserService
             $output = shell_exec($cmd);
             if ($output) {
                 $text = preg_replace('/\s+/', ' ', $output);
+
                 return trim($text);
             }
         } catch (\Exception $e) {
@@ -63,11 +67,13 @@ class PDFParserService
 
     protected function countPages(string $path): int
     {
-        if (!file_exists($path)) return 0;
+        if (! file_exists($path)) {
+            return 0;
+        }
 
         $pdfContent = file_get_contents($path);
         preg_match_all('/\/Type\s*\/Page[^s]/i', $pdfContent, $matches);
-        $count = count($matches[0] ?? []);
+        $count = count($matches[0]);
 
         return max($count, 1);
     }

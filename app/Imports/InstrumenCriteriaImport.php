@@ -2,9 +2,9 @@
 
 namespace App\Imports;
 
+use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Illuminate\Support\Collection;
 
 class InstrumenCriteriaImport implements ToCollection, WithHeadingRow
 {
@@ -16,6 +16,6 @@ class InstrumenCriteriaImport implements ToCollection, WithHeadingRow
                 'nama' => $row['nama_kriteria'] ?? $row['kriteria'] ?? $row['name'] ?? '',
                 'bobot' => (float) ($row['bobot'] ?? $row['weight'] ?? 1),
             ];
-        })->filter(fn($item) => !empty($item['kode']))->values();
+        })->filter(fn ($item) => ! empty($item['kode']))->values();
     }
 }

@@ -3,161 +3,131 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\KnowledgeBaseCategory;
+use App\Http\Requests\KnowledgeBase\AskRequest;
+use App\Http\Requests\KnowledgeBase\UploadRequest;
+use App\Models\KnowledgeBaseChunk;
 use App\Models\KnowledgeBaseDocument;
-use App\Services\AI\ChunkerService;
 use App\Services\AI\EmbeddingService;
-use App\Services\AI\PDFParserService;
-use App\Services\AI\RAGService;
+use App\Services\KnowledgeBase\DocumentProcessingService;
+use App\Services\KnowledgeBase\KnowledgeBaseService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class KnowledgeBaseController extends Controller
 {
+    public function __construct(
+        protected KnowledgeBaseService $knowledgeBase,
+    ) {}
+
     public function index()
     {
-        $documents = KnowledgeBaseDocument::with('category')
-            ->orderBy('created_at', 'desc')
-            ->paginate(15);
-
-        $categories = KnowledgeBaseCategory::all();
-
         return Inertia::render('Admin/KnowledgeBase/Index', [
-            'documents' => $documents,
-            'categories' => $categories,
+            'documents' => $this->knowledgeBase->getPaginatedDocuments(),
+            'categories' => $this->knowledgeBase->getCategories(),
         ]);
     }
 
-    public function upload(Request $request)
+    public function upload(UploadRequest $request)
     {
-        $validated = $request->validate([
-            'file' => 'required|file|mimes:pdf|max:51200',
-            'judul' => 'required|string|max:255',
-            'sumber' => 'nullable|string|max:255',
-            'category_id' => 'nullable|exists:knowledge_base_categories,id',
-        ]);
+        $document = $this->knowledgeBase->createDocument($request->validated(), $request->file('file'));
+        $result = app(DocumentProcessingService::class)->process($document);
 
-        $file = $request->file('file');
-        $filePath = $file->store('knowledge-base', 'public');
-        $fileSize = $file->getSize();
-
-        $document = KnowledgeBaseDocument::create([
-            'category_id' => $validated['category_id'] ?? null,
-            'judul' => $validated['judul'],
-            'sumber' => $validated['sumber'],
-            'file_path' => $filePath,
-            'file_size' => $fileSize,
-            'status' => 'draft',
-        ]);
-
-        try {
-            $parser = app(PDFParserService::class);
-            $result = $parser->extractText($filePath);
-
-            $document->update([
-                'page_count' => $result['page_count'],
-            ]);
-
-            if (empty(trim($result['text']))) {
-                return back()->with('warning', 'Dokumen terupload tetapi teks tidak bisa diekstrak.');
-            }
-
-            $chunker = app(ChunkerService::class);
-            $chunks = $chunker->chunk($result['text']);
-
-            $embeddingService = app(EmbeddingService::class);
-            $textsForEmbedding = array_map(fn($c) => $c, $chunks);
-
-            $embeddings = $embeddingService->embed($textsForEmbedding);
-
-            foreach ($chunks as $i => $content) {
-                $document->chunks()->create([
-                    'chunk_index' => $i,
-                    'content' => $content,
-                    'embedding' => $embeddings[$i] ?? null,
-                ]);
-            }
-
-            $document->update(['status' => 'active']);
-
-            return back()->with('success', "Dokumen '{$document->judul}' berhasil diproses (" . count($chunks) . " chunk).");
-        } catch (\Exception $e) {
-            $document->update(['status' => 'error']);
-            return back()->with('error', 'Gagal memproses dokumen: ' . $e->getMessage());
+        if (! $result['success']) {
+            return back()->with('warning', 'Dokumen terupload tetapi teks tidak bisa diekstrak.');
         }
+
+        return back()->with('success', "Dokumen '{$document->judul}' berhasil diproses ({$result['chunk_count']} chunk).");
+    }
+
+    public function update(UploadRequest $request, KnowledgeBaseDocument $knowledgeBaseDocument)
+    {
+        // Use the same request validation but ignore file requirement if not provided
+        $data = $request->validated();
+
+        $knowledgeBaseDocument->update([
+            'judul' => $data['judul'],
+            'sumber' => $data['sumber'] ?? $knowledgeBaseDocument->sumber,
+            'category_id' => $data['category_id'] ?? $knowledgeBaseDocument->category_id,
+        ]);
+
+        return back()->with('success', "Dokumen '{$knowledgeBaseDocument->judul}' berhasil diperbarui.");
     }
 
     public function reindex(KnowledgeBaseDocument $knowledgeBaseDocument)
     {
+        $processor = app(DocumentProcessingService::class);
+
         try {
-            $parser = app(PDFParserService::class);
-            $result = $parser->extractText($knowledgeBaseDocument->file_path);
+            $result = $processor->reprocess($knowledgeBaseDocument);
 
-            $knowledgeBaseDocument->chunks()->delete();
-            $knowledgeBaseDocument->update(['page_count' => $result['page_count']]);
-
-            $chunker = app(ChunkerService::class);
-            $chunks = $chunker->chunk($result['text']);
-
-            $embeddingService = app(EmbeddingService::class);
-            $embeddings = $embeddingService->embed($chunks);
-
-            foreach ($chunks as $i => $content) {
-                $knowledgeBaseDocument->chunks()->create([
-                    'chunk_index' => $i,
-                    'content' => $content,
-                    'embedding' => $embeddings[$i] ?? null,
-                ]);
-            }
-
-            $knowledgeBaseDocument->update(['status' => 'active']);
-
-            return back()->with('success', "Re-index '{$knowledgeBaseDocument->judul}' berhasil (" . count($chunks) . " chunk).");
+            return back()->with('success', "Re-index '{$knowledgeBaseDocument->judul}' berhasil ({$result['chunk_count']} chunk).");
         } catch (\Exception $e) {
             $knowledgeBaseDocument->update(['status' => 'error']);
-            return back()->with('error', 'Gagal re-index: ' . $e->getMessage());
+
+            return back()->with('error', 'Gagal re-index: '.$e->getMessage());
         }
     }
 
     public function destroy(KnowledgeBaseDocument $knowledgeBaseDocument)
     {
-        Storage::disk('public')->delete($knowledgeBaseDocument->file_path);
-        $knowledgeBaseDocument->delete();
+        $this->knowledgeBase->deleteDocument($knowledgeBaseDocument);
 
         return back()->with('success', 'Dokumen berhasil dihapus.');
     }
 
-    public function status()
+    public function getChunks(KnowledgeBaseDocument $knowledgeBaseDocument)
     {
-        $totalDocs = KnowledgeBaseDocument::count();
-        $activeDocs = KnowledgeBaseDocument::where('status', 'active')->count();
-        $totalChunks = \App\Models\KnowledgeBaseChunk::count();
-
-        $health = null;
-        try {
-            $health = app(RAGService::class)->health();
-        } catch (\Exception $e) {
-            $health = ['status' => 'offline'];
-        }
+        $chunks = $knowledgeBaseDocument->chunks()
+            ->orderBy('chunk_index', 'asc')
+            ->get(['id', 'chunk_index', 'content']);
 
         return response()->json([
-            'documents' => ['total' => $totalDocs, 'active' => $activeDocs],
-            'chunks' => $totalChunks,
-            'ai_service' => $health,
+            'document' => $knowledgeBaseDocument->only(['id', 'judul']),
+            'chunks' => $chunks,
         ]);
     }
 
-    public function ask(Request $request)
+    public function updateChunk(Request $request, KnowledgeBaseChunk $knowledgeBaseChunk)
     {
-        $validated = $request->validate([
-            'question' => 'required|string|max:1000',
-            'category_id' => 'nullable|exists:knowledge_base_categories,id',
+        $request->validate([
+            'content' => 'required|string',
         ]);
 
-        $rag = app(RAGService::class);
-        $result = $rag->ask($validated['question'], $validated['category_id'] ?? null);
+        $content = $request->input('content');
+
+        // Re-embed if content changed
+        $embedding = null;
+        if ($content !== $knowledgeBaseChunk->content) {
+            try {
+                $embeddings = app(EmbeddingService::class)->embed([$content]);
+                $embedding = $embeddings[0] ?? null;
+            } catch (\Exception $e) {
+                // If embedding fails, we still save text but warn?
+                // For now, let's just log and continue or fail.
+            }
+        }
+
+        $knowledgeBaseChunk->update([
+            'content' => $content,
+            'embedding' => $embedding ?? $knowledgeBaseChunk->embedding,
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Chunk berhasil diperbarui.']);
+    }
+
+    public function ask(AskRequest $request)
+    {
+        $result = $this->knowledgeBase->askQuestion($request->validated()['question'], $request->validated()['category_id'] ?? null);
+
+        if (isset($result['error'])) {
+            return response()->json($result, 500);
+        }
 
         return response()->json($result);
+    }
+
+    public function status()
+    {
+        return response()->json($this->knowledgeBase->getStatus());
     }
 }

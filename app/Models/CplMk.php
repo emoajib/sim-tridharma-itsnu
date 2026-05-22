@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 
 class CplMk extends Pivot
 {
+    use HasFactory;
+
     protected $table = 'm_cpl_mk';
 
     protected $fillable = [

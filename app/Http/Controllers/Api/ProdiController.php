@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Prodi;
-use App\Models\LembagaAkreditasi;
+use App\Http\Requests\ProdiRequest;
 use App\Models\Fakultas;
+use App\Models\LembagaAkreditasi;
+use App\Models\Prodi;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -27,34 +28,16 @@ class ProdiController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(ProdiRequest $request)
     {
-        $validated = $request->validate([
-            'kode_prodi' => 'required|string|unique:m_prodi,kode_prodi',
-            'nama_prodi' => 'required|string',
-            'fakultas_id' => 'required|exists:m_fakultas,id',
-            'lembaga_akreditasi_id' => 'nullable|exists:m_lembaga_akreditasi,id',
-            'jenjang' => 'required|string',
-            'akreditasi' => 'nullable|string',
-        ]);
-
-        Prodi::create($validated);
+        Prodi::create($request->validated());
 
         return redirect()->back()->with('success', 'Prodi berhasil ditambahkan.');
     }
 
-    public function update(Request $request, Prodi $prodi)
+    public function update(ProdiRequest $request, Prodi $prodi)
     {
-        $validated = $request->validate([
-            'kode_prodi' => 'required|string|unique:m_prodi,kode_prodi,' . $prodi->id,
-            'nama_prodi' => 'required|string',
-            'fakultas_id' => 'required|exists:m_fakultas,id',
-            'lembaga_akreditasi_id' => 'nullable|exists:m_lembaga_akreditasi,id',
-            'jenjang' => 'required|string',
-            'akreditasi' => 'nullable|string',
-        ]);
-
-        $prodi->update($validated);
+        $prodi->update($request->validated());
 
         return redirect()->back()->with('success', 'Prodi berhasil diperbarui.');
     }

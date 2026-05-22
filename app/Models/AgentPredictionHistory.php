@@ -2,15 +2,19 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AgentPredictionHistory extends Model
 {
+    use HasFactory;
+
     protected $table = 'agent_prediction_history';
 
     protected $fillable = [
         'prodi_id', 'periode_id', 'skor_prediksi', 'probabilitas_unggul',
-        'probabilitas_baik_sekali', 'probabilitas_baik', 'confidence_interval', 'detail_data'
+        'probabilitas_baik_sekali', 'probabilitas_baik', 'confidence_interval', 'detail_data',
     ];
 
     protected function casts(): array
@@ -24,12 +28,12 @@ class AgentPredictionHistory extends Model
         ];
     }
 
-    public function prodi()
+    public function prodi(): BelongsTo
     {
         return $this->belongsTo(Prodi::class);
     }
 
-    public function periode()
+    public function periode(): BelongsTo
     {
         return $this->belongsTo(PeriodeAkademik::class);
     }

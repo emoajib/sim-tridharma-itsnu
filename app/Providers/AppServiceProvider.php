@@ -2,7 +2,14 @@
 
 namespace App\Providers;
 
+use App\Models\AgentExecutionLog;
+use App\Models\Dosen;
+use App\Models\Prodi;
 use App\Models\Setting;
+use App\Observers\AgentExecutionLogObserver;
+use App\Policies\DosenPolicy;
+use App\Policies\ProdiPolicy;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Inertia\Inertia;
 
@@ -15,7 +22,15 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        \App\Models\AgentExecutionLog::observe(\App\Observers\AgentExecutionLogObserver::class);
+        AgentExecutionLog::observe(AgentExecutionLogObserver::class);
+
+        // Register authorization gates (policies)
+        Gate::policy(Prodi::class, ProdiPolicy::class);
+        Gate::policy(Dosen::class, DosenPolicy::class);
+
+        Gate::before(function ($user) {
+            return $user->hasRole('Super Admin') ? true : null;
+        });
 
         try {
             $settings = [

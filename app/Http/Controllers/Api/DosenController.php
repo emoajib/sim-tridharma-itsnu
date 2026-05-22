@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\DosenRequest;
 use App\Models\Dosen;
+use App\Models\Prodi;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -20,34 +22,20 @@ class DosenController extends Controller
 
         return Inertia::render('MasterData/Dosen/Index', [
             'dosen' => $dosen,
-            'prodi_list' => \App\Models\Prodi::select('id', 'nama_prodi')->get(),
+            'prodi_list' => Prodi::select('id', 'nama_prodi')->get(),
         ]);
     }
 
-    public function store(Request $request)
+    public function store(DosenRequest $request)
     {
-        $validated = $request->validate([
-            'nidn' => 'required|string|unique:m_dosen,nidn',
-            'nama_depan' => 'required|string',
-            'nama_belakang' => 'nullable|string',
-            'prodi_id' => 'required|exists:m_prodi,id',
-        ]);
-
-        Dosen::create($validated);
+        Dosen::create($request->validated());
 
         return redirect()->back()->with('success', 'Dosen berhasil ditambahkan.');
     }
 
-    public function update(Request $request, Dosen $dosen)
+    public function update(DosenRequest $request, Dosen $dosen)
     {
-        $validated = $request->validate([
-            'nidn' => 'required|string|unique:m_dosen,nidn,' . $dosen->id,
-            'nama_depan' => 'required|string',
-            'nama_belakang' => 'nullable|string',
-            'prodi_id' => 'required|exists:m_prodi,id',
-        ]);
-
-        $dosen->update($validated);
+        $dosen->update($request->validated());
 
         return redirect()->back()->with('success', 'Dosen berhasil diperbarui.');
     }

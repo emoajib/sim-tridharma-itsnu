@@ -23,7 +23,7 @@ return new class extends Migration
                 'sinta_id',
                 'sinta_score_overall',
                 'sinta_score_3yr',
-                'status_verifikasi_sinta'
+                'status_verifikasi_sinta',
             ]);
         });
     }

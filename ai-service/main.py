@@ -3,15 +3,15 @@ import os
 import logging
 import numpy as np
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sentence_transformers import SentenceTransformer
 from transformers import pipeline
+from contextlib import asynccontextmanager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("ai-service")
 
-app = FastAPI(title="RAG AI Service", version="2.0.0")
-
+# Global models
 embedding_model = None
 qa_pipeline = None
 EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL", "intfloat/multilingual-e5-small")
@@ -19,8 +19,9 @@ QA_MODEL_NAME = os.getenv("QA_MODEL", "distilbert-base-cased-distilled-squad")
 QA_ENABLED = os.getenv("QA_ENABLED", "true").lower() == "true"
 
 
-@app.on_event("startup")
-def load_models():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Load models on startup, clean up on shutdown"""
     global embedding_model, qa_pipeline
     logger.info(f"Loading embedding model: {EMBEDDING_MODEL_NAME}")
     embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
@@ -36,6 +37,13 @@ def load_models():
             logger.warning("Falling back to sentence-only mode")
     else:
         logger.info("QA is disabled, using sentence-only mode")
+
+    yield
+
+    logger.info("Shutting down AI Service...")
+
+
+app = FastAPI(title="RAG AI Service", version="2.0.0", lifespan=lifespan)
 
 
 class EmbedRequest(BaseModel):
@@ -258,6 +266,147 @@ def answer(req: AnswerRequest):
         sentences_used=len(top_sentences),
         mode=mode,
     )
+
+
+# =============================================================================
+# MCP Server Integration
+# =============================================================================
+from mcp.server.fastmcp import FastMCP, Context
+
+rag_mcp = FastMCP(
+    name="akreditasi-rag",
+    stateless_http=True,
+    json_response=True,
+)
+
+
+@rag_mcp.tool()
+async def rag_embed_text(
+    text: str = Field(description="Text to embed"),
+    ctx: Context = None,
+) -> list[float]:
+    """Embed a single text into a vector using the loaded sentence transformer model."""
+    if embedding_model is None:
+        raise RuntimeError("Embedding model not loaded")
+
+    await ctx.info(f"Embedding text: {text[:50]}...")
+    vector = embedding_model.encode([text], normalize_embeddings=True)[0]
+    return vector.tolist()
+
+
+@rag_mcp.tool()
+async def rag_embed_texts(
+    texts: list[str] = Field(description="List of texts to embed"),
+    ctx: Context = None,
+) -> list[list[float]]:
+    """Embed multiple texts into vectors using the loaded sentence transformer model."""
+    if embedding_model is None:
+        raise RuntimeError("Embedding model not loaded")
+
+    await ctx.info(f"Embedding {len(texts)} texts")
+    vectors = embedding_model.encode(texts, normalize_embeddings=True)
+    return vectors.tolist()
+
+
+@rag_mcp.tool()
+async def rag_search(
+    question: str = Field(description="Question to search for"),
+    chunks: list[dict] = Field(description="List of chunks with 'content' field"),
+    top_k: int = Field(default=5, description="Number of top results"),
+    ctx: Context = None,
+) -> dict:
+    """
+    Search for relevant sentences in chunks based on a question.
+    Returns ranked sentences with similarity scores.
+    """
+    if embedding_model is None:
+        raise RuntimeError("Embedding model not loaded")
+
+    await ctx.report_progress(1, 3, "Embedding question...")
+    q_emb = embedding_model.encode([question], normalize_embeddings=True)[0]
+
+    await ctx.report_progress(2, 3, "Scoring sentences...")
+    top_sentences = _build_sentence_scores(q_emb, chunks, top_k)
+
+    await ctx.report_progress(3, 3, "Returning results...")
+    return {
+        "question": question,
+        "results": top_sentences,
+        "count": len(top_sentences),
+    }
+
+
+@rag_mcp.tool()
+async def rag_answer(
+    question: str = Field(description="Question to answer"),
+    chunks: list[dict] = Field(description="List of chunks with 'content' field"),
+    top_k: int = Field(default=5, description="Number of top chunks to use"),
+    ctx: Context = None,
+) -> dict:
+    """
+    Answer a question based on provided document chunks.
+    Returns formatted answer with sources and mode (qa-extractive or sentence-only).
+    """
+    if embedding_model is None:
+        raise RuntimeError("Embedding model not loaded")
+
+    await ctx.report_progress(1, 4, "Embedding question...")
+    q_emb = embedding_model.encode([question], normalize_embeddings=True)[0]
+
+    if not chunks:
+        return {
+            "answer": "Maaf, tidak ada dokumen yang relevan ditemukan.",
+            "sources": [],
+            "mode": "no-chunks",
+        }
+
+    await ctx.report_progress(2, 4, "Scoring sentences...")
+    top_sentences = _build_sentence_scores(q_emb, chunks, top_k)
+
+    if not top_sentences:
+        return {
+            "answer": "Maaf, tidak ditemukan kalimat yang relevan dalam dokumen.",
+            "sources": [],
+            "mode": "no-sentences",
+        }
+
+    await ctx.report_progress(3, 4, "Generating answer...")
+
+    if QA_ENABLED and qa_pipeline is not None:
+        top_context = " ".join([s['text'] for s in top_sentences[:3]])
+        qa_result = _qa_extractive(question, top_context)
+        if qa_result and qa_result['score'] > 0.3:
+            top_sentences[0]['text'] = qa_result['answer']
+            top_sentences[0]['is_span'] = True
+
+    sources = []
+    seen_sources = set()
+    for s in top_sentences:
+        key = f"{s['document_judul']}|{s['document_sumber']}"
+        if key not in seen_sources:
+            seen_sources.add(key)
+            sources.append({
+                'judul': s['document_judul'],
+                'sumber': s['document_sumber'],
+                'skor': round(s.get('chunk_similarity', 0) * 100, 1),
+            })
+
+    answer_text = _format_answer(question, top_sentences)
+    mode = "qa-extractive" if any(s.get('is_span') for s in top_sentences) else "sentence-only"
+
+    await ctx.report_progress(4, 4, "Answer generated")
+    return {
+        "answer": answer_text,
+        "sources": sources,
+        "mode": mode,
+        "sentences_used": len(top_sentences),
+    }
+
+
+# Mount RAG MCP server into FastAPI
+rag_mcp_app = rag_mcp.streamable_http_app()
+app.mount("/mcp", rag_mcp_app)
+logger.info("RAG MCP server mounted at /mcp")
 
 
 if __name__ == "__main__":

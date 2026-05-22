@@ -3,8 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\Fakultas;
-use App\Models\Prodi;
 use App\Models\PeriodeAkademik;
+use App\Models\Prodi;
 use Illuminate\Database\Seeder;
 
 class DataAkademikSeeder extends Seeder
@@ -83,15 +83,15 @@ class DataAkademikSeeder extends Seeder
 
         // Create Periode Akademik
         $tahunSekarang = date('Y');
-        
+
         PeriodeAkademik::firstOrCreate(
-            ['kode_periode' => $tahunSekarang . '-Ganjil'],
-            ['nama_periode' => 'Semester Ganjil ' . $tahunSekarang, 'tanggal_mulai' => $tahunSekarang . '-01-01', 'tanggal_selesai' => $tahunSekarang . '-06-30', 'is_active' => true]
+            ['kode_periode' => $tahunSekarang.'-Ganjil'],
+            ['nama_periode' => 'Semester Ganjil '.$tahunSekarang, 'tanggal_mulai' => $tahunSekarang.'-01-01', 'tanggal_selesai' => $tahunSekarang.'-06-30', 'is_active' => true]
         );
 
         PeriodeAkademik::firstOrCreate(
-            ['kode_periode' => $tahunSekarang . '-Genap'],
-            ['nama_periode' => 'Semester Genap ' . $tahunSekarang, 'tanggal_mulai' => $tahunSekarang . '-07-01', 'tanggal_selesai' => $tahunSekarang . '-12-31', 'is_active' => true]
+            ['kode_periode' => $tahunSekarang.'-Genap'],
+            ['nama_periode' => 'Semester Genap '.$tahunSekarang, 'tanggal_mulai' => $tahunSekarang.'-07-01', 'tanggal_selesai' => $tahunSekarang.'-12-31', 'is_active' => true]
         );
 
         echo "Data dummy berhasil dibuat:\n";

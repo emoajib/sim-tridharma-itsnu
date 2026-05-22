@@ -16,6 +16,7 @@ class AkreditasiSeeder extends Seeder
 
         if ($prodis->isEmpty()) {
             $this->command->warn('Prodi kosong, lewati seeding akreditasi.');
+
             return;
         }
 
@@ -23,8 +24,8 @@ class AkreditasiSeeder extends Seeder
             foreach ($periodes as $periode) {
                 DB::table('m_kuisioner_tracer')->insert([
                     'prodi_id' => $prodi->id,
-                    'judul_kuisioner' => 'Tracer Study ' . $prodi->nama_prodi . ' ' . $periode->nama_periode,
-                    'tahun' => (string)now()->year,
+                    'judul_kuisioner' => 'Tracer Study '.$prodi->nama_prodi.' '.$periode->nama_periode,
+                    'tahun' => (string) now()->year,
                     'pertanyaan' => json_encode([
                         ['id' => 'q1', 'text' => 'Seberapa seringkah Anda mendapat pekerjaan?'],
                         ['id' => 'q2', 'text' => 'Berapa gaji pertama Anda?'],
@@ -51,8 +52,8 @@ class AkreditasiSeeder extends Seeder
                         'indikator_id' => $indikator->id,
                         'nilai' => $nilai,
                         'status' => $status,
-                        'capaian' => 'Capaian indikator: ' . $nilai . '%',
-                        'bukti' => 'Dokumen bukti #' . rand(100, 999),
+                        'capaian' => 'Capaian indikator: '.$nilai.'%',
+                        'bukti' => 'Dokumen bukti #'.rand(100, 999),
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
@@ -81,34 +82,34 @@ class AkreditasiSeeder extends Seeder
                     DB::table('trx_audit_mutu')->insert([
                         'prodi_id' => $prodi->id,
                         'periode_id' => $periode->id,
-                        'judul_audit' => 'Audit Mutu Internal Semester #' . ($i + 1),
+                        'judul_audit' => 'Audit Mutu Internal Semester #'.($i + 1),
                         'tanggal_audit' => now()->subDays(rand(1, 60)),
-                        'auditor' => 'Auditor #' . rand(1, 5),
-                        'temuan' => 'Temuan Audit #' . ($i + 1) . ': ' . Str::random(50),
-                        'rekomendasi' => 'Rekomendasi perbaikan untuk temuan #' . ($i + 1),
+                        'auditor' => 'Auditor #'.rand(1, 5),
+                        'temuan' => 'Temuan Audit #'.($i + 1).': '.Str::random(50),
+                        'rekomendasi' => 'Rekomendasi perbaikan untuk temuan #'.($i + 1),
                         'status' => ['open', 'closed'][rand(0, 1)],
-                        'tindak_lanjut' => 'Rencana tindak lanjut #' . ($i + 1),
+                        'tindak_lanjut' => 'Rencana tindak lanjut #'.($i + 1),
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
                 }
 
                 for ($i = 0; $i < rand(3, 6); $i++) {
-                    $dampak = (string)rand(1, 5);
-                    $probabilitas = (string)rand(1, 5);
-                    $tingkatRisiko = (int)$dampak * (int)$probabilitas;
+                    $dampak = (string) rand(1, 5);
+                    $probabilitas = (string) rand(1, 5);
+                    $tingkatRisiko = (int) $dampak * (int) $probabilitas;
 
                     DB::table('trx_risk_register')->insert([
                         'prodi_id' => $prodi->id,
                         'periode_id' => $periode->id,
-                        'nama_risiko' => 'Risiko #' . ($i + 1) . ': ' . Str::random(30),
+                        'nama_risiko' => 'Risiko #'.($i + 1).': '.Str::random(30),
                         'kategori' => ['Akademik', 'Keuangan', 'SDM', 'Sarana', 'Mutu'][rand(0, 4)],
                         'dampak' => $dampak,
                         'probabilitas' => $probabilitas,
-                        'skor_risiko' => (string)$tingkatRisiko,
-                        'mitigasi' => 'Rencana mitigasi untuk risiko #' . ($i + 1),
+                        'skor_risiko' => (string) $tingkatRisiko,
+                        'mitigasi' => 'Rencana mitigasi untuk risiko #'.($i + 1),
                         'status' => ['open', 'closed'][rand(0, 1)],
-                        'penanggung_jawab' => 'PIC #' . rand(1, 5),
+                        'penanggung_jawab' => 'PIC #'.rand(1, 5),
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);

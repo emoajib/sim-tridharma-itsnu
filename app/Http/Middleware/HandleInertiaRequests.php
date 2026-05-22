@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -30,6 +31,7 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $user = $request->user();
+
         return [
             ...parent::share($request),
             'auth' => [
@@ -42,11 +44,24 @@ class HandleInertiaRequests extends Middleware
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
             ],
-            'appSettings' => [
-                'theme_mode' => \App\Models\Setting::get('theme_mode', 'klasik'),
-                'theme_color' => \App\Models\Setting::get('theme_color', 'indigo'),
-                'chat_enabled' => \App\Models\Setting::get('chat_enabled', true),
-            ]
+            'appSettings' => $this->getAppSettings(),
         ];
+    }
+
+    private function getAppSettings(): array
+    {
+        try {
+            return [
+                'theme_mode' => Setting::get('theme_mode', 'klasik'),
+                'theme_color' => Setting::get('theme_color', 'indigo'),
+                'chat_enabled' => Setting::get('chat_enabled', true),
+            ];
+        } catch (\Exception $e) {
+            return [
+                'theme_mode' => 'klasik',
+                'theme_color' => 'indigo',
+                'chat_enabled' => true,
+            ];
+        }
     }
 }

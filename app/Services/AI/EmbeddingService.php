@@ -31,12 +31,14 @@ class EmbeddingService
     public function embedText(string $text): array
     {
         $embeddings = $this->embed([$text]);
+
         return $embeddings[0];
     }
 
     public function health(): array
     {
         $response = Http::timeout(5)->get("{$this->baseUrl}/health");
+
         return $response->json();
     }
 }

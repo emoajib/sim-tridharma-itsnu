@@ -13,8 +13,9 @@ class DosenSeeder extends Seeder
     {
         $path = database_path('seeders/data/8444.xls');
 
-        if (!file_exists($path)) {
+        if (! file_exists($path)) {
             echo "⚠️  File 8444.xls not found in database/seeders/data/, skipping DosenSeeder\n";
+
             return;
         }
 
@@ -49,8 +50,9 @@ class DosenSeeder extends Seeder
             }
         }
 
-        if (!$headerRow) {
+        if (! $headerRow) {
             echo "⚠️  Could not find NIDN header in 8444.xls\n";
+
             return;
         }
 
@@ -58,7 +60,9 @@ class DosenSeeder extends Seeder
         for ($i = $headerRow + 1; $i < count($rows); $i++) {
             $row = array_map('trim', array_map('strval', $rows[$i]));
             $nidn = $row[$colMap['nidn']] ?? '';
-            if (empty($nidn)) continue;
+            if (empty($nidn)) {
+                continue;
+            }
 
             $nama = $row[$colMap['nama']] ?? '';
             $prodiName = $row[$colMap['prodi']] ?? '';
@@ -93,15 +97,22 @@ class DosenSeeder extends Seeder
 
     private function splitNama(string $fullName): array
     {
-        $parts = array_values(array_filter(explode(' ', $fullName), fn($p) => $p !== ''));
+        $parts = array_values(array_filter(explode(' ', $fullName), fn ($p) => $p !== ''));
         $count = count($parts);
 
-        if ($count === 0) return ['', ''];
-        if ($count === 1) return [$parts[0], ''];
-        if ($count === 2) return [$parts[0], $parts[1]];
+        if ($count === 0) {
+            return ['', ''];
+        }
+        if ($count === 1) {
+            return [$parts[0], ''];
+        }
+        if ($count === 2) {
+            return [$parts[0], $parts[1]];
+        }
 
         $namaDepan = implode(' ', array_slice($parts, 0, $count - 2));
         $namaBelakang = implode(' ', array_slice($parts, -2));
+
         return [$namaDepan, $namaBelakang];
     }
 }

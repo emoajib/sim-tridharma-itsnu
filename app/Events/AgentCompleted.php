@@ -14,8 +14,11 @@ class AgentCompleted implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public string $agent;
+
     public string $status;
+
     public array $data;
+
     public ?int $userId;
 
     public function __construct(string $agent, string $status, array $data, ?int $userId = null)
@@ -29,13 +32,13 @@ class AgentCompleted implements ShouldBroadcast
     public function broadcastOn(): array
     {
         $channels = [];
-        
+
         if ($this->userId) {
-            $channels[] = new PrivateChannel('user.' . $this->userId);
+            $channels[] = new PrivateChannel('user.'.$this->userId);
         }
-        
+
         $channels[] = new Channel('agent-results');
-        
+
         return $channels;
     }
 

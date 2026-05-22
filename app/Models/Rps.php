@@ -2,17 +2,19 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Rps extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'm_rps';
 
     protected $fillable = [
-        'mata_kuliah_id', 'prodi_id', 'periode_id', 'kode_rps', 'file_path', 'status'
+        'mata_kuliah_id', 'prodi_id', 'periode_id', 'kode_rps', 'file_path', 'status',
     ];
 
     protected function casts(): array
@@ -22,17 +24,17 @@ class Rps extends Model
         ];
     }
 
-    public function mataKuliah()
+    public function mataKuliah(): BelongsTo
     {
         return $this->belongsTo(MataKuliah::class);
     }
 
-    public function prodi()
+    public function prodi(): BelongsTo
     {
         return $this->belongsTo(Prodi::class);
     }
 
-    public function periode()
+    public function periode(): BelongsTo
     {
         return $this->belongsTo(PeriodeAkademik::class, 'periode_id');
     }

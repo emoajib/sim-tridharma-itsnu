@@ -3,14 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Dosen;
 use App\Models\KegiatanPendidikan;
 use App\Models\Penelitian;
-use App\Models\Publikasi;
-use App\Models\Pkm;
 use App\Models\Penunjang;
-use App\Models\Dosen;
-use App\Models\Prodi;
 use App\Models\PeriodeAkademik;
+use App\Models\Pkm;
+use App\Models\Prodi;
+use App\Models\Publikasi;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -21,7 +21,7 @@ class PortofolioController extends Controller
         $dosenId = $request->dosen_id;
         $periodeId = $request->periode_id;
 
-        $query = fn($q) => $q;
+        $query = fn ($q) => $q;
 
         $pendidikanQuery = KegiatanPendidikan::query();
         $penelitianQuery = Penelitian::query();

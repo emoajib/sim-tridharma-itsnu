@@ -2,16 +2,16 @@
 
 namespace App\Imports;
 
-use App\Models\Publikasi;
 use App\Models\Dosen;
 use App\Models\PeriodeAkademik;
-use Maatwebsite\Excel\Concerns\ToModel;
-use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use App\Models\Publikasi;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\Importable;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
-use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Concerns\ToModel;
+use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
-class SintaPublikasiImport implements ToModel, WithHeadingRow, SkipsEmptyRows
+class SintaPublikasiImport implements SkipsEmptyRows, ToModel, WithHeadingRow
 {
     use Importable;
 
@@ -32,8 +32,9 @@ class SintaPublikasiImport implements ToModel, WithHeadingRow, SkipsEmptyRows
         $quartile = $cleanRow['quartile'] ?? $cleanRow['sjr_quartile'] ?? $cleanRow['index'] ?? null;
         $authors = $cleanRow['authors'] ?? $cleanRow['penulis'] ?? $cleanRow['author'] ?? null;
 
-        if (!$title) {
+        if (! $title) {
             Log::warning('SINTA Import: Missing Title in row', $cleanRow);
+
             return null;
         }
 
@@ -44,22 +45,23 @@ class SintaPublikasiImport implements ToModel, WithHeadingRow, SkipsEmptyRows
         }
 
         // Try matching by Author Name
-        if (!$dosen && $authors) {
+        if (! $dosen && $authors) {
             $authorParts = explode(',', $authors);
             $firstAuthor = trim($authorParts[0]);
             $dosen = Dosen::where('nama_depan', 'like', "%{$firstAuthor}%")
-                         ->orWhere('nama_belakang', 'like', "%{$firstAuthor}%")
-                         ->first();
+                ->orWhere('nama_belakang', 'like', "%{$firstAuthor}%")
+                ->first();
         }
 
         // AUTO-MATCH FALLBACK: If only one Dosen exists in DB, use it for testing/small campuses
-        if (!$dosen && Dosen::count() === 1) {
+        if (! $dosen && Dosen::count() === 1) {
             $dosen = Dosen::first();
             Log::info("SINTA Import: Falling back to only Dosen available (ID: {$dosen->id})");
         }
 
-        if (!$dosen) {
+        if (! $dosen) {
             Log::error('SINTA Import: Dosen not found for row', ['nidn' => $nidn, 'authors' => $authors]);
+
             return null;
         }
 
@@ -73,13 +75,13 @@ class SintaPublikasiImport implements ToModel, WithHeadingRow, SkipsEmptyRows
                 'judul_publikasi' => $title,
             ],
             [
-                'prodi_id'        => $dosen->prodi_id,
-                'periode_id'      => $periode ? $periode->id : null,
-                'jenis_publikasi' => $quartile ? "Jurnal Terindeks ($quartile)" : "Jurnal Nasional",
-                'tingkat'         => ($quartile && (str_contains(strtoupper($quartile), 'Q') || str_contains(strtoupper($quartile), 'SCOPUS'))) ? 'Internasional' : 'Nasional',
-                'link'            => $cleanRow['url'] ?? $cleanRow['link'] ?? $cleanRow['doi'] ?? null,
-                'tahun'           => $year,
-                'is_verified'     => true,
+                'prodi_id' => $dosen->prodi_id,
+                'periode_id' => $periode ? $periode->id : null,
+                'jenis_publikasi' => $quartile ? "Jurnal Terindeks ($quartile)" : 'Jurnal Nasional',
+                'tingkat' => ($quartile && (str_contains(strtoupper($quartile), 'Q') || str_contains(strtoupper($quartile), 'SCOPUS'))) ? 'Internasional' : 'Nasional',
+                'link' => $cleanRow['url'] ?? $cleanRow['link'] ?? $cleanRow['doi'] ?? null,
+                'tahun' => $year,
+                'is_verified' => true,
             ]
         );
     }

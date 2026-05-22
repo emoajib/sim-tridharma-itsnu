@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\DokumenBuktiRequest;
 use App\Models\DokumenBukti;
 use App\Models\Dosen;
 use Illuminate\Http\Request;
@@ -25,50 +26,38 @@ class DokumenBuktiController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(DokumenBuktiRequest $request)
     {
-        $validated = $request->validate([
-            'dosen_id' => 'nullable|exists:m_dosen,id',
-            'prodi_id' => 'nullable|exists:m_prodi,id',
-            'nama_dokumen' => 'required|string',
-            'file' => 'required|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:10240',
-            'keterangan' => 'nullable|string',
-        ]);
+        $data = $request->validated();
 
         $file = $request->file('file');
         $filePath = $file->store('dokumen', 'public');
-        $validated['file_path'] = $filePath;
-        $validated['file_type'] = $file->getClientOriginalExtension();
-        $validated['file_size'] = $file->getSize();
-        $validated['hash'] = md5_file($file->getRealPath());
+        $data['file_path'] = $filePath;
+        $data['file_type'] = $file->getClientOriginalExtension();
+        $data['file_size'] = $file->getSize();
+        $data['hash'] = md5_file($file->getRealPath());
 
-        DokumenBukti::create($validated);
+        DokumenBukti::create($data);
 
         return redirect()->back()->with('success', 'Dokumen berhasil ditambahkan.');
     }
 
-    public function update(Request $request, DokumenBukti $dokumenBukti)
+    public function update(DokumenBuktiRequest $request, DokumenBukti $dokumenBukti)
     {
-        $validated = $request->validate([
-            'dosen_id' => 'nullable|exists:m_dosen,id',
-            'prodi_id' => 'nullable|exists:m_prodi,id',
-            'nama_dokumen' => 'required|string',
-            'file' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:10240',
-            'keterangan' => 'nullable|string',
-        ]);
+        $data = $request->validated();
 
         if ($request->hasFile('file')) {
             Storage::disk('public')->delete($dokumenBukti->file_path);
 
             $file = $request->file('file');
             $filePath = $file->store('dokumen', 'public');
-            $validated['file_path'] = $filePath;
-            $validated['file_type'] = $file->getClientOriginalExtension();
-            $validated['file_size'] = $file->getSize();
-            $validated['hash'] = md5_file($file->getRealPath());
+            $data['file_path'] = $filePath;
+            $data['file_type'] = $file->getClientOriginalExtension();
+            $data['file_size'] = $file->getSize();
+            $data['hash'] = md5_file($file->getRealPath());
         }
 
-        $dokumenBukti->update($validated);
+        $dokumenBukti->update($data);
 
         return redirect()->back()->with('success', 'Dokumen berhasil diperbarui.');
     }

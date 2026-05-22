@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cpl;
+use App\Models\Kurikulum;
 use App\Models\MataKuliah;
 use App\Models\Prodi;
-use App\Models\Kurikulum;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -29,7 +29,7 @@ class KurikulumMappingController extends Controller
             $mks = MataKuliah::where('prodi_id', $prodiId)->get();
 
             if ($kurikulumId) {
-                $mks = MataKuliah::whereHas('kurikulums', fn($q) => $q->where('m_kurikulum.id', $kurikulumId))
+                $mks = MataKuliah::whereHas('kurikulums', fn ($q) => $q->where('m_kurikulum.id', $kurikulumId))
                     ->orWhere('prodi_id', $prodiId)
                     ->get();
             }

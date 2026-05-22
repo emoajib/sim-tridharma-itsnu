@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\FakultasRequest;
 use App\Models\Fakultas;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -23,32 +24,16 @@ class FakultasController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(FakultasRequest $request)
     {
-        $validated = $request->validate([
-            'kode_fakultas' => 'required|string|unique:m_fakultas,kode_fakultas',
-            'nama_fakultas' => 'required|string',
-            'alamat' => 'nullable|string',
-            'telepon' => 'nullable|string|max:30',
-            'email' => 'nullable|email|max:100',
-        ]);
-
-        Fakultas::create($validated);
+        Fakultas::create($request->validated());
 
         return redirect()->back()->with('success', 'Fakultas berhasil ditambahkan.');
     }
 
-    public function update(Request $request, Fakultas $fakultas)
+    public function update(FakultasRequest $request, Fakultas $fakultas)
     {
-        $validated = $request->validate([
-            'kode_fakultas' => 'required|string|unique:m_fakultas,kode_fakultas,' . $fakultas->id,
-            'nama_fakultas' => 'required|string',
-            'alamat' => 'nullable|string',
-            'telepon' => 'nullable|string|max:30',
-            'email' => 'nullable|email|max:100',
-        ]);
-
-        $fakultas->update($validated);
+        $fakultas->update($request->validated());
 
         return redirect()->back()->with('success', 'Fakultas berhasil diperbarui.');
     }

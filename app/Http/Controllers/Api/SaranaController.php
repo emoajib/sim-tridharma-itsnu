@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Sarana;
+use App\Http\Requests\SaranaRequest;
 use App\Models\Prodi;
+use App\Models\Sarana;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -24,36 +25,16 @@ class SaranaController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(SaranaRequest $request)
     {
-        $validated = $request->validate([
-            'prodi_id' => 'required|exists:m_prodi,id',
-            'nama_sarana' => 'required|string|max:255',
-            'jenis_sarana' => 'required|string|max:100',
-            'jumlah' => 'required|integer|min:1',
-            'kondisi' => 'nullable|string|in:baik,sedang,rusak',
-            'tanggal_kalibrasi' => 'nullable|date',
-            'tanggal_kalibrasi_berikut' => 'nullable|date',
-        ]);
-
-        Sarana::create($validated);
+        Sarana::create($request->validated());
 
         return redirect()->back()->with('success', 'Sarana berhasil ditambahkan.');
     }
 
-    public function update(Request $request, Sarana $sarana)
+    public function update(SaranaRequest $request, Sarana $sarana)
     {
-        $validated = $request->validate([
-            'prodi_id' => 'required|exists:m_prodi,id',
-            'nama_sarana' => 'required|string|max:255',
-            'jenis_sarana' => 'required|string|max:100',
-            'jumlah' => 'required|integer|min:1',
-            'kondisi' => 'required|string|in:baik,sedang,rusak',
-            'tanggal_kalibrasi' => 'nullable|date',
-            'tanggal_kalibrasi_berikut' => 'nullable|date',
-        ]);
-
-        $sarana->update($validated);
+        $sarana->update($request->validated());
 
         return redirect()->back()->with('success', 'Sarana berhasil diperbarui.');
     }

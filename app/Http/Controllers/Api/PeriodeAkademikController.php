@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\PeriodeAkademikRequest;
 use App\Models\PeriodeAkademik;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -23,26 +24,16 @@ class PeriodeAkademikController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(PeriodeAkademikRequest $request)
     {
-        $validated = $request->validate([
-            'kode_periode' => 'required|string|unique:m_periode_akademik,kode_periode',
-            'nama_periode' => 'required|string',
-        ]);
-
-        PeriodeAkademik::create($validated);
+        PeriodeAkademik::create($request->validated());
 
         return redirect()->back()->with('success', 'Periode akademik berhasil ditambahkan.');
     }
 
-    public function update(Request $request, PeriodeAkademik $periodeAkademik)
+    public function update(PeriodeAkademikRequest $request, PeriodeAkademik $periodeAkademik)
     {
-        $validated = $request->validate([
-            'kode_periode' => 'required|string|unique:m_periode_akademik,kode_periode,' . $periodeAkademik->id,
-            'nama_periode' => 'required|string',
-        ]);
-
-        $periodeAkademik->update($validated);
+        $periodeAkademik->update($request->validated());
 
         return redirect()->back()->with('success', 'Periode akademik berhasil diperbarui.');
     }

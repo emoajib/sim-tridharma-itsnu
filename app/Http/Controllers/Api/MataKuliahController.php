@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\MataKuliahRequest;
 use App\Models\MataKuliah;
+use App\Models\Prodi;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -20,32 +22,20 @@ class MataKuliahController extends Controller
 
         return Inertia::render('MasterData/MataKuliah/Index', [
             'mataKuliah' => $mataKuliah,
-            'prodi_list' => \App\Models\Prodi::select('id', 'nama_prodi')->get(),
+            'prodi_list' => Prodi::select('id', 'nama_prodi')->get(),
         ]);
     }
 
-    public function store(Request $request)
+    public function store(MataKuliahRequest $request)
     {
-        $validated = $request->validate([
-            'kode_mk' => 'required|string|unique:m_mata_kuliah,kode_mk',
-            'nama_mk' => 'required|string',
-            'prodi_id' => 'required|exists:m_prodi,id',
-        ]);
-
-        MataKuliah::create($validated);
+        MataKuliah::create($request->validated());
 
         return redirect()->back()->with('success', 'Mata kuliah berhasil ditambahkan.');
     }
 
-    public function update(Request $request, MataKuliah $mataKuliah)
+    public function update(MataKuliahRequest $request, MataKuliah $mataKuliah)
     {
-        $validated = $request->validate([
-            'kode_mk' => 'required|string|unique:m_mata_kuliah,kode_mk,' . $mataKuliah->id,
-            'nama_mk' => 'required|string',
-            'prodi_id' => 'required|exists:m_prodi,id',
-        ]);
-
-        $mataKuliah->update($validated);
+        $mataKuliah->update($request->validated());
 
         return redirect()->back()->with('success', 'Mata kuliah berhasil diperbarui.');
     }

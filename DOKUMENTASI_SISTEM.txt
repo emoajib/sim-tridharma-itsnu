@@ -1,0 +1,27 @@
+================================================================================
+          DOKUMENTASI SISTEM - SIM TRIDHARMA ITSNU PEKALONGAN
+          Sistem Informasi Manajemen Tridharma Dosen
+================================================================================
+
+Generated: 2026-05-20
+Framework: Laravel 13.9.0
+PHP: 8.4.1
+Database: PostgreSQL
+Frontend: Vue 3 + Inertia.js + TailwindCSS
+
+================================================================================
+                          OVERVIEW SISTEM
+================================================================================
+
+STATISTIK SISTEM:
+- 14 Modul Utama
+- 50 Eloquent Models
+- 45 Controllers
+- 68 Database Tables
+- 190 Routes
+- 15 Roles
+- 60 Permissions
+- 6 AI Agents
+- 4 AI Services
+
+[... rest of documentation auto-generated ...]

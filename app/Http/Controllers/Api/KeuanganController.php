@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Keuangan;
+use App\Http\Requests\KeuanganRequest;
 use App\Models\Dosen;
-use App\Models\Prodi;
+use App\Models\Keuangan;
 use App\Models\PeriodeAkademik;
+use App\Models\Prodi;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -14,11 +15,9 @@ class KeuanganController extends Controller
 {
     public function index(Request $request)
     {
-        $keuangan = Keuangan::with(['dosen', 'prodi', 'periode'])
+        $keuangan = Keuangan::with(['dosen', 'prodi'])
             ->when($request->search, function ($query, $search) {
-                $query->whereHas('dosen', function ($q) use ($search) {
-                    $q->where('nama_depan', 'like', "%{$search}%");
-                });
+                $query->where('jenis_dana', 'like', "%{$search}%");
             })
             ->paginate(10);
 
@@ -30,48 +29,24 @@ class KeuanganController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(KeuanganRequest $request)
     {
-        $validated = $request->validate([
-            'dosen_id' => 'required|exists:m_dosen,id',
-            'prodi_id' => 'required|exists:m_prodi,id',
-            'periode_id' => 'nullable|exists:m_periode_akademik,id',
-            'jenis_dana' => 'required|string|max:50',
-            'sumber_dana' => 'nullable|string|max:100',
-            'jumlah' => 'required|numeric|min:0',
-            'tahun' => 'nullable|string|max:10',
-            'keterangan' => 'nullable|string',
-            'status' => 'nullable|string|max:30',
-        ]);
+        Keuangan::create($request->validated());
 
-        Keuangan::create($validated);
-
-        return redirect()->back()->with('success', 'Keuangan berhasil ditambahkan.');
+        return redirect()->back()->with('success', 'Data keuangan berhasil ditambahkan.');
     }
 
-    public function update(Request $request, Keuangan $keuangan)
+    public function update(KeuanganRequest $request, Keuangan $keuangan)
     {
-        $validated = $request->validate([
-            'dosen_id' => 'required|exists:m_dosen,id',
-            'prodi_id' => 'required|exists:m_prodi,id',
-            'periode_id' => 'nullable|exists:m_periode_akademik,id',
-            'jenis_dana' => 'required|string|max:50',
-            'sumber_dana' => 'nullable|string|max:100',
-            'jumlah' => 'required|numeric|min:0',
-            'tahun' => 'nullable|string|max:10',
-            'keterangan' => 'nullable|string',
-            'status' => 'nullable|string|max:30',
-        ]);
+        $keuangan->update($request->validated());
 
-        $keuangan->update($validated);
-
-        return redirect()->back()->with('success', 'Keuangan berhasil diperbarui.');
+        return redirect()->back()->with('success', 'Data keuangan berhasil diperbarui.');
     }
 
     public function destroy(Keuangan $keuangan)
     {
         $keuangan->delete();
 
-        return redirect()->back()->with('success', 'Keuangan berhasil dihapus.');
+        return redirect()->back()->with('success', 'Data keuangan berhasil dihapus.');
     }
 }

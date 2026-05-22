@@ -2,16 +2,18 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Observers\AgentExecutionLogObserver;
 
 class AgentExecutionLog extends Model
 {
+    use HasFactory;
+
     protected $table = 'agent_execution_log';
 
     protected $fillable = [
         'agent_name', 'status', 'started_at', 'finished_at', 'duration_ms',
-        'input_data', 'output_data', 'error_message', 'triggered_by'
+        'input_data', 'output_data', 'error_message', 'triggered_by',
     ];
 
     protected function casts(): array

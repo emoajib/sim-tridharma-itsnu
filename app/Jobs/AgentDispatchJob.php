@@ -12,7 +12,9 @@ class AgentDispatchJob implements ShouldQueue
     use Queueable;
 
     public string $agent;
+
     public string $action;
+
     public array $data;
 
     public function __construct(string $agent, string $action, array $data = [])

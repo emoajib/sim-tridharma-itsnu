@@ -60,6 +60,17 @@ source venv/bin/activate
 python main.py
 ```
 
+## Quick Start (Development)
+
+```bash
+# Satu baris perintah untuk menjalankan seluruh aplikasi dengan hot-reload otomatis
+composer dev
+
+# Output: semua layanan (Laravel, Reverb, Queue, Pail, Vite, AI Agents, RAG Service, Celery)
+# muncul dalam satu terminal dengan label berwarna. Tekan Ctrl+C untuk berhenti.
+# Perubahan kode pada React, PHP, atau Python akan langsung terdeteksi secara otomatis.
+```
+
 ## AI Agent Usage
 
 ### Via Dashboard

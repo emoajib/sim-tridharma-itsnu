@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Rps;
+use App\Http\Requests\RpsRequest;
 use App\Models\MataKuliah;
-use App\Models\Prodi;
 use App\Models\PeriodeAkademik;
+use App\Models\Prodi;
+use App\Models\Rps;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -16,8 +17,8 @@ class RpsController extends Controller
     {
         $rps = Rps::with('mataKuliah', 'prodi', 'periode')
             ->when($request->search, function ($q, $s) {
-                $q->whereHas('mataKuliah', fn($q) => $q->where('nama_mk', 'like', "%{$s}%"))
-                  ->orWhere('kode_rps', 'like', "%{$s}%");
+                $q->whereHas('mataKuliah', fn ($q) => $q->where('nama_mk', 'like', "%{$s}%"))
+                    ->orWhere('kode_rps', 'like', "%{$s}%");
             })
             ->paginate(10);
 
@@ -29,17 +30,9 @@ class RpsController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(RpsRequest $request)
     {
-        $validated = $request->validate([
-            'mata_kuliah_id' => 'required|exists:m_mata_kuliah,id',
-            'prodi_id' => 'required|exists:m_prodi,id',
-            'periode_id' => 'nullable|exists:m_periode_akademik,id',
-            'kode_rps' => 'nullable|string',
-            'file' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
-        ]);
-
-        $data = $validated;
+        $data = $request->validated();
 
         if ($request->hasFile('file')) {
             $data['file_path'] = $request->file('file')->store('rps', 'public');
@@ -50,18 +43,9 @@ class RpsController extends Controller
         return redirect()->back()->with('success', 'RPS berhasil ditambahkan.');
     }
 
-    public function update(Request $request, Rps $rp)
+    public function update(RpsRequest $request, Rps $rp)
     {
-        $validated = $request->validate([
-            'mata_kuliah_id' => 'required|exists:m_mata_kuliah,id',
-            'prodi_id' => 'required|exists:m_prodi,id',
-            'periode_id' => 'nullable|exists:m_periode_akademik,id',
-            'kode_rps' => 'nullable|string',
-            'file' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
-            'status' => 'required|string|in:draft,selesai',
-        ]);
-
-        $data = $validated;
+        $data = $request->validated();
 
         if ($request->hasFile('file')) {
             if ($rp->file_path) {
@@ -81,6 +65,7 @@ class RpsController extends Controller
             \Storage::disk('public')->delete($rp->file_path);
         }
         $rp->delete();
+
         return redirect()->back()->with('success', 'RPS berhasil dihapus.');
     }
 }

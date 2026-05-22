@@ -2,12 +2,19 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasActiveScope;
+use App\Models\Traits\HasCascadeDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Dosen extends Model
 {
-    use SoftDeletes;
+    use HasActiveScope, HasCascadeDeletes, HasFactory, SoftDeletes;
+
+    protected array $cascadeDeletes = ['pendidikan', 'penelitian', 'publikasi', 'pkm', 'bkd'];
 
     protected $table = 'm_dosen';
 
@@ -15,8 +22,11 @@ class Dosen extends Model
         'nidn', 'nip', 'nama_depan', 'nama_belakang', 'gelar_depan', 'gelar_belakang',
         'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin', 'prodi_id',
         'pendidikan_terakhir', 'jabatan_fungsional', 'status_aktivitas',
-        'email', 'telepon', 'is_active', 'sinta_id', 'sinta_score_overall',
-        'sinta_score_3yr', 'status_verifikasi_sinta'
+        'email', 'telepon', 'is_active', 'sinta_id',
+    ];
+
+    protected $guarded = [
+        'sinta_score_overall', 'sinta_score_3yr', 'status_verifikasi_sinta',
     ];
 
     protected function casts(): array
@@ -27,50 +37,33 @@ class Dosen extends Model
         ];
     }
 
-    public function prodi()
+    public function prodi(): BelongsTo
     {
         return $this->belongsTo(Prodi::class);
     }
 
-    public function pendidikan()
+    public function pendidikan(): HasMany
     {
         return $this->hasMany(KegiatanPendidikan::class, 'dosen_id');
     }
 
-    public function penelitian()
+    public function penelitian(): HasMany
     {
         return $this->hasMany(Penelitian::class, 'dosen_id');
     }
 
-    public function publikasi()
+    public function publikasi(): HasMany
     {
         return $this->hasMany(Publikasi::class, 'dosen_id');
     }
 
-    public function pkm()
+    public function pkm(): HasMany
     {
         return $this->hasMany(Pkm::class, 'dosen_id');
     }
 
-    public function bkd()
+    public function bkd(): HasMany
     {
         return $this->hasMany(Bkd::class, 'dosen_id');
-    }
-
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::deleting(function ($dosen) {
-            $relations = ['pendidikan', 'penelitian', 'publikasi', 'pkm', 'bkd'];
-            
-            foreach ($relations as $relation) {
-                if ($dosen->isForceDeleting()) {
-                    $dosen->{$relation}()->forceDelete();
-                } else {
-                    $dosen->{$relation}()->delete();
-                }
-            }
-        });
     }
 }

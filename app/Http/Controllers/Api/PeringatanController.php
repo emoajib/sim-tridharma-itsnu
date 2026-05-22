@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\AgentPeringatanLog;
+use App\Models\Dosen;
 use App\Models\Prodi;
+use App\Models\User;
+use App\Services\MCP\MCPClientService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -13,9 +16,9 @@ class PeringatanController extends Controller
     public function index(Request $request)
     {
         $peringatan = AgentPeringatanLog::with(['prodi', 'dosen'])
-            ->when($request->prodi_id, fn($q) => $q->where('prodi_id', $request->prodi_id))
-            ->when($request->tingkat, fn($q) => $q->where('tingkat', $request->tingkat))
-            ->when($request->search, fn($q) => $q->where('pesan', 'like', '%' . $request->search . '%'))
+            ->when($request->prodi_id, fn ($q) => $q->where('prodi_id', $request->prodi_id))
+            ->when($request->tingkat, fn ($q) => $q->where('tingkat', $request->tingkat))
+            ->when($request->search, fn ($q) => $q->where('pesan', 'like', '%'.$request->search.'%'))
             ->orderByDesc('created_at')
             ->paginate(20);
 
@@ -45,7 +48,7 @@ class PeringatanController extends Controller
         $peringatan = AgentPeringatanLog::findOrFail($id);
         $peringatan->update([
             'is_read' => true,
-            'read_at' => now(),
+            'dibaca_pada' => now(),
         ]);
 
         return back()->with('success', 'Peringatan ditandai sudah dibaca');
@@ -53,9 +56,25 @@ class PeringatanController extends Controller
 
     public function markAllAsRead()
     {
-        AgentPeringatanLog::where('is_read', false)->update([
+        $query = AgentPeringatanLog::where('is_read', false);
+
+        /** @var User $user */
+        $user = auth()->user();
+
+        $prodiId = $user->prodi_id;
+
+        if (! $prodiId && $user->dosen_id) {
+            $dosen = Dosen::find($user->dosen_id);
+            $prodiId = $dosen?->prodi_id;
+        }
+
+        if ($prodiId) {
+            $query->where('prodi_id', $prodiId);
+        }
+
+        $query->update([
             'is_read' => true,
-            'read_at' => now(),
+            'dibaca_pada' => now(),
         ]);
 
         return back()->with('success', 'Semua peringatan ditandai sudah dibaca');
@@ -68,12 +87,15 @@ class PeringatanController extends Controller
         ]);
 
         $prodiId = $request->prodi_id ?: null;
-        
-        \App\Jobs\AgentDispatchJob::dispatch('peringatan', 'run', [
-            'prodi_id' => $prodiId,
-        ]);
 
-        return back()->with('success', 'Agent Peringatan sedang dijalankan...');
+        $mcpClient = app(MCPClientService::class);
+
+        try {
+            $result = $mcpClient->runPeringatanCheck($prodiId);
+
+            return back()->with('success', "Agent Peringatan selesai: {$result['warning_count']} peringatan ditemukan");
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal menjalankan agent: '.$e->getMessage());
+        }
     }
-
 }

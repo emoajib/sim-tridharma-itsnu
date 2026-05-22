@@ -2,17 +2,19 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TracerJawaban extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'trx_tracer_jawaban';
 
     protected $fillable = [
-        'alumni_id', 'kuisioner_id', 'jawaban', 'diisi_pada'
+        'alumni_id', 'kuisioner_id', 'jawaban', 'diisi_pada',
     ];
 
     protected function casts(): array
@@ -23,12 +25,12 @@ class TracerJawaban extends Model
         ];
     }
 
-    public function alumni()
+    public function alumni(): BelongsTo
     {
         return $this->belongsTo(Alumni::class);
     }
 
-    public function kuisioner()
+    public function kuisioner(): BelongsTo
     {
         return $this->belongsTo(KuisionerTracer::class, 'kuisioner_id');
     }

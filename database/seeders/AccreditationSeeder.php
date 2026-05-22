@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\LembagaAkreditasi;
 use App\Models\InstrumenAkreditasi;
+use App\Models\LembagaAkreditasi;
 use App\Models\Prodi;
 use Illuminate\Database\Seeder;
 
@@ -26,19 +26,19 @@ class AccreditationSeeder extends Seeder
         InstrumenAkreditasi::updateOrCreate(['lembaga_id' => $lamsama->id, 'nama_instrumen' => 'Instrumen LAMSAMA v1.0']);
 
         // 3. Ploting Prodi ke Lembaga (Sesuai Struktur ITSNU Pekalongan)
-        
+
         // LAM INFOKOM: S1 Teknologi Informasi (TTI), S1 Informatika (IF)
         Prodi::whereIn('kode_prodi', ['IF', 'TTI'])->update(['lembaga_akreditasi_id' => $infokom->id]);
-        
+
         // LAM Teknik: S1 Teknik Industri (TI)
         Prodi::whereIn('kode_prodi', ['TI'])->update(['lembaga_akreditasi_id' => $lamTeknik->id]);
-        
+
         // LAMEMBA: S1 Bisnis Digital (BD), D3 Akuntansi (AKT), D3 Administrasi Perkantoran (AP)
         Prodi::whereIn('kode_prodi', ['BD', 'AKT', 'AP'])->update(['lembaga_akreditasi_id' => $lamemba->id]);
-        
+
         // LAMSAMA: S1 Fisika (FIS)
         Prodi::whereIn('kode_prodi', ['FIS'])->update(['lembaga_akreditasi_id' => $lamsama->id]);
-        
+
         // BAN-PT: D3 Kriya Batik (KB)
         Prodi::whereIn('kode_prodi', ['KB'])->update(['lembaga_akreditasi_id' => $banpt->id]);
 

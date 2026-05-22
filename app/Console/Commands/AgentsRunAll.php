@@ -8,6 +8,7 @@ use Illuminate\Console\Command;
 class AgentsRunAll extends Command
 {
     protected $signature = 'agents:run-all {--agent= : Specific agent to run}';
+
     protected $description = 'Dispatch all AI agents or a specific one';
 
     public function handle(): void
