@@ -16,6 +16,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/agents/{agent}/run', [AgentController::class, 'run']);
     Route::get('/agents/status', [AgentController::class, 'status']);
     Route::get('/agents/latest', [AgentController::class, 'latestResults']);
+
+    // M13: RKAT & IKU
+    Route::prefix('rkat')->group(function () {
+        Route::get('/proposals', [\App\Http\Controllers\Api\RkatController::class, 'index']);
+        Route::post('/proposals', [\App\Http\Controllers\Api\RkatController::class, 'store']);
+        Route::post('/proposals/{id}/approve', [\App\Http\Controllers\Api\RkatController::class, 'approve']);
+        Route::get('/pagu-check', [\App\Http\Controllers\Api\RkatController::class, 'checkPagu']);
+    });
 });
 
 // Internal API for AI Microservice (FastAPI)
