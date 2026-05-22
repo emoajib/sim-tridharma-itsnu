@@ -59,16 +59,16 @@ class FormRequestTest extends TestCase
     }
 
     public function test_upload_request_fails_without_file(): void
-     {
-         $request = new UploadRequest;
-         $request->setMethod('POST');
-         $data = ['judul' => 'Test'];
-         $rules = $request->rules();
-         $validator = Validator::make($data, $rules);
+    {
+        $request = new UploadRequest;
+        $request->setMethod('POST');
+        $data = ['judul' => 'Test'];
+        $rules = $request->rules();
+        $validator = Validator::make($data, $rules);
 
-         $this->assertTrue($validator->fails());
-         $this->assertArrayHasKey('file', $validator->errors()->toArray());
-     }
+        $this->assertTrue($validator->fails());
+        $this->assertArrayHasKey('file', $validator->errors()->toArray());
+    }
 
     public function test_upload_request_fails_without_judul(): void
     {

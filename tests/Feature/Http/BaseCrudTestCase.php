@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Tests\Feature\SeedRolePermission;
 use Tests\TestCase;
 
@@ -34,25 +35,25 @@ abstract class BaseCrudTestCase extends TestCase
         return User::factory()->create(['is_active' => true]);
     }
 
-protected function assertPersisted(array $data): void
-     {
-         $model = new ($this->modelClass());
-         $table = $model->getTable();
-         $casts = $model->getCasts();
+    protected function assertPersisted(array $data): void
+    {
+        $model = new ($this->modelClass());
+        $table = $model->getTable();
+        $casts = $model->getCasts();
 
-         $dbData = Arr::except($data, ['file', '_token', 'password', 'password_confirmation']);
+        $dbData = Arr::except($data, ['file', '_token', 'password', 'password_confirmation']);
 
-         foreach ($dbData as $key => $value) {
-             if (isset($casts[$key]) && in_array($casts[$key], ['array', 'json'], true)) {
-                 $dbData[$key] = json_encode($value);
-             }
-             if (isset($casts[$key]) && in_array($casts[$key], ['date', 'datetime'], true)) {
-                 $dbData[$key] = \Illuminate\Support\Carbon::parse($value)->toDateTimeString();
-             }
-         }
+        foreach ($dbData as $key => $value) {
+            if (isset($casts[$key]) && in_array($casts[$key], ['array', 'json'], true)) {
+                $dbData[$key] = json_encode($value);
+            }
+            if (isset($casts[$key]) && in_array($casts[$key], ['date', 'datetime'], true)) {
+                $dbData[$key] = Carbon::parse($value)->toDateTimeString();
+            }
+        }
 
-         $this->assertDatabaseHas($table, $dbData);
-     }
+        $this->assertDatabaseHas($table, $dbData);
+    }
 
     public function test_unauthenticated_user_redirected_to_login(): void
     {
