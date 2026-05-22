@@ -42,14 +42,34 @@ STATISTIK SISTEM:
    - CHAT ANALYTICS: Logging pertanyaan dan jawaban ke trx_chat_history untuk evaluasi LPM.
 
 ================================================================================
-                          INFRASTRUKTUR MINIMUM
+                          SPESIFIKASI HOSTING & INFRASTRUKTUR
 ================================================================================
 
-- Server: VPS (Mandatory - No Shared Hosting)
-- CPU: Min 4 Cores
-- RAM: Min 4GB (Recommended 8GB)
-- Storage: Min 40GB SSD
-- Services: PostgreSQL 16, pgvector, MinIO, RabbitMQ, Redis, Python 3.11+
+TIPE HOSTING: 
+- Virtual Private Server (VPS) atau Cloud Server (WAJIB).
+- TIDAK MENDUKUNG Shared Hosting / cPanel (karena butuh install pgvector & Python daemon).
+
+HARDWARE MINIMUM (Minimum Requirements):
+- CPU: 4 Cores (Dedicated atau High-Performance vCPU).
+- RAM: 4 GB (Minimum mutlak untuk memuat model embedding AI).
+- Storage: 40 GB SSD / NVMe (Untuk database PostgreSQL & data MinIO).
+- Network: 100 Mbps bandwidth (Untuk akses API Gemini & sinkronisasi eksternal).
+
+HARDWARE REKOMENDASI (Recommended for Production):
+- CPU: 8 Cores.
+- RAM: 8 GB - 16 GB (Untuk performa chatbot RAG yang lebih responsif).
+- Storage: 80 GB SSD / NVMe.
+
+SOFTWARE STACK & ENVIRONMENT:
+- OS: Ubuntu 22.04 / 24.04 LTS (Direkomendasikan).
+- Database: PostgreSQL 16 dengan ekstensi 'pgvector' aktif.
+- Web Server: Nginx atau Apache (sebagai Reverse Proxy).
+- PHP Runtime: PHP 8.4+ dengan ekstensi (pdo_pgsql, gd, zip, intl, bcmath).
+- Python Runtime: Python 3.11+ (Venv terisolasi untuk ai-service & ai-agents).
+- Process Manager: PM2 atau Supervisor (Untuk menjaga daemon Python & Queue tetap hidup).
+- Message Broker: RabbitMQ (Untuk AI Task Queue).
+- Cache Memory: Redis.
+- Object Storage: MinIO (Bisa di-install lokal di VPS yang sama).
 
 ================================================================================
                           DEVELOPMENT WORKFLOW
