@@ -4,8 +4,6 @@
 
 namespace Tests\Feature\Services;
 
-use App\Models\ChatHistory;
-use App\Models\KnowledgeBaseCategory;
 use App\Models\KnowledgeBaseChunk;
 use App\Models\KnowledgeBaseDocument;
 use App\Models\User;
@@ -25,7 +23,7 @@ class RAGServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $user = User::factory()->create(['id' => 1]);
         Auth::login($user);
 
@@ -43,10 +41,10 @@ class RAGServiceTest extends TestCase
         $this->assertStringContainsString('tidak menemukan informasi yang cukup relevan', $result['answer']);
         $this->assertEmpty($result['sources']);
         $this->assertEquals('no-context', $result['mode']);
-        
+
         $this->assertDatabaseHas('trx_chat_history', [
             'question' => 'test question',
-            'mode' => 'no-context'
+            'mode' => 'no-context',
         ]);
     }
 
@@ -57,7 +55,7 @@ class RAGServiceTest extends TestCase
         ]);
         KnowledgeBaseChunk::create([
             'document_id' => $doc->id, 'chunk_index' => 0,
-            'content' => 'Low relevance content', 
+            'content' => 'Low relevance content',
             'embedding' => [0.9, -0.9, 0.1], // Very different from [0.1, 0.2, 0.3]
         ]);
 
@@ -106,7 +104,7 @@ class RAGServiceTest extends TestCase
 
         $this->assertDatabaseHas('trx_chat_history', [
             'question' => 'Bagaimana IKU 1?',
-            'answer' => 'AI Response'
+            'answer' => 'AI Response',
         ]);
     }
 
@@ -137,4 +135,3 @@ class RAGServiceTest extends TestCase
         $this->assertGreaterThan(0, $result[0]['similarity']);
     }
 }
-

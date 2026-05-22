@@ -34,13 +34,13 @@ class RAGService
             $questionVector = $this->embedding->embedText($question);
             $chunks = $this->searchSimilar($questionVector, $categoryId, $topK);
 
-            $maxSimilarity = !empty($chunks) ? $chunks[0]['similarity'] : 0;
+            $maxSimilarity = ! empty($chunks) ? $chunks[0]['similarity'] : 0;
             $mode = 'sentence-only';
             $answer = '';
 
             // Guardrail: Cek apakah relevansi mencukupi
             if (empty($chunks) || $maxSimilarity < self::SIMILARITY_THRESHOLD) {
-                $answer = "Maaf, saya tidak menemukan informasi yang cukup relevan dalam pedoman ITSNU untuk menjawab pertanyaan tersebut. Silakan hubungi unit terkait untuk informasi lebih lanjut.";
+                $answer = 'Maaf, saya tidak menemukan informasi yang cukup relevan dalam pedoman ITSNU untuk menjawab pertanyaan tersebut. Silakan hubungi unit terkait untuk informasi lebih lanjut.';
                 $mode = 'no-context';
                 $chunks = []; // Kosongkan chunks agar tidak tampil di sumber
             } else {
@@ -80,10 +80,11 @@ class RAGService
 
         } catch (\Exception $e) {
             Log::error('RAGService Error', ['message' => $e->getMessage()]);
+
             return [
                 'answer' => 'Terjadi kesalahan teknis pada layanan asisten AI. Silakan coba beberapa saat lagi.',
                 'sources' => [],
-                'error' => true
+                'error' => true,
             ];
         }
     }
@@ -105,7 +106,7 @@ class RAGService
         $scored = [];
         foreach ($chunks as $chunk) {
             $chunkVector = $chunk->embedding;
-            if (!$chunkVector || !is_array($chunkVector)) {
+            if (! $chunkVector) {
                 continue;
             }
 
@@ -132,12 +133,13 @@ class RAGService
         $len = min(count($a), count($b));
 
         for ($i = 0; $i < $len; $i++) {
-            $dot += (float)$a[$i] * (float)$b[$i];
-            $normA += (float)$a[$i] * (float)$a[$i];
-            $normB += (float)$b[$i] * (float)$b[$i];
+            $dot += (float) $a[$i] * (float) $b[$i];
+            $normA += (float) $a[$i] * (float) $a[$i];
+            $normB += (float) $b[$i] * (float) $b[$i];
         }
 
         $denom = sqrt($normA) * sqrt($normB);
+
         return $denom > 0 ? $dot / $denom : 0;
     }
 
@@ -170,7 +172,6 @@ class RAGService
             $parts[] = "📄 **{$chunk['document_judul']}** (Relevansi {$sim}%):\n{$chunk['content']}";
         }
 
-        return "Berdasarkan dokumen internal yang ditemukan:\n\n" . implode("\n\n---\n\n", $parts);
+        return "Berdasarkan dokumen internal yang ditemukan:\n\n".implode("\n\n---\n\n", $parts);
     }
 }
-

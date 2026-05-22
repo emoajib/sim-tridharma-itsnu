@@ -7,8 +7,8 @@ namespace Tests\Feature\Services;
 use App\Models\PeriodeAkademik;
 use App\Models\Prodi;
 use App\Models\RkatPagu;
-use App\Models\UsulanRkat;
 use App\Models\User;
+use App\Models\UsulanRkat;
 use App\Services\Rkat\RkatService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -22,7 +22,7 @@ class RkatServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new RkatService();
+        $this->service = new RkatService;
     }
 
     public function test_can_submit_usulan()
@@ -71,7 +71,7 @@ class RkatServiceTest extends TestCase
         ]);
 
         $this->expectException(\Exception::class);
-        $this->expectExceptionMessage("Plafon anggaran tidak mencukupi");
+        $this->expectExceptionMessage('Plafon anggaran tidak mencukupi');
 
         $this->service->processApproval($usulan->id, 'approve', $user->id);
     }

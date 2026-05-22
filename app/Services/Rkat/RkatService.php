@@ -41,7 +41,7 @@ class RkatService
                 );
 
                 if (! $pagu['available']) {
-                    throw new Exception("Plafon anggaran tidak mencukupi. Sisa pagu: Rp " . number_format($pagu['remaining'], 0, ',', '.'));
+                    throw new Exception('Plafon anggaran tidak mencukupi. Sisa pagu: Rp '.number_format($pagu['remaining'], 0, ',', '.'));
                 }
 
                 // Update terpakai in Pagu
@@ -110,6 +110,7 @@ class RkatService
         if ($periodeId) {
             $query->where('periode_id', $periodeId);
         }
+
         return $query->with(['iku', 'indikatorAkreditasi', 'pengusul'])->orderBy('created_at', 'desc')->get();
     }
 }

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AgentController;
 use App\Http\Controllers\Api\KnowledgeBaseController;
+use App\Http\Controllers\Api\RkatController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -19,10 +20,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // M13: RKAT & IKU
     Route::prefix('rkat')->group(function () {
-        Route::get('/proposals', [\App\Http\Controllers\Api\RkatController::class, 'index']);
-        Route::post('/proposals', [\App\Http\Controllers\Api\RkatController::class, 'store']);
-        Route::post('/proposals/{id}/approve', [\App\Http\Controllers\Api\RkatController::class, 'approve']);
-        Route::get('/pagu-check', [\App\Http\Controllers\Api\RkatController::class, 'checkPagu']);
+        Route::get('/proposals', [RkatController::class, 'index']);
+        Route::post('/proposals', [RkatController::class, 'store']);
+        Route::post('/proposals/{id}/approve', [RkatController::class, 'approve']);
+        Route::get('/pagu-check', [RkatController::class, 'checkPagu']);
     });
 });
 
