@@ -31,13 +31,11 @@ class KnowledgeBaseController extends Controller
     public function upload(UploadRequest $request)
     {
         $document = $this->knowledgeBase->createDocument($request->validated(), $request->file('file'));
-        $result = app(DocumentProcessingService::class)->process($document);
+        
+        // Dispatch Background Job
+        \App\Jobs\ProcessKnowledgeBaseDocument::dispatch($document);
 
-        if (! $result['success']) {
-            return back()->with('warning', 'Dokumen terupload tetapi teks tidak bisa diekstrak.');
-        }
-
-        return back()->with('success', "Dokumen '{$document->judul}' berhasil diproses ({$result['chunk_count']} chunk).");
+        return back()->with('success', "Dokumen '{$document->judul}' berhasil diupload. Sistem sedang memproses ekstraksi teks di latar belakang.");
     }
 
     public function update(UploadRequest $request, KnowledgeBaseDocument $knowledgeBaseDocument)
@@ -56,17 +54,13 @@ class KnowledgeBaseController extends Controller
 
     public function reindex(KnowledgeBaseDocument $knowledgeBaseDocument)
     {
-        $processor = app(DocumentProcessingService::class);
+        $knowledgeBaseDocument->chunks()->delete();
+        $knowledgeBaseDocument->update(['status' => 'processing']);
 
-        try {
-            $result = $processor->reprocess($knowledgeBaseDocument);
+        // Dispatch Background Job
+        \App\Jobs\ProcessKnowledgeBaseDocument::dispatch($knowledgeBaseDocument);
 
-            return back()->with('success', "Re-index '{$knowledgeBaseDocument->judul}' berhasil ({$result['chunk_count']} chunk).");
-        } catch (\Exception $e) {
-            $knowledgeBaseDocument->update(['status' => 'error']);
-
-            return back()->with('error', 'Gagal re-index: '.$e->getMessage());
-        }
+        return back()->with('success', "Proses Re-index untuk '{$knowledgeBaseDocument->judul}' telah dimulai di latar belakang.");
     }
 
     public function destroy(KnowledgeBaseDocument $knowledgeBaseDocument)

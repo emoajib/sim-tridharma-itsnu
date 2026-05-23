@@ -137,7 +137,7 @@ class AdminSettingController extends Controller
                 ], 400);
             }
 
-            $response = Http::timeout(15)->get("https://generativelanguage.googleapis.com/v1beta/models?key={$key}");
+            $response = Http::timeout(15)->get("https://generativelanguage.googleapis.com/v1/models?key={$key}");
 
             if ($response->successful()) {
                 return response()->json([

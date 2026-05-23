@@ -5,6 +5,7 @@ namespace App\Services\KnowledgeBase;
 use App\Models\KnowledgeBaseCategory;
 use App\Models\KnowledgeBaseChunk;
 use App\Models\KnowledgeBaseDocument;
+use App\Models\SemanticCache;
 use App\Models\Setting;
 use App\Services\MCP\MCPClientService;
 use Illuminate\Http\UploadedFile;
@@ -13,9 +14,16 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
+/**
+ * Vetted by AI - Manual Review Required by Senior Engineer/Manager
+ */
 class KnowledgeBaseService
 {
+    // Threshold for semantic similarity (0.95 = 95% similarity)
+    const CACHE_SIMILARITY_THRESHOLD = 0.95;
+
     public function __construct(
         protected DocumentProcessingService $processor,
         protected MCPClientService $mcpClient,
@@ -79,12 +87,12 @@ class KnowledgeBaseService
         }
 
         try {
-            $response = Http::timeout(20)->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}", [
+            $response = Http::timeout(25)->post("https://generativelanguage.googleapis.com/v1/models/{$model}:generateContent?key={$apiKey}", [
                 'contents' => [
                     ['parts' => [['text' => $prompt]]],
                 ],
                 'generationConfig' => [
-                    'temperature' => 0.8,
+                    'temperature' => 0.7,
                     'maxOutputTokens' => 1024,
                 ],
             ]);
@@ -95,12 +103,54 @@ class KnowledgeBaseService
             }
             
             if ($response->status() === 429) {
-                Log::warning('Gemini API Quota Exceeded (429)');
+                Log::warning('Gemini API Quota Exceeded (429), checking for failover...');
             } else {
-                Log::warning('Gemini API Error', ['status' => $response->status(), 'body' => $response->body()]);
+                Log::warning('Gemini API Error', [
+                    'status' => $response->status(), 
+                    'model' => $model,
+                    'body' => $response->body()
+                ]);
             }
         } catch (\Exception $e) {
             Log::error('Gemini call failed', ['error' => $e->getMessage()]);
+        }
+
+        // FAILOVER TO OPENAI
+        return $this->callOpenAI($prompt);
+    }
+
+    private function callOpenAI(string $prompt): ?string
+    {
+        $apiKey = Setting::get('openai_api_key') ?? env('OPENAI_API_KEY');
+        $model = Setting::get('openai_model', 'gpt-3.5-turbo');
+        $baseUrl = Setting::get('openai_base_url', 'https://api.openai.com/v1');
+
+        if (! $apiKey) {
+            return null;
+        }
+
+        try {
+            Log::info('Attempting OpenAI failover...');
+            $response = Http::timeout(30)->withHeaders([
+                'Authorization' => "Bearer {$apiKey}",
+                'Content-Type' => 'application/json',
+            ])->post("{$baseUrl}/chat/completions", [
+                'model' => $model,
+                'messages' => [
+                    ['role' => 'user', 'content' => $prompt],
+                ],
+                'temperature' => 0.7,
+                'max_tokens' => 1024,
+            ]);
+
+            if ($response->successful()) {
+                $text = $response->json('choices.0.message.content');
+                return $text ? trim($text) : null;
+            }
+
+            Log::warning('OpenAI API Error during failover', ['status' => $response->status(), 'body' => $response->body()]);
+        } catch (\Exception $e) {
+            Log::error('OpenAI failover failed', ['error' => $e->getMessage()]);
         }
 
         return null;
@@ -131,7 +181,29 @@ class KnowledgeBaseService
                 Log::warning('KnowledgeBase: Embedding failed', ['error' => $e->getMessage()]);
             }
 
-            // 2. Fetch chunks (Vector Search)
+            // 2. CHECK SEMANTIC CACHE FIRST
+            if ($embedding && is_array($embedding)) {
+                $vectorStr = '['.implode(',', $embedding).']';
+                $cached = SemanticCache::select('*')
+                    ->selectRaw('question_vector <=> ?::vector as distance', [$vectorStr])
+                    ->whereRaw('question_vector <=> ?::vector < ?', [$vectorStr, 1 - self::CACHE_SIMILARITY_THRESHOLD])
+                    ->orderBy('distance', 'asc')
+                    ->first();
+
+                if ($cached) {
+                    Log::info('Semantic Cache Hit', ['question' => $question, 'cached_id' => $cached->id, 'similarity' => 1 - $cached->distance]);
+                    $cached->increment('hit_count');
+                    $cached->update(['last_hit_at' => now()]);
+                    
+                    return [
+                        'answer' => $cached->answer . "\n\n*(Jawaban diambil dari Smart Cache)*",
+                        'sources' => $cached->sources ?? [],
+                        'mode' => 'semantic-cache-hit',
+                    ];
+                }
+            }
+
+            // 3. Fetch chunks (Vector Search)
             $query = KnowledgeBaseChunk::with('document')
                 ->when($categoryId, function ($q) use ($categoryId) {
                     $q->whereHas('document', fn ($d) => $d->where('category_id', $categoryId));
@@ -155,52 +227,105 @@ class KnowledgeBaseService
                 ];
             }
 
-            // 3. Synthesize Answer using Gemini
-            $context = $chunks->map(fn ($c) => "DOKUMEN: {$c->document->judul}\nSUMBER: {$c->document->sumber}\nISI: {$c->content}")->implode("\n\n---\n\n");
+            // 4. Synthesize Answer using Gemini
+            $context = $chunks->map(fn ($c) => "DOKUMEN: {$c->document->judul}\nISI: {$c->content}")->implode("\n\n---\n\n");
             
-            $prompt = "Anda adalah Asisten Akreditasi ITSNU Pekalongan bernama Kilo. " .
-                      "Tugas Anda: Menjawab pertanyaan pengguna berdasarkan potongan dokumen (CONTEXT) yang disediakan.\n\n" .
-                      "INSTRUKSI PENTING:\n" .
-                      "1. Jawab dengan gaya bahasa yang HUMANIS (seperti berbicara dengan teman sejawat) namun tetap PROFESIONAL.\n" .
-                      "2. Gunakan sapaan yang sopan dan paragraf yang mengalir lancar (hindari daftar poin yang membosankan jika tidak perlu).\n" .
-                      "3. Jika jawaban ada di CONTEXT, jelaskan secara detail.\n" .
-                      "4. Jika jawaban TIDAK ADA di CONTEXT, gunakan pengetahuan umum Anda tentang akreditasi Indonesia untuk membantu, " .
-                         "TAPI beri tahu pengguna dengan jujur bahwa informasi ini bersifat umum karena tidak ditemukan di dokumen internal kampus.\n" .
-                      "5. Jika pertanyaan tidak relevan dengan akreditasi/kampus, jawab dengan ramah dan arahkan kembali ke topik akreditasi.\n\n" .
+            $prompt = "Anda adalah 'Kilo', Asisten Akreditasi ITSNU Pekalongan yang ramah, humanist, dan ahli dalam kebijakan BAN-PT/LAM. " .
+                      "Tugas Anda: Menjawab pertanyaan berdasarkan CONTEXT yang disediakan.\n\n" .
+                      "ATURAN MENJAWAB:\n" .
+                      "1. Awali dengan sapaan yang hangat namun profesional (Contoh: 'Halo Bapak/Ibu, terkait hal tersebut...', 'Halo Sahabat ITSNU...').\n" .
+                      "2. Gunakan gaya bahasa yang MENGALIR dan HUMANIS. Hindari format poin-poin yang kaku jika bisa dijelaskan dalam paragraf yang enak dibaca.\n" .
+                      "3. Jika jawaban ada di CONTEXT, jelaskan dengan detail dan berikan konteks yang relevan bagi pengguna.\n" .
+                      "4. Jika jawaban TIDAK ADA di CONTEXT, beritahu dengan jujur namun tetap berikan saran umum berdasarkan pengetahuan umum akreditasi Indonesia.\n" .
+                      "5. Pastikan nada bicara Anda membantu dan memberikan semangat kepada para dosen/admin prodi.\n\n" .
                       "CONTEXT:\n{$context}\n\n" .
                       "PERTANYAAN: {$question}";
 
             $answer = $this->callGemini($prompt);
+            $sources = $chunks->map(fn ($c) => [
+                'judul' => $c->document->judul,
+                'sumber' => $c->document->sumber,
+                'skor' => isset($c->distance) ? round((1 - $c->distance) * 100, 1) : 0,
+            ])->unique('judul')->values()->toArray();
 
             if (! $answer) {
-                // Improved Fallback Format
-                $formatted = "Halo! Mohon maaf, saat ini fitur kecerdasan buatan (Gemini) sedang mencapai batas kuota harian.\n\n" .
-                             "Namun, saya menemukan beberapa informasi yang mungkin relevan dari dokumen kami:\n\n";
+                // FALLBACK: Try local RAG engine if Gemini is unavailable
+                try {
+                    Log::info('KnowledgeBase: Gemini unavailable, trying local RAG fallback');
+                    
+                    $chunksForMcp = $chunks->map(fn ($c) => [
+                        'content' => $c->content,
+                        'document_judul' => $c->document->judul,
+                        'document_sumber' => $c->document->sumber,
+                        'similarity' => isset($c->distance) ? (1 - $c->distance) : 0,
+                    ])->toArray();
+
+                    $localResult = $this->mcpClient->askRAG($question, $chunksForMcp);
+                    
+                    if (isset($localResult['answer']) && strlen($localResult['answer']) > 20) {
+                        $prefix = "Halo! Mohon maaf, koneksi ke pusat sedang sibuk, saya bantu jawab menggunakan database lokal saya ya.\n\n";
+                        $answer = $prefix . $localResult['answer'];
+                        
+                        // SAVE FALLBACK TO CACHE TOO
+                        if ($embedding && is_array($embedding)) {
+                            try {
+                                SemanticCache::create([
+                                    'question' => $question,
+                                    'answer' => $answer,
+                                    'sources' => $sources,
+                                    'question_vector' => $embedding,
+                                    'provider' => 'local-fallback',
+                                ]);
+                            } catch (\Exception $e) {
+                                Log::error('Failed to save semantic cache (fallback)', ['error' => $e->getMessage()]);
+                            }
+                        }
+
+                        return [
+                            'answer' => $answer,
+                            'sources' => $sources,
+                            'mode' => 'local-rag-fallback',
+                        ];
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('KnowledgeBase: Local RAG fallback failed', ['error' => $e->getMessage()]);
+                }
+
+                // ULTIMATE FALLBACK
+                $formatted = "Halo! Saya mohon maaf sekali, saat ini layanan AI sedang tidak stabil.\n\n" .
+                             "Berdasarkan catatan yang saya miliki, mungkin ini bisa membantu Anda:\n\n";
                 
                 foreach ($chunks as $c) {
-                    $formatted .= "• ". substr($c->content, 0, 200) . "...\n";
+                    $formatted .= "• ". $c->content . "\n\n";
                 }
                 
-                $formatted .= "\nSilakan hubungi administrator jika Anda memerlukan jawaban yang lebih detail.";
+                $formatted .= "Semoga informasi singkat ini bermanfaat. Silakan hubungi admin untuk bantuan lebih lanjut.";
 
                 return [
                     'answer' => $formatted,
-                    'sources' => $chunks->map(fn ($c) => [
-                        'judul' => $c->document->judul,
-                        'sumber' => $c->document->sumber,
-                        'skor' => 0,
-                    ])->unique('judul')->values()->toArray(),
+                    'sources' => $sources,
                     'mode' => 'fallback-manual'
                 ];
             }
 
+            // 5. SAVE TO SEMANTIC CACHE
+            if ($embedding && is_array($embedding)) {
+                try {
+                    SemanticCache::create([
+                        'question' => $question,
+                        'answer' => $answer,
+                        'sources' => $sources,
+                        'question_vector' => $embedding,
+                        'provider' => 'gemini',
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to save semantic cache', ['error' => $e->getMessage()]);
+                }
+            }
+
             return [
                 'answer' => $answer,
-                'sources' => $chunks->map(fn ($c) => [
-                    'judul' => $c->document->judul,
-                    'sumber' => $c->document->sumber,
-                    'skor' => isset($c->distance) ? round((1 - $c->distance) * 100, 1) : 0,
-                ])->unique('judul')->values()->toArray(),
+                'sources' => $sources,
                 'mode' => 'generative-rag',
             ];
         } catch (\Exception $e) {
@@ -238,6 +363,10 @@ class KnowledgeBaseService
             ],
             'chunks' => KnowledgeBaseChunk::count(),
             'mcp_servers' => $this->mcpClient->healthCheck(),
+            'cache' => [
+                'total_entries' => SemanticCache::count(),
+                'total_hits' => SemanticCache::sum('hit_count'),
+            ]
         ];
     }
 }
