@@ -14,7 +14,6 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Vetted by AI - Manual Review Required by Senior Engineer/Manager
@@ -45,7 +44,8 @@ class KnowledgeBaseService
     {
         $filePath = $file->store('knowledge-base', 'public');
 
-        return KnowledgeBaseDocument::create([
+        /** @var KnowledgeBaseDocument $doc */
+        $doc = KnowledgeBaseDocument::create([
             'category_id' => $data['category_id'] ?? null,
             'judul' => $data['judul'],
             'sumber' => $data['sumber'] ?? null,
@@ -53,6 +53,8 @@ class KnowledgeBaseService
             'file_size' => $file->getSize(),
             'status' => 'draft',
         ]);
+
+        return $doc;
     }
 
     public function deleteDocument(KnowledgeBaseDocument $document): void
@@ -79,8 +81,8 @@ class KnowledgeBaseService
 
     private function callGemini(string $prompt): ?string
     {
-        $apiKey = Setting::get('gemini_api_key') ?? env('GEMINI_API_KEY');
-        $model = Setting::get('gemini_model', 'gemini-1.5-flash');
+        $apiKey = Setting::get('gemini_api_key') ?? config('ai-service.gemini.api_key');
+        $model = Setting::get('gemini_model', config('ai-service.gemini.model', 'gemini-1.5-flash'));
 
         if (! $apiKey) {
             return null;
@@ -98,6 +100,7 @@ class KnowledgeBaseService
             ]);
 
             if ($response->successful()) {
+                /** @var string|null $text */
                 $text = $response->json('candidates.0.content.parts.0.text');
                 return $text ? trim($text) : null;
             }
@@ -121,9 +124,9 @@ class KnowledgeBaseService
 
     private function callOpenAI(string $prompt): ?string
     {
-        $apiKey = Setting::get('openai_api_key') ?? env('OPENAI_API_KEY');
-        $model = Setting::get('openai_model', 'gpt-3.5-turbo');
-        $baseUrl = Setting::get('openai_base_url', 'https://api.openai.com/v1');
+        $apiKey = Setting::get('openai_api_key') ?? config('ai-service.openai.api_key');
+        $model = Setting::get('openai_model', config('ai-service.openai.model', 'gpt-3.5-turbo'));
+        $baseUrl = Setting::get('openai_base_url', config('ai-service.openai.base_url', 'https://api.openai.com/v1'));
 
         if (! $apiKey) {
             return null;
@@ -144,6 +147,7 @@ class KnowledgeBaseService
             ]);
 
             if ($response->successful()) {
+                /** @var string|null $text */
                 $text = $response->json('choices.0.message.content');
                 return $text ? trim($text) : null;
             }
@@ -182,7 +186,7 @@ class KnowledgeBaseService
             }
 
             // 2. CHECK SEMANTIC CACHE FIRST
-            if ($embedding && is_array($embedding)) {
+            if (is_array($embedding)) {
                 $vectorStr = '['.implode(',', $embedding).']';
                 $cached = SemanticCache::select('*')
                     ->selectRaw('question_vector <=> ?::vector as distance', [$vectorStr])
@@ -190,8 +194,8 @@ class KnowledgeBaseService
                     ->orderBy('distance', 'asc')
                     ->first();
 
-                if ($cached) {
-                    Log::info('Semantic Cache Hit', ['question' => $question, 'cached_id' => $cached->id, 'similarity' => 1 - $cached->distance]);
+                if ($cached instanceof SemanticCache) {
+                    Log::info('Semantic Cache Hit', ['question' => $question, 'cached_id' => $cached->id]);
                     $cached->increment('hit_count');
                     $cached->update(['last_hit_at' => now()]);
                     
@@ -209,7 +213,7 @@ class KnowledgeBaseService
                     $q->whereHas('document', fn ($d) => $d->where('category_id', $categoryId));
                 });
 
-            if ($embedding && is_array($embedding)) {
+            if (is_array($embedding)) {
                 $vectorStr = '['.implode(',', $embedding).']';
                 $chunks = $query->select('*')
                     ->selectRaw('embedding <=> ?::vector as distance', [$vectorStr])
@@ -228,9 +232,15 @@ class KnowledgeBaseService
             }
 
             // 4. Synthesize Answer using Gemini
-            $context = $chunks->map(fn ($c) => "DOKUMEN: {$c->document->judul}\nISI: {$c->content}")->implode("\n\n---\n\n");
+            /** @var Collection<int, KnowledgeBaseChunk> $chunks */
+            $context = $chunks->map(function(KnowledgeBaseChunk $c) {
+                /** @var KnowledgeBaseDocument|null $doc */
+                $doc = $c->document;
+                $judul = $doc ? $doc->judul : 'Dokumen Tanpa Judul';
+                return "DOKUMEN: {$judul}\nISI: {$c->content}";
+            })->implode("\n\n---\n\n");
             
-            $prompt = "Anda adalah 'Kilo', Asisten Akreditasi ITSNU Pekalongan yang ramah, humanist, dan ahli dalam kebijakan BAN-PT/LAM. " .
+            $prompt = "Anda adalah 'Kilo', Asisten Akreditasi ITSNU Pekalongan yang ramah, humanist, and ahli dalam kebijakan BAN-PT/LAM. " .
                       "Tugas Anda: Menjawab pertanyaan berdasarkan CONTEXT yang disediakan.\n\n" .
                       "ATURAN MENJAWAB:\n" .
                       "1. Awali dengan sapaan yang hangat namun profesional (Contoh: 'Halo Bapak/Ibu, terkait hal tersebut...', 'Halo Sahabat ITSNU...').\n" .
@@ -242,23 +252,39 @@ class KnowledgeBaseService
                       "PERTANYAAN: {$question}";
 
             $answer = $this->callGemini($prompt);
-            $sources = $chunks->map(fn ($c) => [
-                'judul' => $c->document->judul,
-                'sumber' => $c->document->sumber,
-                'skor' => isset($c->distance) ? round((1 - $c->distance) * 100, 1) : 0,
-            ])->unique('judul')->values()->toArray();
+
+            /** @var Collection<int, array{judul: string, sumber: string|null, skor: float}> $sourceCollection */
+            $sourceCollection = $chunks->map(function(KnowledgeBaseChunk $c) {
+                /** @var KnowledgeBaseDocument|null $doc */
+                $doc = $c->document;
+                $cArray = $c->toArray();
+                $distance = isset($cArray['distance']) ? (float)$cArray['distance'] : 1.0;
+                return [
+                    'judul' => $doc ? $doc->judul : 'Tanpa Judul',
+                    'sumber' => $doc ? $doc->sumber : null,
+                    'skor' => round((1 - $distance) * 100, 1),
+                ];
+            });
+            $sources = $sourceCollection->unique('judul')->values()->toArray();
 
             if (! $answer) {
                 // FALLBACK: Try local RAG engine if Gemini is unavailable
                 try {
                     Log::info('KnowledgeBase: Gemini unavailable, trying local RAG fallback');
                     
-                    $chunksForMcp = $chunks->map(fn ($c) => [
-                        'content' => $c->content,
-                        'document_judul' => $c->document->judul,
-                        'document_sumber' => $c->document->sumber,
-                        'similarity' => isset($c->distance) ? (1 - $c->distance) : 0,
-                    ])->toArray();
+                    /** @var Collection<int, KnowledgeBaseChunk> $chunks */
+                    $chunksForMcp = $chunks->map(function(KnowledgeBaseChunk $c) {
+                        /** @var KnowledgeBaseDocument|null $doc */
+                        $doc = $c->document;
+                        $cArray = $c->toArray();
+                        $distance = isset($cArray['distance']) ? (float)$cArray['distance'] : 1.0;
+                        return [
+                            'content' => $c->content,
+                            'document_judul' => $doc ? $doc->judul : 'Tanpa Judul',
+                            'document_sumber' => $doc ? $doc->sumber : null,
+                            'similarity' => 1 - $distance,
+                        ];
+                    })->toArray();
 
                     $localResult = $this->mcpClient->askRAG($question, $chunksForMcp);
                     
@@ -267,7 +293,7 @@ class KnowledgeBaseService
                         $answer = $prefix . $localResult['answer'];
                         
                         // SAVE FALLBACK TO CACHE TOO
-                        if ($embedding && is_array($embedding)) {
+                        if (is_array($embedding)) {
                             try {
                                 SemanticCache::create([
                                     'question' => $question,
@@ -299,7 +325,7 @@ class KnowledgeBaseService
                     $formatted .= "• ". $c->content . "\n\n";
                 }
                 
-                $formatted .= "Semoga informasi singkat ini bermanfaat. Silakan hubungi admin untuk bantuan lebih lanjut.";
+                $formatted .= "Semoga informasi singkat ini bermanfaat. Silakan hubungi admin for bantuan lebih lanjut.";
 
                 return [
                     'answer' => $formatted,
@@ -309,7 +335,7 @@ class KnowledgeBaseService
             }
 
             // 5. SAVE TO SEMANTIC CACHE
-            if ($embedding && is_array($embedding)) {
+            if (is_array($embedding)) {
                 try {
                     SemanticCache::create([
                         'question' => $question,
@@ -335,7 +361,7 @@ class KnowledgeBaseService
         }
     }
 
-    private function parseVector($response): ?array
+    private function parseVector(mixed $response): ?array
     {
         if (is_array($response) && isset($response[0]) && is_array($response[0]) && isset($response[0]['text'])) {
             return array_map(function($item) {
@@ -365,7 +391,7 @@ class KnowledgeBaseService
             'mcp_servers' => $this->mcpClient->healthCheck(),
             'cache' => [
                 'total_entries' => SemanticCache::count(),
-                'total_hits' => SemanticCache::sum('hit_count'),
+                'total_hits' => (int) SemanticCache::sum('hit_count'),
             ]
         ];
     }
