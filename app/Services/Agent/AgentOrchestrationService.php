@@ -1,18 +1,31 @@
 <?php
 
+/**
+ * @deprecated Replaced by direct MCP tool calls via MCPClientService.
+ *             dispatch() kept for backward compatibility but routes to MCP.
+ *             Will be removed in next major release.
+ */
+
 namespace App\Services\Agent;
 
-use App\Jobs\AgentDispatchJob;
 use App\Models\AgentExecutionLog;
 use App\Models\AgentGeneratorHistory;
 use App\Models\AgentPeringatanLog;
 use App\Models\AgentPredictionHistory;
+use App\Services\MCP\MCPClientService;
 
 class AgentOrchestrationService
 {
     protected array $allowedAgents = [
         'verifikasi', 'prediksi', 'rekomendasi', 'peringatan', 'generator', 'integrasi',
     ];
+
+    protected MCPClientService $mcp;
+
+    public function __construct(MCPClientService $mcp)
+    {
+        $this->mcp = $mcp;
+    }
 
     public function getAllowedAgents(): array
     {
@@ -26,7 +39,19 @@ class AgentOrchestrationService
 
     public function dispatch(string $agent, array $data): void
     {
-        AgentDispatchJob::dispatch($agent, 'run', $data);
+        $mcpTool = match ($agent) {
+            'peringatan' => 'peringatan_check',
+            'prediksi' => 'prediksi_skor',
+            'verifikasi' => 'verifikasi_dokumen',
+            'rekomendasi' => 'rekomendasi_generate',
+            'generator' => 'generator_dokumen',
+            'integrasi' => 'integrasi_sync',
+            default => null,
+        };
+
+        if ($mcpTool) {
+            $this->mcp->callTool($mcpTool, $data);
+        }
     }
 
     public function logExecution(array $data): AgentExecutionLog

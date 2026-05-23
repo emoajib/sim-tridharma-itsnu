@@ -1,7 +1,14 @@
 <?php
 
+/**
+ * @deprecated Replaced by MCP protocol via app/Services/MCP/MCPClientService.php
+ *             RabbitMQ transport is no longer used. All agents communicate via MCP.
+ *             Kept for reference during transition period. Will be removed in next major release.
+ */
+
 namespace App\Services;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
@@ -16,6 +23,8 @@ class RabbitMQService
 
     public function __construct()
     {
+        Log::warning('RabbitMQService used — DEPRECATED. Use MCPClientService instead.');
+
         $this->exchange = config('rabbitmq.exchange', 'akreditasi');
         $this->queue = config('rabbitmq.queue', 'agent_tasks');
     }

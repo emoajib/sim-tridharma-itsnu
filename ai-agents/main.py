@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-import threading
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Header, Depends
@@ -9,13 +8,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 
 from config import AGENT_API_PORT, require_env
-from rabbitmq import RabbitMQConsumer
 from agents_mcp.tools import mcp
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
 logger = logging.getLogger("main")
-
-consumer: RabbitMQConsumer | None = None
 
 API_KEY = require_env("AGENT_API_KEY")
 AGENT_CORS_ORIGINS = os.getenv("AGENT_CORS_ORIGINS", "http://localhost:8000").split(",")
@@ -30,18 +26,9 @@ async def verify_api_key(x_api_key: Optional[str] = Header(None)):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global consumer
-    logger.info("Starting AI Agent microservice...")
-    consumer = RabbitMQConsumer()
-    
-    # Run RabbitMQ consumer in a separate thread
-    thread = threading.Thread(target=consumer.start_consuming, daemon=True)
-    thread.start()
-    
+    logger.info("Starting AI Agent microservice (MCP mode)...")
     yield
     logger.info("Shutting down AI Agent microservice...")
-    if consumer:
-        consumer.stop()
 
 
 app = FastAPI(

@@ -9,6 +9,7 @@ use App\Models\AgentPredictionHistory;
 use App\Models\Fakultas;
 use App\Models\Prodi;
 use App\Services\Agent\AgentOrchestrationService;
+use App\Services\MCP\MCPClientService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -25,7 +26,8 @@ class AgentOrchestrationServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new AgentOrchestrationService;
+        $mcp = $this->createMock(MCPClientService::class);
+        $this->service = new AgentOrchestrationService($mcp);
         $this->fakultas = Fakultas::create([
             'kode_fakultas' => 'FTI', 'nama_fakultas' => 'Teknik',
         ]);

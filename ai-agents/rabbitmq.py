@@ -1,3 +1,4 @@
+# DEPRECATED: Replaced by MCP protocol (agents_mcp/). Kept for reference.
 import json
 import logging
 import time
