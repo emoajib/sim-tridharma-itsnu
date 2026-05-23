@@ -13,13 +13,13 @@ echo "=========================================="
 if [ -d "venv" ]; then
     source venv/bin/activate
     echo "✓ ai-agents virtual environment activated"
-fi
-
-# Install dependencies if needed
-if [ "$1" = "--install" ]; then
-    echo "Installing ai-agents dependencies..."
+else
+    echo "Creating ai-agents virtual environment (numpy>=2.1.3)..."
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install --upgrade pip
     pip install -r requirements.txt
-    echo "✓ ai-agents dependencies installed"
+    echo "✓ ai-agents venv created"
 fi
 
 # Start MCP Agent Server (port 8001)
@@ -27,17 +27,19 @@ echo "Starting MCP Agent Server on port 8001..."
 python -m uvicorn main:app --host 0.0.0.0 --port 8001 --reload &
 AGENT_PID=$!
 
-# Activate ai-service virtual environment
+# Activate ai-service virtual environment (numpy<2 for sentence-transformers compatibility)
 if [ -d "../ai-service/venv" ]; then
     source ../ai-service/venv/bin/activate
     echo "✓ ai-service virtual environment activated"
-fi
-
-# Install dependencies if needed
-if [ "$1" = "--install" ]; then
-    echo "Installing ai-service dependencies..."
+else
+    echo "Creating ai-service virtual environment (numpy<2)..."
+    cd ..
+    python3 -m venv ai-service/venv
+    source ai-service/venv/bin/activate
+    cd ai-agents
+    pip install --upgrade pip
     pip install -r ../ai-service/requirements.txt
-    echo "✓ ai-service dependencies installed"
+    echo "✓ ai-service venv created"
 fi
 
 # Start MCP RAG Server (port 5001)

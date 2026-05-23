@@ -601,3 +601,62 @@ async def integrasi_sync(
             "error": f"Unknown source: {sumber}. Must be one of: pddikti, sinta, sister",
             "timestamp": datetime.now().isoformat(),
         }
+
+
+@mcp.tool()
+async def orchestrator_list_plans(
+    ctx: Context = None,
+) -> dict:
+    """List all available orchestration plans."""
+    from agents_mcp.orchestrator import list_plans as plans
+    return {
+        "plans": [
+            {"name": k, "description": v["description"], "tools": v["tools"]}
+            for k, v in plans.items()
+        ]
+    }
+
+
+@mcp.tool()
+async def orchestrator_run_plan(
+    plan_name: str = Field(description="Orchestration plan name to execute"),
+    prodi_id: int = Field(description="Program Studi ID"),
+    ctx: Context = None,
+) -> dict:
+    """Execute an orchestration plan - runs multiple tools for a complete workflow."""
+    from agents_mcp.orchestrator import ORCHESTRATION_PLANS
+
+    plan = ORCHESTRATION_PLANS.get(plan_name)
+    if not plan:
+        return {"error": f"Unknown plan: {plan_name}", "available_plans": list(ORCHESTRATION_PLANS.keys())}
+
+    results = {}
+    await _ctx(ctx).info(f"Running plan '{plan_name}': {plan['description']}")
+
+    for i, tool_name in enumerate(plan["tools"]):
+        await _ctx(ctx).report_progress(i + 1, len(plan["tools"]), f"Running {tool_name}...")
+        try:
+            if tool_name == "peringatan_check":
+                from tools import peringatan_check as tool_fn
+            elif tool_name == "prediksi_skor":
+                from tools import prediksi_skor as tool_fn
+            elif tool_name == "verifikasi_dokumen":
+                from tools import verifikasi_dokumen as tool_fn
+            elif tool_name == "rekomendasi_generate":
+                from tools import rekomendasi_generate as tool_fn
+            else:
+                results[tool_name] = {"error": f"Unknown tool: {tool_name}"}
+                continue
+
+            result = await tool_fn(prodi_id=prodi_id, ctx=ctx)
+            results[tool_name] = result
+        except Exception as e:
+            logger.error(f"Plan {plan_name} tool {tool_name} failed: {e}")
+            results[tool_name] = {"error": str(e)}
+
+    return {
+        "plan": plan_name,
+        "prodi_id": prodi_id,
+        "results": results,
+        "status": "completed",
+    }
