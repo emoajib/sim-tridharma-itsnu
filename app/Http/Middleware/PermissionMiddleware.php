@@ -19,6 +19,7 @@ class PermissionMiddleware
         'import' => 'portofolio',
         'aipt' => 'agent-ai',
         'tracer' => 'tracer-study',
+        'rag' => 'agent-ai',
         'admin.users' => 'users',
         'admin.roles' => 'admin',
         'admin.permissions' => 'admin',
@@ -125,7 +126,7 @@ class PermissionMiddleware
             return 'agent-ai.view';
         }
 
-        if (in_array($segment, ['dashboard', 'welcome'], true)) {
+        if (in_array($segment, ['dashboard', 'welcome', 'rag'], true)) {
             return null;
         }
 
