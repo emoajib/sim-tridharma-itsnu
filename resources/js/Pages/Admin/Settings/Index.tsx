@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, usePage } from '@inertiajs/react';
+import axios from 'axios';
 import { useState } from 'react';
 
 interface Settings {
@@ -10,6 +11,14 @@ interface Settings {
     theme_mode: string;
     favicon_path: string | null;
     logo_path: string | null;
+    ai_provider: string | null;
+    gemini_enabled: boolean;
+    gemini_api_key: string | null;
+    gemini_model: string | null;
+    openai_enabled: boolean;
+    openai_base_url: string | null;
+    openai_api_key: string | null;
+    openai_model: string | null;
     [key: string]: string | boolean | null;
 }
 
@@ -28,11 +37,13 @@ const themeColorClasses: Record<string, { border: string; bg: string; text: stri
 export default function Index({ settings }: Props) {
     const [formData, setFormData] = useState<Settings>(settings);
     const [saving, setSaving] = useState(false);
+    const [testingKey, setTestingKey] = useState(false);
+    const [showKey, setShowKey] = useState(false);
     const { props } = usePage();
     const flashSuccess = (props as any).flash?.success;
     const colors = themeColorClasses[formData.theme_color] || themeColorClasses.indigo;
 
-    function handleChange(key: keyof Settings, value: string | boolean) {
+    function handleChange(key: keyof Settings, value: string | boolean | null) {
         setFormData((prev) => ({ ...prev, [key]: value }));
     }
 
@@ -43,6 +54,67 @@ export default function Index({ settings }: Props) {
         }, {
             onFinish: () => setSaving(false),
         });
+    }
+
+    function handleTestApiKey() {
+        const isGemini = formData.ai_provider === 'gemini';
+        const apiKey = isGemini ? formData.gemini_api_key : formData.openai_api_key;
+        
+        if (!apiKey) {
+            alert('Silakan isi API Key terlebih dahulu.');
+            return;
+        }
+        
+        setTestingKey(true);
+
+        if (isGemini) {
+            axios.post(route('admin.settings.api-key.test'), {
+                api_key: apiKey,
+            })
+            .then((res: any) => alert(res.data.message))
+            .catch((err: any) => alert(err.response?.data?.message || 'Terjadi kesalahan saat pengetesan.'))
+            .finally(() => setTestingKey(false));
+        } else {
+            // Test Custom OpenAI via Direct Call
+            axios.get((String(formData.openai_base_url) + '/models').replace('//models', '/models'), {
+                headers: { 'Authorization': 'Bearer ' + apiKey }
+            })
+            .then(() => alert('Koneksi Berhasil! API Provider Custom Valid.'))
+            .catch((err: any) => alert('Koneksi Gagal: ' + (err.response?.data?.error?.message || err.message)))
+            .finally(() => setTestingKey(false));
+        }
+    }
+
+    const aiPresets = [
+        { name: 'FreeTheAi', url: 'https://api.freetheai.xyz/v1', model: 'gpt-3.5-turbo' },
+        { name: 'DeepSeek (Official)', url: 'https://api.deepseek.com', model: 'deepseek-chat' },
+        { name: 'Groq (Llama/Mixtral)', url: 'https://api.groq.com/openai/v1', model: 'llama-3.3-70b-versatile' },
+        { name: 'OpenRouter (All Models)', url: 'https://openrouter.ai/api/v1', model: 'google/gemini-2.0-flash-001' },
+        { name: 'Qwen (DashScope)', url: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen-plus' },
+        { name: 'Together AI', url: 'https://api.together.xyz/v1', model: 'meta-llama/Llama-3.3-70b-instruct-turbo' },
+        { name: 'Free.ai', url: 'https://api.free.ai/v1', model: 'gpt-3.5-turbo' },
+        { name: 'BazaarLink', url: 'https://bazaarlink.ai/api/v1', model: 'gpt-3.5-turbo' },
+        { name: 'Edyx', url: 'https://edyx.in/v1', model: 'gpt-3.5-turbo' },
+    ];
+
+    const applyPreset = (preset: { url: string, model: string }) => {
+        setFormData(prev => ({
+            ...prev,
+            ai_provider: 'openai',
+            openai_base_url: preset.url,
+            openai_model: preset.model
+        }));
+    };
+
+    function handleRemoveApiKey() {
+        if (confirm('Apakah Anda yakin ingin menghapus API Key Gemini dari database?')) {
+            router.delete(route('admin.settings.api-key.remove'), {
+                onFinish: () => {
+                    handleChange('gemini_api_key', null);
+                    window.location.reload();
+                },
+            });
+        }
     }
 
     function handleFaviconUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -255,6 +327,147 @@ export default function Index({ settings }: Props) {
                                     Pilih mode tampilan sistem. Theme 3 memberikan pengalaman navigasi sidebar dengan visual KPI yang lebih detail.
                                 </p>
                             </div>
+                        </div>
+                    </div>
+
+                    {/* AI Configuration */}
+                    <div className="mb-6 rounded-lg bg-white p-6 shadow-sm border-l-4 border-indigo-500">
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-3">
+                                <span className="text-2xl">🤖</span>
+                                <h3 className="text-lg font-semibold text-gray-800">Konfigurasi AI Chatbot</h3>
+                            </div>
+                            <div className="flex bg-gray-100 p-1 rounded-lg">
+                                <button
+                                    onClick={() => handleChange('ai_provider', 'gemini')}
+                                    className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${formData.ai_provider === 'gemini' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500'}`}
+                                >
+                                    Google Gemini
+                                </button>
+                                <button
+                                    onClick={() => handleChange('ai_provider', 'openai')}
+                                    className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${formData.ai_provider === 'openai' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500'}`}
+                                >
+                                    Custom (OpenAI)
+                                </button>
+                            </div>
+                        </div>
+
+                        {formData.ai_provider === 'gemini' ? (
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+                                    <div>
+                                        <p className="text-sm font-bold text-indigo-700">Status Google Gemini</p>
+                                        <p className="text-xs text-indigo-500">Aktifkan atau nonaktifkan model ini saja</p>
+                                    </div>
+                                    <label className="relative inline-flex cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={Boolean(formData.gemini_enabled)}
+                                            onChange={(e) => handleChange('gemini_enabled', e.target.checked)}
+                                            className="sr-only peer"
+                                        />
+                                        <div className={`h-6 w-11 rounded-full bg-gray-200 peer-checked:bg-indigo-600 after:absolute after:top-0.5 after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-full`}></div>
+                                    </label>
+                                </div>
+                                <div>
+                                    <label className="mb-2 block text-sm font-medium text-gray-700">Google Gemini Model</label>
+                                    <select
+                                        value={String(formData.gemini_model || 'gemini-1.5-flash')}
+                                        onChange={(e) => handleChange('gemini_model', e.target.value)}
+                                        className="w-full rounded-lg border-gray-300"
+                                    >
+                                        <option value="gemini-1.5-flash">Gemini 1.5 Flash (Cepat & Irit)</option>
+                                        <option value="gemini-1.5-pro">Gemini 1.5 Pro (Cerdas)</option>
+                                        <option value="gemini-2.0-flash">Gemini 2.0 Flash (Eksperimental)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="mb-2 block text-sm font-medium text-gray-700">Gemini API Key</label>
+                                    <div className="relative">
+                                        <input
+                                            type={showKey ? 'text' : 'password'}
+                                            value={String(formData.gemini_api_key || '')}
+                                            onChange={(e) => handleChange('gemini_api_key', e.target.value)}
+                                            placeholder="AIzaSy..."
+                                            className="w-full rounded-lg border-gray-300"
+                                        />
+                                        <button type="button" onClick={() => setShowKey(!showKey)} className="absolute right-3 top-2.5">{showKey ? '🙈' : '👁️'}</button>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+                                    <div>
+                                        <p className="text-sm font-bold text-indigo-700">Status Custom Provider</p>
+                                        <p className="text-xs text-indigo-500">Aktifkan atau nonaktifkan model ini saja</p>
+                                    </div>
+                                    <label className="relative inline-flex cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={Boolean(formData.openai_enabled)}
+                                            onChange={(e) => handleChange('openai_enabled', e.target.checked)}
+                                            className="sr-only peer"
+                                        />
+                                        <div className={`h-6 w-11 rounded-full bg-gray-200 peer-checked:bg-indigo-600 after:absolute after:top-0.5 after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-full`}></div>
+                                    </label>
+                                </div>
+                                <div>
+                                    <label className="mb-1 block text-xs font-bold text-gray-500 uppercase">Presets Platform Gratis</label>
+                                    <div className="flex flex-wrap gap-2 mb-4">
+                                        {aiPresets.map(p => (
+                                            <button
+                                                key={p.name}
+                                                onClick={() => applyPreset(p)}
+                                                className="px-3 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-full text-[10px] font-bold hover:bg-indigo-600 hover:text-white transition-all"
+                                            >
+                                                + {p.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="col-span-2">
+                                        <label className="mb-2 block text-sm font-medium text-gray-700">Base URL API</label>
+                                        <input
+                                            type="text"
+                                            value={String(formData.openai_base_url || '')}
+                                            onChange={(e) => handleChange('openai_base_url', e.target.value)}
+                                            placeholder="https://api.freetheai.xyz/v1"
+                                            className="w-full rounded-lg border-gray-300"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="mb-2 block text-sm font-medium text-gray-700">API Key</label>
+                                        <input
+                                            type="password"
+                                            value={String(formData.openai_api_key || '')}
+                                            onChange={(e) => handleChange('openai_api_key', e.target.value)}
+                                            className="w-full rounded-lg border-gray-300"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="mb-2 block text-sm font-medium text-gray-700">Model Name</label>
+                                        <input
+                                            type="text"
+                                            value={String(formData.openai_model || '')}
+                                            onChange={(e) => handleChange('openai_model', e.target.value)}
+                                            className="w-full rounded-lg border-gray-300"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex flex-wrap gap-3 pt-4 mt-4 border-t border-gray-100">
+                            <button
+                                onClick={handleTestApiKey}
+                                disabled={testingKey}
+                                className="rounded-lg border border-indigo-200 px-4 py-2 text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition-all uppercase tracking-wider"
+                            >
+                                {testingKey ? '🔄 Mengetes...' : '⚡ Test Koneksi'}
+                            </button>
                         </div>
                     </div>
 

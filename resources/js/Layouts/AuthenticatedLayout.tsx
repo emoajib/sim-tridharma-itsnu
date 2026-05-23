@@ -26,7 +26,7 @@ export default function Authenticated({
     const auth = (props.auth as any) || {};
     const user = auth.user;
     const appSettings = (props.appSettings as any) || {};
-    const themeMode = appSettings?.theme_mode || 'klasik';
+    const themeMode = appSettings?.theme_mode || 'theme3';
     const logoUrl = appSettings?.logo_path ? '/storage/' + appSettings.logo_path : null;
 
     // Use Theme 3 layout when theme_mode is 'theme3'
