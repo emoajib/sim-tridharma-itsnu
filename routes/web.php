@@ -262,6 +262,7 @@ Route::middleware(['auth', PermissionMiddleware::class])->group(function () {
 
     // RBAC Management (Super Admin only)
     Route::middleware(['can:admin.view'])->group(function () {
+        Route::get('/admin/users/audit', [\App\Http\Controllers\Api\Admin\UserController::class, 'audit'])->name('admin.users.audit');
         Route::get('/admin/users', [\App\Http\Controllers\Api\Admin\UserController::class, 'index'])->name('admin.users.index');
         Route::post('/admin/users', [\App\Http\Controllers\Api\Admin\UserController::class, 'store'])->name('admin.users.store');
         Route::put('/admin/users/{user}', [\App\Http\Controllers\Api\Admin\UserController::class, 'update'])->name('admin.users.update');

@@ -53,7 +53,23 @@ class KnowledgeBaseService
     public function askQuestion(string $question, ?int $categoryId = null): array
     {
         try {
-            return $this->mcpClient->askRAG($question);
+            // Fetch relevant chunks
+            // For now, using a simple latest-retrieval as vector search implementation in PHP is pending
+            $chunks = KnowledgeBaseChunk::with('document')
+                ->when($categoryId, function ($q) use ($categoryId) {
+                    $q->whereHas('document', fn ($d) => $d->where('category_id', $categoryId));
+                })
+                ->latest()
+                ->take(15)
+                ->get()
+                ->map(fn ($c) => [
+                    'content' => $c->content,
+                    'document_judul' => $c->document->judul ?? 'Dokumen Tanpa Judul',
+                    'document_sumber' => $c->document->sumber ?? 'Sumber Internal',
+                ])
+                ->toArray();
+
+            return $this->mcpClient->askRAG($question, $chunks);
         } catch (\Exception $e) {
             return [
                 'error' => 'Gagal menjawab pertanyaan: '.$e->getMessage(),

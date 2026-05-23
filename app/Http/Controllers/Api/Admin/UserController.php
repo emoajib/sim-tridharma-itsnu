@@ -120,6 +120,43 @@ class UserController extends Controller
         }
     }
 
+    public function audit()
+    {
+        $users = User::with('roles')->get();
+        $issues = [];
+
+        foreach ($users as $user) {
+            $roles = $user->getRoleNames()->toArray();
+            
+            if (in_array('Dosen', $roles) && ! $user->dosen_id) {
+                $issues[] = [
+                    'user_id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => 'Dosen',
+                    'issue' => 'Profil Dosen belum tertaut.',
+                ];
+            }
+
+            if (array_intersect(['Kaprodi', 'Dekan', 'Staf Prodi'], $roles) && ! $user->prodi_id) {
+                $issues[] = [
+                    'user_id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => implode(', ', array_intersect(['Kaprodi', 'Dekan', 'Staf Prodi'], $roles)),
+                    'issue' => 'Data Program Studi belum tertaut.',
+                ];
+            }
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'total_users' => count($users),
+            'issue_count' => count($issues),
+            'issues' => $issues,
+        ]);
+    }
+
     public function destroy(User $user)
     {
         if ($user->email === 'admin@itsnu.ac.id') {

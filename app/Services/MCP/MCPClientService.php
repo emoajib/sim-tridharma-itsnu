@@ -72,11 +72,15 @@ class MCPClientService
             Log::error("MCP tool call failed: {$toolName}", [
                 'status' => $response->status(),
                 'body' => $response->body(),
+                'url' => "{$baseUrl}/mcp/tools/call",
             ]);
 
             throw new Exception("MCP tool call failed: {$response->status()}");
         } catch (Exception $e) {
-            Log::error("MCP tool call exception: {$toolName}", ['error' => $e->getMessage()]);
+            Log::error("MCP tool call exception: {$toolName}", [
+                'error' => $e->getMessage(),
+                'url' => "{$baseUrl}/mcp/tools/call",
+            ]);
             throw $e;
         }
     }
