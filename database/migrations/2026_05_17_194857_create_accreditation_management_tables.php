@@ -29,7 +29,7 @@ return new class extends Migration
 
         // 3. Mapping Prodi ke Lembaga (Ploting)
         Schema::table('m_prodi', function (Blueprint $table) {
-            $table->foreignId('lembaga_akreditasi_id')->nullable()->after('fakultas_id')->constrained('m_lembaga_akreditasi');
+            $table->foreignId('lembaga_akreditasi_id')->nullable()->after('fakultas_id')->constrained('m_lembaga_akreditasi')->nullOnDelete();
         });
     }
 

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Http\Requests\Admin\FileUploadRequest;
 use App\Http\Requests\Admin\SettingsUpdateRequest;
+use App\Http\Requests\AgentRunRequest;
 use App\Http\Requests\AuditMutuRequest;
 use App\Http\Requests\DokumenBuktiRequest;
 use App\Http\Requests\DosenRequest;
@@ -1180,5 +1181,100 @@ class FormRequestTest extends TestCase
 
         $this->assertTrue($validator->fails());
         $this->assertArrayHasKey('skor_risiko', $validator->errors()->toArray());
+    }
+
+    public function test_agent_run_request_passes_with_valid_data(): void
+    {
+        $prodi = Prodi::factory()->create();
+        $fakultas = Fakultas::factory()->create();
+
+        $data = [
+            'prodi_id' => $prodi->id,
+            'fakultas_id' => $fakultas->id,
+            'periode' => '2024/2025',
+            'filter' => ['status' => 'active'],
+            'options' => ['detail' => true],
+        ];
+
+        $request = new AgentRunRequest;
+        $request->setMethod('POST');
+        $validator = Validator::make($data, $request->rules());
+
+        $this->assertTrue($validator->passes());
+    }
+
+    public function test_agent_run_request_fails_with_invalid_prodi_id(): void
+    {
+        $data = ['prodi_id' => 99999]; // non-existent
+
+        $request = new AgentRunRequest;
+        $request->setMethod('POST');
+        $validator = Validator::make($data, $request->rules());
+
+        $this->assertTrue($validator->fails());
+        $this->assertArrayHasKey('prodi_id', $validator->errors()->toArray());
+    }
+
+    public function test_agent_run_request_fails_with_invalid_fakultas_id(): void
+    {
+        $data = ['fakultas_id' => 99999];
+
+        $request = new AgentRunRequest;
+        $request->setMethod('POST');
+        $validator = Validator::make($data, $request->rules());
+
+        $this->assertTrue($validator->fails());
+        $this->assertArrayHasKey('fakultas_id', $validator->errors()->toArray());
+    }
+
+    public function test_agent_run_request_periode_max_validation(): void
+    {
+        $data = ['periode' => str_repeat('a', 21)]; // >20 chars
+
+        $request = new AgentRunRequest;
+        $request->setMethod('POST');
+        $validator = Validator::make($data, $request->rules());
+
+        $this->assertTrue($validator->fails());
+        $this->assertArrayHasKey('periode', $validator->errors()->toArray());
+    }
+
+    public function test_agent_run_request_filter_must_be_array(): void
+    {
+        $data = ['filter' => 'not-an-array'];
+
+        $request = new AgentRunRequest;
+        $request->setMethod('POST');
+        $validator = Validator::make($data, $request->rules());
+
+        $this->assertTrue($validator->fails());
+        $this->assertArrayHasKey('filter', $validator->errors()->toArray());
+    }
+
+    public function test_agent_run_request_options_must_be_array(): void
+    {
+        $data = ['options' => 'not-an-array'];
+
+        $request = new AgentRunRequest;
+        $request->setMethod('POST');
+        $validator = Validator::make($data, $request->rules());
+
+        $this->assertTrue($validator->fails());
+        $this->assertArrayHasKey('options', $validator->errors()->toArray());
+    }
+
+    public function test_agent_run_request_custom_messages(): void
+    {
+        $request = new AgentRunRequest;
+        $messages = $request->messages();
+
+        $this->assertArrayHasKey('prodi_id.exists', $messages);
+        $this->assertSame('Program studi tidak ditemukan.', $messages['prodi_id.exists']);
+
+        $this->assertArrayHasKey('fakultas_id.exists', $messages);
+        $this->assertSame('Fakultas tidak ditemukan.', $messages['fakultas_id.exists']);
+
+        $this->assertArrayHasKey('periode.max', $messages);
+        $this->assertSame('Periode maksimal 20 karakter.', $messages['periode.max']);
     }
 }

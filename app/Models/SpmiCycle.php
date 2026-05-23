@@ -12,7 +12,8 @@ class SpmiCycle extends Model
     protected $table = 'spmi_cycles';
 
     protected $fillable = [
-        'nama_siklus', 'tanggal_mulai', 'tanggal_selesai', 'keterangan',
+        'tahap', 'kategori', 'nama_siklus', 'tanggal_mulai', 'tanggal_selesai',
+        'persentase_selesai', 'status', 'catatan',
     ];
 
     protected function casts(): array
@@ -20,6 +21,7 @@ class SpmiCycle extends Model
         return [
             'tanggal_mulai' => 'date',
             'tanggal_selesai' => 'date',
+            'persentase_selesai' => 'float',
         ];
     }
 }

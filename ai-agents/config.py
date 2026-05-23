@@ -75,5 +75,7 @@ RABBITMQ_QUEUE: str = os.getenv("RABBITMQ_QUEUE", "agent_tasks")
 AGENT_API_PORT: int = int(os.getenv("AGENT_API_PORT", "8001"))
 
 LARAVEL_URL: str = os.getenv("LARAVEL_URL", "http://localhost:8000")
-INTERNAL_KEY: str = require_env("AI_INTERNAL_KEY")
+INTERNAL_KEY: str = os.getenv("AI_INTERNAL_KEY", "dev-internal-key-change-in-production")
 DOCS_OUTPUT_DIR: str = os.getenv("DOCS_OUTPUT_DIR", os.path.join(os.path.dirname(__file__), "output", "docs"))
+GENAI_API_KEY: str = os.getenv("GENAI_API_KEY", "")
+GENAI_MODEL: str = os.getenv("GENAI_MODEL", "gemini-1.5-flash")

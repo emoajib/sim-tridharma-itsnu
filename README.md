@@ -24,9 +24,9 @@ Sistem Informasi Manajemen Tridharma Dosen berbasis Laravel 11 + React + Inertia
 ### 🔧 Technology Stack
 - **Backend**: Laravel 11 (PHP 8.2+)
 - **Frontend**: React 18 + Inertia + Tailwind CSS
-- **AI Microservice**: Python FastAPI + Celery + RabbitMQ
+- **AI Microservice**: Python FastAPI + MCP (replaces legacy Celery/RabbitMQ)
 - **Database**: SQLite (dev) / PostgreSQL (prod)
-- **Queue**: RabbitMQ
+- **Queue**: (legacy RabbitMQ deprecated, replaced by MCP direct calls)
 - **Cache**: Redis
 
 ## Installation
@@ -44,7 +44,7 @@ npm install
 
 # Setup environment
 cp .env.example .env
-# Edit .env for database and RabbitMQ settings
+# Edit .env for database settings (RabbitMQ no longer required)
 
 # Run migrations
 php artisan migrate
@@ -67,7 +67,7 @@ python main.py
 # Satu baris perintah untuk menjalankan seluruh aplikasi dengan hot-reload otomatis
 composer dev
 
-# Output: semua layanan (Laravel, Reverb, Queue, Pail, Vite, AI Agents, RAG Service, Celery)
+# Output: semua layanan (Laravel, Reverb, Queue, Pail, Vite, AI Agents, RAG Service)
 # muncul dalam satu terminal dengan label berwarna. Tekan Ctrl+C untuk berhenti.
 # Perubahan kode pada React, PHP, atau Python akan langsung terdeteksi secara otomatis.
 ```
@@ -113,7 +113,7 @@ php artisan agents:run-all
 ├── ai-agents/
 │   ├── agents/               # Python AI agents
 │   ├── main.py               # FastAPI entry point
-│   └── worker.py             # Celery tasks
+│   └── worker.py             # Legacy Celery tasks (deprecated, replaced by MCP tools in agents_mcp/)
 ├── resources/js/
 │   ├── Components/           # React components
 │   │   └── Agent/            # AI widgets

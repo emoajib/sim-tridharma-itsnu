@@ -21,7 +21,7 @@ OAUTH_REQUIRED_SCOPES = os.getenv("OAUTH_REQUIRED_SCOPES", "read,write").split("
 # Database Configuration (for PostgreSQL MCP tool)
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = os.getenv("DB_PORT", "5432")
-DB_NAME = os.getenv("DB_NAME", "akreditasi")
+DB_NAME = os.getenv("DB_NAME", "sim_tridharma_itsnu")
 DB_USER = os.getenv("DB_USER", "postgres")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 

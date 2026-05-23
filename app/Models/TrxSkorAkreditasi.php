@@ -5,26 +5,31 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class AgentPredictionHistory extends Model
+class TrxSkorAkreditasi extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
-    protected $table = 'agent_prediction_history';
+    protected $table = 'trx_skor_akreditasi';
 
     protected $fillable = [
-        'prodi_id', 'periode_id', 'skor_prediksi', 'probabilitas_unggul',
-        'probabilitas_baik_sekali', 'probabilitas_baik', 'confidence_interval', 'detail_data',
+        'prodi_id', 'periode_id', 'skor_total', 'skor_prediksi',
+        'confidence_interval', 'probabilitas_unggul',
+        'probabilitas_baik_sekali', 'probabilitas_baik',
+        'sumber_data', 'is_final',
     ];
 
     protected function casts(): array
     {
         return [
+            'skor_total' => 'float',
             'skor_prediksi' => 'float',
+            'confidence_interval' => 'float',
             'probabilitas_unggul' => 'float',
             'probabilitas_baik_sekali' => 'float',
             'probabilitas_baik' => 'float',
-            'confidence_interval' => 'float',
+            'is_final' => 'boolean',
         ];
     }
 

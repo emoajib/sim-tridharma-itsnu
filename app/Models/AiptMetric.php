@@ -13,14 +13,14 @@ class AiptMetric extends Model
     protected $table = 'aipt_metrics';
 
     protected $fillable = [
-        'periode_id', 'aspek', 'skor', 'target', 'keterangan',
+        'periode_id', 'aspek', 'indikator', 'deskripsi', 'target_skor', 'skor_saat_ini', 'status',
     ];
 
     protected function casts(): array
     {
         return [
-            'skor' => 'float',
-            'target' => 'float',
+            'target_skor' => 'float',
+            'skor_saat_ini' => 'float',
         ];
     }
 

@@ -2,6 +2,7 @@ import json
 import logging
 import os
 from datetime import datetime
+import google.generativeai as genai
 
 from sqlalchemy import text
 from docx import Document
@@ -10,13 +11,14 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from agents.base_agent import BaseAgent
 from database import SessionLocal
+from config import GENAI_API_KEY, GENAI_MODEL
 
 logger = logging.getLogger("agent.generator")
 
 
 class GeneratorAgent(BaseAgent):
     name = "generator"
-    version = "1.0.0"
+    version = "1.1.0"  # Updated version for Gemini LLM integration
 
     def execute(self, data: dict) -> dict:
         missing = self.validate_input(data, ["prodi_id", "periode_id", "jenis_dokumen"])
@@ -53,8 +55,10 @@ class GeneratorAgent(BaseAgent):
                 {"prodi_id": prodi_id, "periode_id": periode_id},
             ).fetchall()
 
-            sections = self._build_sections(nama_prodi, nama_periode, indikator_data, jenis_dokumen)
-            narasi = "\n\n".join(s["isi"] for s in sections)
+            # Generate narrative using Gemini LLM
+            narasi = self._generate_narrative_with_gemini(nama_prodi, nama_periode, indikator_data, jenis_dokumen)
+
+            sections = self._build_sections(nama_prodi, nama_periode, indikator_data, jenis_dokumen, narasi)
 
             docx_path = self._create_docx(nama_prodi, nama_periode, sections, jenis_dokumen)
 
@@ -97,7 +101,74 @@ class GeneratorAgent(BaseAgent):
         finally:
             db.close()
 
-    def _build_sections(self, prodi: str, periode: str, indikator_data: list, jenis: str) -> list:
+    def _generate_narrative_with_gemini(self, nama_prodi: str, nama_periode: str, indikator_data: list, jenis_dokumen: str) -> str:
+        """
+        Generate narrative using Gemini LLM based on indicator data
+        """
+        try:
+            # Configure Gemini API
+            genai.configure(api_key=GENAI_API_KEY)
+            model = genai.GenerativeModel(GENAI_MODEL)
+            
+            # Prepare data for the prompt
+            indikator_summary = []
+            merah_count = 0
+            kuning_count = 0
+            hijau_count = 0
+            
+            for indikator in indikator_data:
+                indikator_summary.append(
+                    f"- {indikator.nama_indikator} (Kode: {indikator.kode_indikator}): "
+                    f"Target {indikator.target}, Tercapai {indikator.nilai or '-'}, Status {indikator.status}"
+                )
+                if indikator.status == "merah":
+                    merah_count += 1
+                elif indikator.status == "kuning":
+                    kuning_count += 1
+                elif indikator.status == "hijau":
+                    hijau_count += 1
+            
+            # Create prompt for Gemini
+            prompt = f"""
+            Buat narasi untuk dokumen {jenis_dokumen.upper()} Program Studi {nama_prodi} periode {nama_periode} berdasarkan data berikut:
+            
+            Jumlah Indikator: {len(indikator_data)}
+            Status Capaian:
+            - Merah (Perlu Tindakan Segera): {merah_count} indikator
+            - Kuning (Perlu Ditingkatkan): {kuning_count} indikator
+            - Hijau (Sudah Tercapai): {hijau_count} indikator
+            
+            Detail Indikator:
+            {chr(10).join(indikator_summary)}
+            
+            Buat narasi yang profesional, kohesif, dan relevan dengan standar akreditasi. Narasi harus mencakup:
+            1. Pendahuluan tentang pentingnya dokumen ini
+            2. Analisis capaian indikator berdasarkan data di atas
+            3. Identifikasi area yang perlu perbaikan
+            4. Rekomendasi untuk peningkatan
+            5. Penutup yang positif dan membangkitkan semangat
+            
+            Gunakan bahasa Indonesia yang formal tetapi mudah dipahami.
+            """
+            
+            # Generate content using Gemini
+            response = model.generate_content(prompt)
+            return response.text
+            
+        except Exception as e:
+            logger.warning(f"Gemini generation failed, falling back to template: {e}")
+            # Fallback to original template-based generation
+            return self._generate_template_narrative(nama_prodi, nama_periode, indikator_data, jenis_dokumen)
+
+    def _generate_template_narrative(self, nama_prodi: str, nama_periode: str, indikator_data: list, jenis_dokumen: str) -> str:
+        """
+        Original template-based narrative generation as fallback
+        """
+        # Build sections using original method to get the narrative
+        sections = self._build_sections(nama_prodi, nama_periode, indikator_data, jenis_dokumen)
+        return "\n\n".join(s["isi"] for s in sections)
+
+    def _build_sections(self, prodi: str, periode: str, indikator_data: list, jenis: str, narasi: str = "") -> list:
         today = datetime.now().strftime("%d %B %Y")
         sections = []
 
@@ -107,14 +178,21 @@ class GeneratorAgent(BaseAgent):
                 "isi": f"DOKUMEN {jenis.upper()}\nProgram Studi {prodi}\nPeriode {periode}\nDibuat: {today}",
             })
 
-            sections.append({
-                "judul": "Pendahuluan",
-                "isi": (
-                    f"Dokumen {jenis.upper()} ini disusun untuk Program Studi {prodi} "
-                    f"pada periode {periode}. Dokumen ini berisi ringkasan capaian indikator "
-                    f"kinerja yang telah dicapai dalam periode tersebut."
-                ),
-            })
+            # Use generated narrative if available, otherwise use template
+            if narasi:
+                sections.append({
+                    "judul": "Pendahuluan dan Analisis",
+                    "isi": narasi,
+                })
+            else:
+                sections.append({
+                    "judul": "Pendahuluan",
+                    "isi": (
+                        f"Dokumen {jenis.upper()} ini disusun untuk Program Studi {prodi} "
+                        f"pada periode {periode}. Dokumen ini berisi ringkasan capaian indikator "
+                        f"kinerja yang telah dicapai dalam periode tersebut."
+                    ),
+                })
 
             sections.append({
                 "judul": "Capaian Indikator",

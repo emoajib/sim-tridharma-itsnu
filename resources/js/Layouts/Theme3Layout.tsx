@@ -1,10 +1,56 @@
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
+import ErrorBoundary from '@/Components/ErrorBoundary';
 import RoleSwitcher from '@/Components/RoleSwitcher';
-import ChatButton from '@/Components/ChatAssistant/ChatButton';
-import ChatModal from '@/Components/ChatAssistant/ChatModal';
 import { Link, usePage } from '@inertiajs/react';
-import { PropsWithChildren, ReactNode, useEffect, useState } from 'react';
+import React, { PropsWithChildren, ReactNode, Suspense, useEffect, useState } from 'react';
+
+const ChatButton = React.lazy(() => import('@/Components/ChatAssistant/ChatButton'));
+const ChatModal = React.lazy(() => import('@/Components/ChatAssistant/ChatModal'));
+import { 
+    BarChart3, Building2, BookOpen, GraduationCap, BookOpenText,
+    ClipboardList, Target, CalendarDays, Microscope, FileText,
+    Handshake, Folder, FileSpreadsheet, FolderOpen, MessageSquare,
+    Building, Users, Link as LinkIcon, Wallet, GitBranch, ShieldCheck,
+    AlertTriangle, TrendingUp, Bell, CheckCircle, Bot, Lightbulb,
+    RefreshCw, Settings, ClipboardCheck, FileCheck, Award, X
+} from 'lucide-react';
+
+// Icon mapping from emoji keys to lucide-react components
+const sidebarIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+    '📊': BarChart3,
+    '🏛️': Building2,
+    '📚': BookOpen,
+    '👨‍🏫': GraduationCap,
+    '📖': BookOpenText,
+    '📋': ClipboardList,
+    '🎯': Target,
+    '📅': CalendarDays,
+    '🎓': GraduationCap,
+    '🔬': Microscope,
+    '📝': FileText,
+    '🤝': Handshake,
+    '📁': Folder,
+    '📄': FileSpreadsheet,
+    '📑': FolderOpen,
+    '💬': MessageSquare,
+    '🏢': Building,
+    '🔗': LinkIcon,
+    '💰': Wallet,
+    '🔀': GitBranch,
+    '📃': FileText,
+    '✅': ShieldCheck,
+    '⚠️': AlertTriangle,
+    '🚨': Bell,
+    '✔️': CheckCircle,
+    '🤖': Bot,
+    '💡': Lightbulb,
+    '🔄': RefreshCw,
+    '⚙️': Settings,
+    '🗂️': ClipboardCheck,
+    '📮': FileCheck,
+    '🏆': Award,
+};
 
 export default function Theme3Layout({
     header,
@@ -16,6 +62,9 @@ export default function Theme3Layout({
     const chatEnabled = appSettings?.chat_enabled !== false && appSettings?.chat_enabled !== 'false';
     const themeColor = appSettings?.theme_color || 'indigo';
     const logoUrl = appSettings?.logo_path ? '/storage/' + appSettings.logo_path : null;
+
+    const permissions = new Set(user?.permissions ?? []);
+    const can = (perm?: string) => !perm || permissions.has(perm);
 
     // State for sidebar mobile
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -36,51 +85,58 @@ export default function Theme3Layout({
 
     // Define link groups
     const masterDataLinks = [
-        { name: 'Fakultas', route: 'master-data.fakultas', icon: '🏛️' },
-        { name: 'Prodi', route: 'master-data.prodi', icon: '📚' },
-        { name: 'Dosen', route: 'master-data.dosen', icon: '👨‍🏫' },
-        { name: 'Mata Kuliah', route: 'master-data.mata-kuliah', icon: '📖' },
-        { name: 'Kurikulum', route: 'master-data.kurikulum', icon: '📋' },
-        { name: 'CPL', route: 'master-data.cpl', icon: '🎯' },
-        { name: 'Periode Akademik', route: 'master-data.periode-akademik', icon: '📅' },
+        { name: 'Fakultas', route: 'master-data.fakultas', icon: '🏛️', perm: 'master-data.view' },
+        { name: 'Prodi', route: 'master-data.prodi', icon: '📚', perm: 'master-data.view' },
+        { name: 'Dosen', route: 'master-data.dosen', icon: '👨‍🏫', perm: 'master-data.view' },
+        { name: 'Mata Kuliah', route: 'master-data.mata-kuliah', icon: '📖', perm: 'master-data.view' },
+        { name: 'Kurikulum', route: 'master-data.kurikulum', icon: '📋', perm: 'master-data.view' },
+        { name: 'CPL', route: 'master-data.cpl', icon: '🎯', perm: 'master-data.view' },
+        { name: 'Periode Akademik', route: 'master-data.periode-akademik', icon: '📅', perm: 'master-data.view' },
     ];
 
     const portofolioLinks = [
-        { name: 'Dashboard Portofolio', route: 'portofolio', icon: '📊' },
-        { name: 'Pendidikan', route: 'portofolio.pendidikan', icon: '🎓' },
-        { name: 'Penelitian', route: 'portofolio.penelitian', icon: '🔬' },
-        { name: 'Publikasi', route: 'portofolio.publikasi', icon: '📝' },
-        { name: 'PKM', route: 'portofolio.pkm', icon: '🤝' },
-        { name: 'Penunjang', route: 'portofolio.penunjang', icon: '📁' },
+        { name: 'Dashboard Portofolio', route: 'portofolio', icon: '📊', perm: 'portofolio.view' },
+        { name: 'Pendidikan', route: 'portofolio.pendidikan', icon: '🎓', perm: 'portofolio.view' },
+        { name: 'Penelitian', route: 'portofolio.penelitian', icon: '🔬', perm: 'portofolio.view' },
+        { name: 'Publikasi', route: 'portofolio.publikasi', icon: '📝', perm: 'portofolio.view' },
+        { name: 'PKM', route: 'portofolio.pkm', icon: '🤝', perm: 'portofolio.view' },
+        { name: 'Penunjang', route: 'portofolio.penunjang', icon: '📁', perm: 'portofolio.view' },
     ];
 
     const otherLinks = [
-        { name: 'BKD', route: 'bkd', icon: '📄' },
-        { name: 'Dokumen', route: 'dokumen', icon: '📑' },
+        { name: 'BKD', route: 'bkd', icon: '📄', perm: 'bkd.view' },
+        { name: 'Dokumen', route: 'dokumen', icon: '📑', perm: 'dokumen.view' },
         { name: 'Bimbingan', route: 'bimbingan', icon: '💬' },
-        { name: 'Sarpras', route: 'sarpras', icon: '🏢' },
+        { name: 'Sarpras', route: 'sarpras', icon: '🏢', perm: 'sarpras.view' },
         { name: 'Alumni', route: 'alumni', icon: '🎓' },
-        { name: 'Mitra', route: 'mitra', icon: '🤝' },
-        { name: 'Kerjasama', route: 'kerjasama', icon: '🔗' },
-        { name: 'Keuangan', route: 'keuangan', icon: '💰' },
-        { name: 'Mapping CPL-MK', route: 'kurikulum.mapping', icon: '🔀' },
-        { name: 'RPS', route: 'kurikulum.rps', icon: '📃' },
-        { name: 'Audit Mutu', route: 'spmi.audit', icon: '✅' },
-        { name: 'Risk Register', route: 'spmi.risk', icon: '⚠️' },
+        { name: 'Mitra', route: 'mitra', icon: '🤝', perm: 'kerjasama.view' },
+        { name: 'Kerjasama', route: 'kerjasama', icon: '🔗', perm: 'kerjasama.view' },
+        { name: 'Keuangan', route: 'keuangan', icon: '💰', perm: 'keuangan.view' },
+        { name: 'Mapping CPL-MK', route: 'kurikulum.mapping', icon: '🔀', perm: 'kurikulum.view' },
+        { name: 'RPS', route: 'kurikulum.rps', icon: '📃', perm: 'kurikulum.view' },
+        { name: 'Audit Mutu', route: 'spmi.audit', icon: '✅', perm: 'spmi.view' },
+        { name: 'Risk Register', route: 'spmi.risk', icon: '⚠️', perm: 'spmi.view' },
+        { name: 'Tracer Kuisioner', route: 'tracer.kuisioner', icon: '🗂️' },
+        { name: 'Tracer Jawaban', route: 'tracer.jawaban', icon: '📮' },
     ];
 
     const aiAgentLinks = [
-        { name: 'Prediksi Akreditasi', route: 'prediksi', icon: '📊' },
-        { name: 'Peringatan Dini', route: 'peringatan', icon: '🚨' },
-        { name: 'Verifikasi Dokumen', route: 'verifikasi', icon: '✔️' },
-        { name: 'Generator Dokumen', route: 'generator', icon: '🤖' },
+        { name: 'Prediksi Akreditasi', route: 'prediksi', icon: '📊', perm: 'agent-ai.view' },
+        { name: 'Peringatan Dini', route: 'peringatan', icon: '🚨', perm: 'agent-ai.view' },
+        { name: 'Verifikasi Dokumen', route: 'verifikasi', icon: '✔️', perm: 'agent-ai.view' },
+        { name: 'Generator Dokumen', route: 'generator', icon: '🤖', perm: 'agent-ai.view' },
+        { name: 'Rekomendasi Strategis', route: 'rekomendasi', icon: '💡', perm: 'agent-ai.view' },
+        { name: 'Integrasi Data', route: 'integrasi', icon: '🔄', perm: 'agent-ai.view' },
+        { name: 'AIPT', route: 'aipt.index', icon: '🏆', perm: 'agent-ai.view' },
     ];
 
     const adminLinks = [
-        { name: 'Pengaturan Sistem', route: 'admin.settings', icon: '⚙️' },
-        { name: 'Lembaga Akreditasi', route: 'admin.lembaga.index', icon: '🏛️' },
-        { name: 'Instrumen Penilaian', route: 'admin.instrumen.index', icon: '📋' },
-        { name: 'Knowledge Base', route: 'admin.knowledge-base.index', icon: '📚' },
+        { name: 'Pengaturan Sistem', route: 'admin.settings', icon: '⚙️', perm: 'admin.view' },
+        { name: 'Lembaga Akreditasi', route: 'admin.lembaga.index', icon: '🏛️', perm: 'admin.view' },
+        { name: 'Instrumen Penilaian', route: 'admin.instrumen.index', icon: '📋', perm: 'admin.view' },
+        { name: 'Indikator Akreditasi', route: 'admin.indikator.index', icon: '🎯', perm: 'admin.view' },
+        { name: 'Template', route: 'admin.templates.index', icon: '📄', perm: 'admin.view' },
+        { name: 'Knowledge Base', route: 'admin.knowledge-base.index', icon: '📚', perm: 'admin.view' },
     ];
 
     // Sidebar component
@@ -97,10 +153,16 @@ export default function Theme3Layout({
                     sidebarOpen ? 'translate-x-0' : '-translate-x-full'
                 }`}
             >
-                <div className="flex h-16 items-center justify-center border-b border-gray-200">
+                <div className="flex h-16 items-center justify-between border-b border-gray-200 px-4">
                     <Link href="/">
                         <ApplicationLogo logoUrl={logoUrl} className="block h-9 w-auto" />
                     </Link>
+                    <button
+                        onClick={() => setSidebarOpen(false)}
+                        className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 lg:hidden"
+                    >
+                        <X className="h-5 w-5" />
+                    </button>
                 </div>
 
                 <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
@@ -109,21 +171,24 @@ export default function Theme3Layout({
                         className={`nav-item ${isActive('dashboard') ? 'active' : ''}`}
                     >
                         <div className="nav-item-left">
-                            <span>📊</span>
+                            <BarChart3 className="h-5 w-5" />
                             <span>Dashboard</span>
                         </div>
                     </Link>
 
                     <div className="nav-group pt-4">
                         <p className="nav-group-title">Master Data</p>
-                        {masterDataLinks.map((link) => (
+                        {masterDataLinks.filter(l => can(l.perm)).map((link) => (
                             <Link
                                 key={link.route}
                                 href={route(link.route)}
                                 className={`nav-item ${isActive(link.route) ? 'active' : ''}`}
                             >
                                 <div className="nav-item-left">
-                                    <span>{link.icon}</span>
+                                    {(() => {
+                                        const Icon = sidebarIcons[link.icon];
+                                        return Icon ? <Icon className="h-5 w-5" /> : <span>{link.icon}</span>;
+                                    })()}
                                     <span>{link.name}</span>
                                 </div>
                             </Link>
@@ -132,14 +197,17 @@ export default function Theme3Layout({
 
                     <div className="nav-group pt-4">
                         <p className="nav-group-title">Portofolio</p>
-                        {portofolioLinks.map((link) => (
+                        {portofolioLinks.filter(l => can(l.perm)).map((link) => (
                             <Link
                                 key={link.route}
                                 href={route(link.route)}
                                 className={`nav-item ${isActive(link.route) ? 'active' : ''}`}
                             >
                                 <div className="nav-item-left">
-                                    <span>{link.icon}</span>
+                                    {(() => {
+                                        const Icon = sidebarIcons[link.icon];
+                                        return Icon ? <Icon className="h-5 w-5" /> : <span>{link.icon}</span>;
+                                    })()}
                                     <span>{link.name}</span>
                                 </div>
                             </Link>
@@ -148,14 +216,17 @@ export default function Theme3Layout({
 
                     <div className="nav-group pt-4">
                         <p className="nav-group-title">Lainnya</p>
-                        {otherLinks.map((link) => (
+                        {otherLinks.filter(l => can(l.perm)).map((link) => (
                             <Link
                                 key={link.route}
                                 href={route(link.route)}
                                 className={`nav-item ${isActive(link.route) ? 'active' : ''}`}
                             >
                                 <div className="nav-item-left">
-                                    <span>{link.icon}</span>
+                                    {(() => {
+                                        const Icon = sidebarIcons[link.icon];
+                                        return Icon ? <Icon className="h-5 w-5" /> : <span>{link.icon}</span>;
+                                    })()}
                                     <span>{link.name}</span>
                                 </div>
                             </Link>
@@ -164,14 +235,17 @@ export default function Theme3Layout({
 
                     <div className="nav-group pt-4">
                         <p className="nav-group-title">AI Agents</p>
-                        {aiAgentLinks.map((link) => (
+                        {aiAgentLinks.filter(l => can(l.perm)).map((link) => (
                             <Link
                                 key={link.route}
                                 href={route(link.route)}
                                 className={`nav-item ${isActive(link.route) ? 'active' : ''}`}
                             >
                                 <div className="nav-item-left">
-                                    <span>{link.icon}</span>
+                                    {(() => {
+                                        const Icon = sidebarIcons[link.icon];
+                                        return Icon ? <Icon className="h-5 w-5" /> : <span>{link.icon}</span>;
+                                    })()}
                                     <span>{link.name}</span>
                                 </div>
                             </Link>
@@ -180,14 +254,17 @@ export default function Theme3Layout({
 
                     <div className="nav-group pt-4">
                         <p className="nav-group-title">Admin</p>
-                        {adminLinks.map((link) => (
+                        {adminLinks.filter(l => can(l.perm)).map((link) => (
                             <Link
                                 key={link.route}
                                 href={route(link.route)}
                                 className={`nav-item ${isActive(link.route) ? 'active' : ''}`}
                             >
                                 <div className="nav-item-left">
-                                    <span>{link.icon}</span>
+                                    {(() => {
+                                        const Icon = sidebarIcons[link.icon];
+                                        return Icon ? <Icon className="h-5 w-5" /> : <span>{link.icon}</span>;
+                                    })()}
                                     <span>{link.name}</span>
                                 </div>
                             </Link>
@@ -285,12 +362,12 @@ export default function Theme3Layout({
             <Sidebar />
             <div className={`lg:pl-64`}>
                 <Topbar />
-                <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+                <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8"><ErrorBoundary>{children}</ErrorBoundary></main>
                 {chatEnabled && (
-                    <>
+                    <Suspense fallback={null}>
                         <ChatButton onClick={() => setShowChat(true)} />
                         <ChatModal isOpen={showChat} onClose={() => setShowChat(false)} />
-                    </>
+                    </Suspense>
                 )}
             </div>
         </div>

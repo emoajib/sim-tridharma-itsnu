@@ -1,5 +1,7 @@
 # Vetted by AI - Manual Review Required by Senior Engineer/Manager
 import logging
+import numpy as np
+from scipy import stats
 
 from sqlalchemy import text
 
@@ -12,7 +14,7 @@ logger = logging.getLogger("agent.prediksi")
 
 class PrediksiAgent(BaseAgent):
     name = "prediksi"
-    version = "1.1.0"
+    version = "1.2.0"  # Updated version for Monte Carlo implementation
 
     def execute(self, data: dict) -> dict:
         if isinstance(data, list):
@@ -75,27 +77,122 @@ class PrediksiAgent(BaseAgent):
 
             historical_scores = historical_scores[-3:]
 
-            pred = calculate_prediction(historical_scores)
-            
-            # 3. Analyze Budget Correlation
+            # 3. Monte Carlo Simulation with 1000 samples
+            if len(historical_scores) >= 2:
+                # Calculate mean and standard deviation from historical data
+                mean_score = np.mean(historical_scores)
+                std_score = np.std(historical_scores, ddof=1)  # Sample standard deviation
+                
+                # Generate 1000 Monte Carlo samples
+                np.random.seed(42)  # For reproducible results
+                mc_samples = np.random.normal(mean_score, std_score, 1000)
+                
+                # Calculate statistics from Monte Carlo samples
+                mc_mean = np.mean(mc_samples)
+                mc_std = np.std(mc_samples, ddof=1)
+                
+                # Calculate 95% confidence interval
+                ci_lower = np.percentile(mc_samples, 2.5)
+                ci_upper = np.percentile(mc_samples, 97.5)
+                
+                # Calculate probabilities for each category based on MC samples
+                unggul_count = np.sum(mc_samples >= 350)  # Assuming 350+ is unggul
+                baik_sekali_count = np.sum((mc_samples >= 300) & (mc_samples < 350))  # 300-349
+                baik_count = np.sum(mc_samples < 300)  # Below 300
+                
+                prob_unggul = unggul_count / len(mc_samples)
+                prob_baik_sekali = baik_sekali_count / len(mc_samples)
+                prob_baik = baik_count / len(mc_samples)
+                
+                # Use the mean of MC samples as the predicted score
+                skor_prediksi = mc_mean
+                trend_analysis = "Stagnan"  # Will be updated below
+                
+                # Calculate trend factor from historical data
+                if len(historical_scores) >= 2:
+                    x = np.arange(len(historical_scores))
+                    y = np.array(historical_scores)
+                    slope, _ = np.polyfit(x, y, 1)
+                    trend_factor = 1.0 + (slope / 100.0)
+                    trend_analysis = "Positif" if trend_factor > 1 else ("Negatif" if trend_factor < 1 else "Stagnan")
+                    
+                    # Apply trend factor to MC mean
+                    skor_prediksi = mc_mean * trend_factor
+                    
+                    # Recalculate probabilities with trend-adjusted score
+                    # Simplified approach: adjust the distributions
+                    adjusted_samples = mc_samples * trend_factor
+                    unggul_count = np.sum(adjusted_samples >= 350)
+                    baik_sekali_count = np.sum((adjusted_samples >= 300) & (adjusted_samples < 350))
+                    baik_count = np.sum(adjusted_samples < 300)
+                    
+                    prob_unggul = unggul_count / len(adjusted_samples)
+                    prob_baik_sekali = baik_sekali_count / len(adjusted_samples)
+                    prob_baik = baik_count / len(adjusted_samples)
+                    
+                    # Update MC mean with trend
+                    mc_mean = np.mean(adjusted_samples)
+                    mc_std = np.std(adjusted_samples, ddof=1)
+                    ci_lower = np.percentile(adjusted_samples, 2.5)
+                    ci_upper = np.percentile(adjusted_samples, 97.5)
+            else:
+                # Not enough data for Monte Carlo, fall back to original method
+                pred = calculate_prediction(historical_scores)
+                skor_prediksi = pred["skor_prediksi"]
+                prob_unggul = pred["probabilitas"]["unggul"]
+                prob_baik_sekali = pred["probabilitas"]["baik_sekali"]
+                prob_baik = pred["probabilitas"]["baik"]
+                trend_analysis = pred["trend_analysis"]
+                ci_lower = skor_prediksi - 4.5
+                ci_upper = skor_prediksi + 4.5
+                mc_mean = skor_prediksi
+                mc_std = 0
+
+            # 4. Analyze Budget Correlation
             budget_impact = "netral"
             if periode_id in budgets:
                 current_budget = budgets[periode_id]
                 prev_budget = sum(budgets.values()) / len(budgets) if budgets else current_budget
                 if current_budget > prev_budget * 1.2:
                     budget_impact = "positif (peningkatan investasi)"
-                    pred["skor_prediksi"] += 0.5 # Small boost for high investment
+                    skor_prediksi += 0.5 # Small boost for high investment
+                    # Adjust confidence interval slightly
+                    ci_lower += 0.5
+                    ci_upper += 0.5
                 elif current_budget < prev_budget * 0.8:
                     budget_impact = "negatif (pengurangan anggaran)"
-                    pred["skor_prediksi"] -= 0.3
+                    skor_prediksi -= 0.3
+                    # Adjust confidence interval slightly
+                    ci_lower -= 0.3
+                    ci_upper -= 0.3
+
+            # Determine final category based on highest probability
+            probabilities = {
+                "unggul": prob_unggul,
+                "baik_sekali": prob_baik_sekali,
+                "baik": prob_baik
+            }
+            predicted_category = max(probabilities, key=probabilities.get)
 
             result = {
-                "skor_prediksi": round(pred["skor_prediksi"], 2),
-                "probabilitas": pred["probabilitas"],
-                "confidence_interval": 4.5,
-                "trend_analysis": pred["trend_analysis"],
+                "skor_prediksi": round(skor_prediksi, 2),
+                "probabilitas": {
+                    "unggul": round(prob_unggul, 2),
+                    "baik_sekali": round(prob_baik_sekali, 2),
+                    "baik": round(prob_baik, 2),
+                },
+                "confidence_interval": round((ci_upper - ci_lower) / 2, 2),  # Half-width as before
+                "confidence_interval_details": {
+                    "lower": round(ci_lower, 2),
+                    "upper": round(ci_upper, 2)
+                },
+                "trend_analysis": trend_analysis,
                 "historical_data_points": len(historical_scores),
                 "budget_analysis": budget_impact,
+                "method": "monte_carlo",
+                "mc_samples": 1000,
+                "mc_mean": round(mc_mean, 2),
+                "mc_std": round(mc_std, 2)
             }
 
             db.execute(

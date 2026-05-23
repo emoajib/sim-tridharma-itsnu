@@ -51,17 +51,23 @@ class PrediksiController extends Controller
         ]);
 
         $prodiId = $request->prodi_id ?: null;
+        $periodeId = $request->periode_id ?: null;
 
         $mcpClient = app(MCPClientService::class);
 
         try {
-            $result = $mcpClient->runPrediksiSkor($prodiId);
+            $result = $mcpClient->runPrediksiSkor($prodiId, $periodeId);
 
             if (isset($result['error'])) {
                 return back()->with('error', $result['error']);
             }
 
-            return back()->with('success', "Agent Prediksi selesai: Skor {$result['predicted_score']} ({$result['predicted_category']})");
+            $score = $result['skor_prediksi'] ?? 0;
+            $probabilities = $result['probabilitas'] ?? ['unggul' => 0, 'baik_sekali' => 0, 'baik' => 0];
+            // Find category with highest probability
+            $category = array_search(max($probabilities), $probabilities);
+
+            return back()->with('success', "Agent Prediksi selesai: Skor {$score} ({$category})");
         } catch (\Exception $e) {
             return back()->with('error', 'Gagal menjalankan agent: '.$e->getMessage());
         }

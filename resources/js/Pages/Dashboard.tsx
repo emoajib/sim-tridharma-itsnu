@@ -82,6 +82,7 @@ interface Props {
     prodiAccreditation: ProdiAccreditation[];
     institutionAccreditation: InstitutionAccreditation | null;
     filters: { periode_id?: string; instrumen_id?: string };
+    dashboardDefaultTab?: string;
 }
 
 function StatCard({ label, value, color, href, isTheme3 }: { label: string; value: number | string; color: string; href?: string; isTheme3?: boolean }) {

@@ -23,8 +23,11 @@ class DashboardController extends Controller
             'ai' => route('peringatan'),
         ];
 
-        if ($defaultTab !== 'overview' && isset($redirectRoutes[$defaultTab])) {
-            return redirect($redirectRoutes[$defaultTab]);
+        if ($defaultTab !== 'overview') {
+            if (isset($redirectRoutes[$defaultTab])) {
+                return redirect($redirectRoutes[$defaultTab]);
+            }
+            $defaultTab = 'overview';
         }
 
         $periodeId = $request->get('periode_id');

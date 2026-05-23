@@ -7,6 +7,7 @@ use App\Models\AgentRekomendasiLog;
 use App\Models\Prodi;
 use App\Services\MCP\MCPClientService;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class RekomendasiController extends Controller
 {
@@ -21,7 +22,7 @@ class RekomendasiController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        return inertia('Agent/Rekomendasi/Index', [
+        return Inertia::render('Agent/Rekomendasi/Index', [
             'rekomendasis' => $rekomendasis,
             'prodi_list' => $prodi_list,
             'filters' => [

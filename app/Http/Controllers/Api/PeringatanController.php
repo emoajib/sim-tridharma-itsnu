@@ -1,101 +1,83 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\AgentPeringatanLog;
-use App\Models\Dosen;
-use App\Models\Prodi;
-use App\Models\User;
+use App\Http\Requests\AgentRunRequest;
 use App\Services\MCP\MCPClientService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class PeringatanController extends Controller
 {
-    public function index(Request $request)
+    protected MCPClientService $mcpClient;
+
+    public function __construct(MCPClientService $mcpClient)
     {
-        $peringatan = AgentPeringatanLog::with(['prodi', 'dosen'])
-            ->when($request->prodi_id, fn ($q) => $q->where('prodi_id', $request->prodi_id))
-            ->when($request->tingkat, fn ($q) => $q->where('tingkat', $request->tingkat))
-            ->when($request->search, fn ($q) => $q->where('pesan', 'like', '%'.$request->search.'%'))
-            ->orderByDesc('created_at')
-            ->paginate(20);
+        $this->mcpClient = $mcpClient;
+    }
 
-        $prodi_list = Prodi::select('id', 'nama_prodi')->get();
-        $stats = [
-            'total' => AgentPeringatanLog::count(),
-            'critical' => AgentPeringatanLog::where('tingkat', 'critical')->count(),
-            'warning' => AgentPeringatanLog::where('tingkat', 'warning')->count(),
-            'info' => AgentPeringatanLog::where('tingkat', 'info')->count(),
-            'unread' => AgentPeringatanLog::where('is_read', false)->count(),
-        ];
-
+    public function index(): Response
+    {
         return Inertia::render('Peringatan/Index', [
-            'peringatan' => $peringatan,
-            'prodi_list' => $prodi_list,
-            'stats' => $stats,
-            'filters' => [
-                'prodi_id' => $request->prodi_id,
-                'tingkat' => $request->tingkat,
-                'search' => $request->search,
-            ],
+            'message' => 'Peringatan agent endpoint',
+            'status' => 'ready',
         ]);
-    }
-
-    public function markAsRead($id)
-    {
-        $peringatan = AgentPeringatanLog::findOrFail($id);
-        $peringatan->update([
-            'is_read' => true,
-            'dibaca_pada' => now(),
-        ]);
-
-        return back()->with('success', 'Peringatan ditandai sudah dibaca');
-    }
-
-    public function markAllAsRead()
-    {
-        $query = AgentPeringatanLog::where('is_read', false);
-
-        /** @var User $user */
-        $user = auth()->user();
-
-        $prodiId = $user->prodi_id;
-
-        if (! $prodiId && $user->dosen_id) {
-            $dosen = Dosen::find($user->dosen_id);
-            $prodiId = $dosen?->prodi_id;
-        }
-
-        if ($prodiId) {
-            $query->where('prodi_id', $prodiId);
-        }
-
-        $query->update([
-            'is_read' => true,
-            'dibaca_pada' => now(),
-        ]);
-
-        return back()->with('success', 'Semua peringatan ditandai sudah dibaca');
     }
 
     public function runAgent(Request $request)
     {
         $request->validate([
             'prodi_id' => 'nullable|integer',
+            'periode_id' => 'nullable|integer',
         ]);
 
         $prodiId = $request->prodi_id ?: null;
-
-        $mcpClient = app(MCPClientService::class);
+        $periodeId = $request->periode_id ?: null;
 
         try {
-            $result = $mcpClient->runPeringatanCheck($prodiId);
+            $result = $this->mcpClient->runPeringatanAgent($prodiId, $periodeId);
 
-            return back()->with('success', "Agent Peringatan selesai: {$result['warning_count']} peringatan ditemukan");
+            if (isset($result['error'])) {
+                return back()->with('error', $result['error']);
+            }
+
+            $warnings = $result['warnings'] ?? [];
+            $count = is_array($warnings) ? count($warnings) : 0;
+
+            return back()->with('success', "Agent Peringatan selesai: {$count} peringatan ditemukan.");
         } catch (\Exception $e) {
+            Log::error('Agent peringatan failed: '.$e->getMessage());
+
             return back()->with('error', 'Gagal menjalankan agent: '.$e->getMessage());
+        }
+    }
+
+    public function run(AgentRunRequest $request): JsonResponse
+    {
+        try {
+            $result = $this->mcpClient->runPeringatanAgent(
+                $request->prodi_id,
+                $request->periode_id ?? null
+            );
+
+            return response()->json([
+                'message' => 'Agent peringatan executed',
+                'agent' => 'peringatan',
+                'status' => 'completed',
+                'result' => $result,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Agent peringatan failed: '.$e->getMessage());
+
+            return response()->json([
+                'error' => 'Agent peringatan failed: '.$e->getMessage(),
+            ], 500);
         }
     }
 }

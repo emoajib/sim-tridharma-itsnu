@@ -2,7 +2,8 @@
 # ============================================================
 # scripts/dev.sh
 # Satu baris perintah — seluruh stack dengan hot-reload otomatis
-# Laravel + Reverb + Queue + Pail + Vite + AI Agents + AI RAG + Celery
+# Laravel + Reverb + Queue + Pail + Vite + AI Agents + AI RAG
+# (Celery/RabbitMQ deprecated — replaced by MCP direct calls)
 # ============================================================
 set -uo pipefail
 
@@ -45,11 +46,11 @@ echo ""
 # --- Bangun array perintah secara dinamis ---
 AGENTS_CMD="cd \"$AGENTS_DIR\" && \"$AGENTS_VENV_PYTHON\" -m uvicorn main:app --host 0.0.0.0 --port 8001 --reload"
 RAG_CMD="cd \"$RAG_DIR\" && \"$RAG_VENV_PYTHON\" -m uvicorn main:app --host 0.0.0.0 --port 5001 --reload"
-CELERY_CMD="cd \"$AGENTS_DIR\" && \"$AGENTS_VENV_PYTHON\" -m celery -A worker.celery_app worker --loglevel=info --concurrency=2"
+# CELERY_CMD deprecated — agents now called via MCP direct HTTP calls
 
 npx concurrently \
   -c "#93c5fd,#c4b5fd,#fb7185,#fdba74,#f472b6,#a78bfa,#34d399,#fbbf24" \
-  --names="laravel,reverb,queue,pail,vite,agents,rag,celery" \
+  --names="laravel,reverb,queue,pail,vite,agents,rag" \
   --kill-others \
   "php artisan serve" \
   "php artisan reverb:start" \
@@ -57,5 +58,4 @@ npx concurrently \
   "php artisan pail --timeout=0" \
   "npm run dev" \
   "$AGENTS_CMD" \
-  "$RAG_CMD" \
-  "$CELERY_CMD"
+  "$RAG_CMD"

@@ -46,11 +46,11 @@ return new class extends Migration
             $blueprint->string('judul_kegiatan');
             $blueprint->text('deskripsi_kegiatan')->nullable();
             $blueprint->decimal('estimasi_biaya', 15, 2);
-            $blueprint->foreignId('iku_id')->nullable()->constrained('m_indikator_iku');
-            $blueprint->foreignId('indikator_akreditasi_id')->nullable()->constrained('m_indikator_akreditasi');
+            $blueprint->foreignId('iku_id')->nullable()->constrained('m_indikator_iku')->nullOnDelete();
+            $blueprint->foreignId('indikator_akreditasi_id')->nullable()->constrained('m_indikator_akreditasi')->nullOnDelete();
             $blueprint->enum('status', ['draft', 'submitted', 'approved', 'rejected', 'revised'])->default('draft');
             $blueprint->text('komentar_reviewer')->nullable();
-            $blueprint->foreignId('user_id')->constrained('users'); // Pengusul
+            $blueprint->foreignId('user_id')->constrained('users')->cascadeOnDelete(); // Pengusul
             $blueprint->timestamps();
             $blueprint->softDeletes();
         });
@@ -59,7 +59,7 @@ return new class extends Migration
         Schema::create('trx_rkat_approval_log', function (Blueprint $blueprint) {
             $blueprint->id();
             $blueprint->foreignId('rkat_id')->constrained('trx_usulan_rkat')->onDelete('cascade');
-            $blueprint->foreignId('user_id')->constrained('users'); // Reviewer
+            $blueprint->foreignId('user_id')->constrained('users')->cascadeOnDelete(); // Reviewer
             $blueprint->string('action'); // approve, reject, revise
             $blueprint->text('keterangan')->nullable();
             $blueprint->timestamps();

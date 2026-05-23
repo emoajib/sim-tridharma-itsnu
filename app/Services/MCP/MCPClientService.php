@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\MCP;
 
 use Exception;
@@ -173,9 +175,27 @@ class MCPClientService
     /**
      * Run score prediction via MCP
      */
-    public function runPrediksiSkor(int $prodiId): array
+    public function runPrediksiSkor(int $prodiId, ?int $periodeId = null): array
     {
-        return $this->callToolAsync('prediksi_skor', ['prodi_id' => $prodiId]);
+        $arguments = ['prodi_id' => $prodiId];
+        if ($periodeId !== null) {
+            $arguments['periode_id'] = $periodeId;
+        }
+
+        return $this->callToolAsync('prediksi_skor', $arguments);
+    }
+
+    /**
+     * Run peringatan agent via MCP
+     */
+    public function runPeringatanAgent(int $prodiId, ?int $periodeId = null): array
+    {
+        $arguments = ['prodi_id' => $prodiId];
+        if ($periodeId !== null) {
+            $arguments['periode_id'] = $periodeId;
+        }
+
+        return $this->callToolAsync('peringatan_agent', $arguments);
     }
 
     /**

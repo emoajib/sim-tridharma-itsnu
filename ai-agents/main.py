@@ -72,6 +72,23 @@ async def list_mcp_tools():
     }
 
 
+@app.post("/api/mcp/tools/call")
+async def call_mcp_tool(data: dict):
+    """Call an MCP tool via REST (proxy for PHP)"""
+    tool_name = data.get("name")
+    arguments = data.get("arguments", {})
+
+    if not tool_name:
+        raise HTTPException(status_code=400, detail="Missing 'name' in request body")
+
+    try:
+        result = await mcp.call_tool(tool_name, arguments)
+        return {"result": result}
+    except Exception as e:
+        logger.error(f"MCP tool call failed: {tool_name}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/api/v1/agents/{agent_name}/run", dependencies=[Depends(verify_api_key)])
 async def run_agent(agent_name: str, data: dict):
     import asyncio

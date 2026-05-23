@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
@@ -53,7 +55,10 @@ class GeneratorController extends Controller
                 return back()->with('error', $result['error']);
             }
 
-            return back()->with('success', "Dokumen {$result['jenis_dokumen']} berhasil dibuat: {$result['filename']}");
+            // Extract filename from file path for display
+            $filename = isset($result['file_path']) ? basename($result['file_path']) : 'Document';
+
+            return back()->with('success', "Dokumen {$result['jenis_dokumen']} berhasil dibuat: {$filename}");
         } catch (\Exception $e) {
             return back()->with('error', 'Gagal membuat dokumen: '.$e->getMessage());
         }

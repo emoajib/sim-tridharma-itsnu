@@ -11,6 +11,7 @@ use App\Services\AI\EmbeddingService;
 use App\Services\KnowledgeBase\DocumentProcessingService;
 use App\Services\KnowledgeBase\KnowledgeBaseService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class KnowledgeBaseController extends Controller
@@ -102,8 +103,10 @@ class KnowledgeBaseController extends Controller
                 $embeddings = app(EmbeddingService::class)->embed([$content]);
                 $embedding = $embeddings[0] ?? null;
             } catch (\Exception $e) {
-                // If embedding fails, we still save text but warn?
-                // For now, let's just log and continue or fail.
+                Log::warning('KnowledgeBase: embedding gagal saat update chunk', [
+                    'chunk_id' => $knowledgeBaseChunk->id,
+                    'error' => $e->getMessage(),
+                ]);
             }
         }
 

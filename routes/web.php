@@ -45,7 +45,6 @@ use App\Http\Controllers\Api\TracerJawabanController;
 use App\Http\Controllers\Api\VerifikasiController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Middleware\PermissionMiddleware;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -53,8 +52,6 @@ Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
     ]);
 });
 
@@ -233,6 +230,7 @@ Route::middleware(['auth', PermissionMiddleware::class])->group(function () {
     // Prediksi Akreditasi
     Route::get('/prediksi', [PrediksiController::class, 'index'])->name('prediksi');
     Route::post('/prediksi/run', [PrediksiController::class, 'runAgent'])->name('prediksi.run');
+    Route::get('/prediksi/latest', [PrediksiController::class, 'latest'])->name('prediksi.latest');
 
     // Rekomendasi Agent
     Route::get('/rekomendasi', [RekomendasiController::class, 'index'])->name('rekomendasi');

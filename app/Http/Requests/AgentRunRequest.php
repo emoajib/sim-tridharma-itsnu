@@ -14,8 +14,8 @@ class AgentRunRequest extends FormRequest
     public function rules()
     {
         return [
-            'prodi_id' => 'nullable|integer|exists:prodis,id',
-            'fakultas_id' => 'nullable|integer|exists:fakultas,id',
+            'prodi_id' => 'nullable|integer|exists:m_prodi,id',
+            'fakultas_id' => 'nullable|integer|exists:m_fakultas,id',
             'periode' => 'nullable|string|max:20',
             'filter' => 'nullable|array',
             'options' => 'nullable|array',

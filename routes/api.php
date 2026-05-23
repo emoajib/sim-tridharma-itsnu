@@ -14,9 +14,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/rag/status', [KnowledgeBaseController::class, 'status']);
 
     // Agent AI
-    Route::post('/agents/{agent}/run', [AgentController::class, 'run']);
-    Route::get('/agents/status', [AgentController::class, 'status']);
-    Route::get('/agents/latest', [AgentController::class, 'latestResults']);
+    Route::post('/agents/{agent}/run', [AgentController::class, 'run'])->name('agents.run');
+    Route::get('/agents/status', [AgentController::class, 'status'])->name('agents.status');
+    Route::get('/agents/latest', [AgentController::class, 'latestResults'])->name('agents.latest');
 
     // M13: RKAT & IKU
     Route::prefix('rkat')->group(function () {

@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\IntegrasiLogSinkron;
 use App\Models\Prodi;
 use App\Services\MCP\MCPClientService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class IntegrasiController extends Controller
 {
@@ -16,11 +18,11 @@ class IntegrasiController extends Controller
 
         $logs = IntegrasiLogSinkron::when($request->sumber, fn ($q) => $q->where('sumber', $request->sumber))
             ->when($request->status, fn ($q) => $q->where('status', $request->status))
-            ->orderBy('waktu_mulai', 'desc')
+            ->orderBy('mulai_pada', 'desc')
             ->paginate(20)
             ->withQueryString();
 
-        return inertia('Agent/Integrasi/Index', [
+        return Inertia::render('Agent/Integrasi/Index', [
             'logs' => $logs,
             'prodi_list' => $prodi_list,
             'filters' => [
@@ -49,18 +51,8 @@ class IntegrasiController extends Controller
         }
     }
 
-    public function sync(Request $request)
+    public function sync(Request $request): RedirectResponse
     {
-        $sumber = $request->get('sumber', 'pddikti');
-
-        $mcpClient = app(MCPClientService::class);
-
-        try {
-            $result = $mcpClient->runIntegrasiSync($sumber);
-
-            return back()->with('success', "Sinkronisasi {$sumber} selesai: {$result['records_pulled']} records");
-        } catch (\Exception $e) {
-            return back()->with('error', 'Gagal sinkronisasi: '.$e->getMessage());
-        }
+        return $this->run($request);
     }
 }

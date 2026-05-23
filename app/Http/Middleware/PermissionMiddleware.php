@@ -1,28 +1,70 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class PermissionMiddleware
 {
+    private const AI_AGENT_MODULES = [
+        'prediksi', 'peringatan', 'verifikasi', 'generator', 'rekomendasi', 'integrasi',
+    ];
+
+    private const MODULE_MAP = [
+        'import' => 'portofolio',
+        'aipt' => 'agent-ai',
+        'tracer' => 'tracer-study',
+    ];
+
+    private const ACTION_MAP = [
+        'index' => 'view', 'show' => 'view',
+        'create' => 'create', 'store' => 'create',
+        'edit' => 'edit', 'update' => 'edit',
+        'destroy' => 'delete', 'remove' => 'delete',
+        'run' => 'trigger', 'generate' => 'generate',
+        'download' => 'view', 'upload' => 'upload',
+        'switch' => 'view', 'status' => 'view',
+        'latest' => 'view', 'ask' => 'view',
+        'reindex' => 'trigger', 'sync' => 'trigger',
+        'ai-resolve' => 'trigger', 'test' => 'view',
+        'import-preview' => 'view', 'chunks' => 'view',
+        'toggle' => 'edit', 'markRead' => 'edit',
+        'markAllRead' => 'edit', 'kuisioner' => 'view',
+        'jawaban' => 'view',
+    ];
+
     public function handle(Request $request, Closure $next): Response
     {
+        Log::debug('=== PERMISSION MIDDLEWARE EXECUTING ===');
+        Log::debug('PermissionMiddleware: START - Handling request for '.($request->route()?->getName() ?? 'no route'));
+
         if (! $request->user()) {
+            Log::debug('PermissionMiddleware: No user, passing through');
+
             return $next($request);
         }
 
         $routeName = $request->route()?->getName();
 
         if (! $routeName) {
+            Log::debug('PermissionMiddleware: No route name, passing through');
+
             return $next($request);
         }
 
         $permission = $this->extractPermission($routeName);
 
+        // Debug logging
+        Log::debug('PermissionMiddleware: Checking route '.$routeName.', permission: '.$permission);
+        Log::debug('User permissions: '.print_r($request->user()->getPermissionNames()->toArray(), true));
+
         if ($permission && ! $request->user()->can($permission)) {
+            Log::debug('PermissionMiddleware: Permission denied for '.$permission);
             if ($request->expectsJson() || $request->is('api/*')) {
                 return response()->json([
                     'message' => 'Unauthorized',
@@ -33,6 +75,8 @@ class PermissionMiddleware
             abort(403, 'Anda tidak memiliki izin untuk mengakses halaman ini.');
         }
 
+        Log::debug('PermissionMiddleware: Permission granted, passing through');
+
         return $next($request);
     }
 
@@ -40,77 +84,38 @@ class PermissionMiddleware
     {
         $segments = explode('.', $routeName);
 
-        // Handle single segment route names (e.g., 'prediksi', 'dashboard')
         if (count($segments) === 1) {
-            $module = $segments[0];
-
-            // Map AI agents to agent-ai module
-            if (in_array($module, ['prediksi', 'peringatan', 'verifikasi', 'generator', 'rekomendasi', 'integrasi'])) {
-                return 'agent-ai.view';
-            }
-
-            // Other single segment routes that don't need permission enforcement
-            if (in_array($module, ['dashboard', 'welcome', 'profile'])) {
-                return null;
-            }
-
-            return "{$module}.view";
+            return $this->handleSingleSegment($segments[0]);
         }
 
         $module = $segments[0];
         $action = end($segments);
 
-        // Map AI agent sub-routes to agent-ai module
-        if (in_array($module, ['prediksi', 'peringatan', 'verifikasi', 'generator', 'rekomendasi', 'integrasi'])) {
+        if (in_array($module, self::AI_AGENT_MODULES, true)) {
             $module = 'agent-ai';
         }
 
-        // Routes that don't need specific permission
-        if (in_array($module, ['role', 'profile'])) {
+        $module = self::MODULE_MAP[$module] ?? $module;
+
+        if (in_array($module, ['role', 'profile'], true)) {
             return null;
         }
 
-        // Map import routes to portofolio module
-        if ($module === 'import') {
-            return 'portofolio.create';
+        $mappedAction = self::ACTION_MAP[$action] ?? 'view';
+
+        return "{$module}.{$mappedAction}";
+    }
+
+    private function handleSingleSegment(string $segment): ?string
+    {
+        if (in_array($segment, self::AI_AGENT_MODULES, true)) {
+            return 'agent-ai.view';
         }
 
-        // Map dokumen actions to upload
-        if ($module === 'dokumen' && in_array($action, ['store', 'create'])) {
-            return 'dokumen.upload';
+        if (in_array($segment, ['dashboard', 'welcome'], true)) {
+            return null;
         }
 
-        // Map ai-resolve action to agent-ai module
-        if ($action === 'ai-resolve') {
-            return 'agent-ai.trigger';
-        }
-
-        $actionMap = [
-            'index' => 'view',
-            'show' => 'view',
-            'create' => 'create',
-            'store' => 'create',
-            'edit' => 'edit',
-            'update' => 'edit',
-            'destroy' => 'delete',
-            'run' => 'trigger',
-            'generate' => 'generate',
-            'download' => 'view',
-            'upload' => 'upload',
-            'remove' => 'delete',
-            'switch' => 'view',
-            'status' => 'view',
-            'latest' => 'view',
-            'ask' => 'view',
-            'reindex' => 'trigger',
-            'sync' => 'trigger',
-            'ai-resolve' => 'trigger',
-        ];
-
-        if (isset($actionMap[$action])) {
-            return "{$module}.{$actionMap[$action]}";
-        }
-
-        return "{$module}.view";
+        return "{$segment}.view";
     }
 }

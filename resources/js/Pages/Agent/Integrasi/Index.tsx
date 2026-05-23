@@ -27,9 +27,15 @@ interface PaginatedData<T> {
     links: { url: string | null; label: string; active: boolean }[];
 }
 
+interface ProdiItem {
+    id: number;
+    nama_prodi: string;
+    kode_prodi: string;
+}
+
 interface Props {
     logs: PaginatedData<IntegrasiLog>;
-    prodi_list: any[];
+    prodi_list: ProdiItem[];
     filters: {
         sumber: string | null;
         status: string | null;

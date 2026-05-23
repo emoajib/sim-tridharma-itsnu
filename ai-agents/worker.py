@@ -1,3 +1,8 @@
+"""
+@deprecated Celery/RabbitMQ worker — digantikan oleh MCP tools langsung.
+Agent dipanggil via MCP protocol oleh MCPClientService (PHP) → agents_mcp/tools.py (Python).
+File ini hanya dipertahankan sebagai referensi. Tidak digunakan dalam runtime aktif.
+"""
 from celery import Celery
 
 from config import REDIS_URL
@@ -17,6 +22,34 @@ celery_app.conf.update(
 def run_verification(data: dict) -> dict:
     from agents.verifikasi_agent import VerifikasiAgent
     agent = VerifikasiAgent()
+    return agent.execute(data)
+
+
+@celery_app.task
+def run_prediction(data: dict) -> dict:
+    from agents.prediksi_agent import PrediksiAgent
+    agent = PrediksiAgent()
+    return agent.execute(data)
+
+
+@celery_app.task
+def run_peringatan(data: dict) -> dict:
+    from agents.peringatan_agent import PeringatanAgent
+    agent = PeringatanAgent()
+    return agent.execute(data)
+
+
+@celery_app.task
+def run_generator(data: dict) -> dict:
+    from agents.generator_agent import GeneratorAgent
+    agent = GeneratorAgent()
+    return agent.execute(data)
+
+
+@celery_app.task
+def run_integrasi(data: dict) -> dict:
+    from agents.integrasi_agent import IntegrasiAgent
+    agent = IntegrasiAgent()
     return agent.execute(data)
 
 

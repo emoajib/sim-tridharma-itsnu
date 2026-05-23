@@ -637,13 +637,13 @@ async def orchestrator_run_plan(
         await _ctx(ctx).report_progress(i + 1, len(plan["tools"]), f"Running {tool_name}...")
         try:
             if tool_name == "peringatan_check":
-                from tools import peringatan_check as tool_fn
+                from agents_mcp.tools import peringatan_check as tool_fn
             elif tool_name == "prediksi_skor":
-                from tools import prediksi_skor as tool_fn
+                from agents_mcp.tools import prediksi_skor as tool_fn
             elif tool_name == "verifikasi_dokumen":
-                from tools import verifikasi_dokumen as tool_fn
+                from agents_mcp.tools import verifikasi_dokumen as tool_fn
             elif tool_name == "rekomendasi_generate":
-                from tools import rekomendasi_generate as tool_fn
+                from agents_mcp.tools import rekomendasi_generate as tool_fn
             else:
                 results[tool_name] = {"error": f"Unknown tool: {tool_name}"}
                 continue
