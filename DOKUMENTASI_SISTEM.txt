@@ -3,7 +3,7 @@
           Sistem Informasi Manajemen Tridharma Dosen
 ================================================================================
 
-Terakhir Diperbarui: 2026-05-23 (Sprint 2.0 - Stability & M13 Integration)
+Terakhir Diperbarui: 2026-05-23 (Sprint 2.0 - RBAC UI & Dashboard Personalization)
 Framework: Laravel 11.x (Latest Stable)
 PHP: 8.4.1
 Database: PostgreSQL 16 + pgvector
@@ -16,9 +16,9 @@ Frontend: React + Inertia.js + TailwindCSS + Vite v8
 STATISTIK SISTEM:
 - 14 Modul Utama (Termasuk M13: E-RKAT & Cascading IKU)
 - 56 Eloquent Models
-- 57 Controllers
+- 60 Controllers (Termasuk Admin/RBAC Controllers)
 - 74 Database Tables (Teroptimasi pgvector)
-- 197 Routes API & Web
+- 205 Routes API & Web
 - 6 AI Agents (Verifikasi, Prediksi, Rekomendasi, Peringatan, Integrasi, Generator)
 - 3 AI Services (FastAPI RAG, FastAPI Agents, RabbitMQ Worker)
 
@@ -26,20 +26,21 @@ STATISTIK SISTEM:
                           ARSITEKTUR BARU (SPRINT 2.0)
 ================================================================================
 
-1. STABILITAS AI (Fase 1.5):
-   - Implementasi ModelManager Singleton di AI Service untuk efisiensi memori.
-   - Pembatasan TORCH_THREADS=2 untuk mencegah CPU Spike 99% di environment VPS.
-   - Endpoint /status untuk monitoring kesehatan model AI secara real-time.
+1. FITUR SUPERADMIN NON-IT FRIENDLY (Fase 4 & 5):
+   - RBAC MANAGEMENT UI: Antarmuka visual untuk mengelola Pengguna, Role, dan Permission Matrix tanpa menyentuh kode/seeder.
+   - DASHBOARD PERSONALIZATION: Statistik otomatis terfilter (Scoping) berdasarkan peran aktif:
+     * Dosen: Hanya melihat portofolio pribadi.
+     * Kaprodi: Melihat performa Program Studi.
+     * Dekan: Melihat agregasi data satu Fakultas.
+     * Superadmin/Rektor: Pandangan Institusional Global.
+   - UI SECURITY POLISH: Proteksi level tombol (can check) di 20+ halaman manajemen untuk mencegah error 403.
 
-2. MODUL PERENCANAAN M13 (Fase 2):
-   - E-RKAT: Digitalisasi usulan anggaran Tridharma per unit (Prodi/Fakultas).
-   - CASCADING IKU: Penurunan target 8 IKU Kemdiktisaintek dari Rektor ke Kaprodi.
-   - VALIDASI PAGU: Sistem pencegahan approval usulan anggaran yang melebihi pagu unit.
+2. STABILITAS AI & DATABASE:
+   - Fix PostgreSQL View Migration: Pemisahan perintah SQL untuk kompatibilitas strict mode.
+   - Cross-Validation User: Validasi otomatis yang mewajibkan tautan Dosen/Prodi untuk role tertentu guna menjaga integritas data.
 
-3. RAG REFINEMENT & GUARDRAILS (Fase 4):
-   - SIMILARITY THRESHOLD: Chatbot asisten hanya menjawab jika tingkat relevansi > 0.65.
-   - HALLUCINATION BLOCK: Instruksi ketat (Guardrails) untuk hanya menjawab berbasis data lokal.
-   - CHAT ANALYTICS: Logging pertanyaan dan jawaban ke trx_chat_history untuk evaluasi LPM.
+3. MODUL PERENCANAAN M13:
+... (seperti sebelumnya) ...
 
 ================================================================================
                           SPESIFIKASI HOSTING & INFRASTRUKTUR
