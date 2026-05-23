@@ -61,6 +61,10 @@ Route::middleware(['auth', PermissionMiddleware::class])->group(function () {
 
     Route::post('/role/switch', [RoleSwitchController::class, 'switch'])->name('role.switch');
 
+    // RAG Chatbot
+    Route::post('/rag/ask', [KnowledgeBaseController::class, 'ask'])->name('rag.ask');
+    Route::get('/rag/status', [KnowledgeBaseController::class, 'status'])->name('rag.status');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');

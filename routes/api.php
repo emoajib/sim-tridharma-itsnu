@@ -9,10 +9,6 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', fn (Request $r) => $r->user());
 
-    // RAG
-    Route::post('/rag/ask', [KnowledgeBaseController::class, 'ask'])->name('rag.ask');
-    Route::get('/rag/status', [KnowledgeBaseController::class, 'status'])->name('rag.status');
-
     // Agent AI
     Route::post('/agents/{agent}/run', [AgentController::class, 'run'])->name('agents.run');
     Route::get('/agents/status', [AgentController::class, 'status'])->name('agents.status');

@@ -54,7 +54,7 @@ export default function ChatModal({ isOpen, onClose }: Props) {
         setLoading(true);
 
         try {
-            const response = await axios.post('/api/rag/ask', {
+            const response = await axios.post('/rag/ask', {
                 question: input
             });
 
