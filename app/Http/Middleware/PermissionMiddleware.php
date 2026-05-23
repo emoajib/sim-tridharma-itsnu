@@ -19,6 +19,9 @@ class PermissionMiddleware
         'import' => 'portofolio',
         'aipt' => 'agent-ai',
         'tracer' => 'tracer-study',
+        'admin.users' => 'users',
+        'admin.roles' => 'admin',
+        'admin.permissions' => 'admin',
     ];
 
     private const ACTION_MAP = [
@@ -86,6 +89,16 @@ class PermissionMiddleware
 
         if (count($segments) === 1) {
             return $this->handleSingleSegment($segments[0]);
+        }
+
+        // Check for two-segment modules first (e.g., admin.users, admin.roles)
+        if (count($segments) >= 2) {
+            $twoSegment = $segments[0].'.'.$segments[1];
+            if (isset(self::MODULE_MAP[$twoSegment])) {
+                $action = end($segments);
+                $mappedAction = self::ACTION_MAP[$action] ?? 'view';
+                return self::MODULE_MAP[$twoSegment].'.'.$mappedAction;
+            }
         }
 
         $module = $segments[0];

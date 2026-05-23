@@ -23,18 +23,78 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardService
 {
-    public function getStats(): array
+    private function applyScope($query, array $scopeParams): void
     {
+        if (! empty($scopeParams['dosen_id'])) {
+            if ($query->getModel() instanceof Dosen) {
+                $query->where('id', $scopeParams['dosen_id']);
+            } elseif ($query->getModel() instanceof Prodi) {
+                $query->whereHas('dosens', fn ($q) => $q->where('id', $scopeParams['dosen_id']));
+            } else {
+                $query->where('dosen_id', $scopeParams['dosen_id']);
+            }
+        } elseif (! empty($scopeParams['prodi_id'])) {
+            if ($query->getModel() instanceof Prodi) {
+                $query->where('id', $scopeParams['prodi_id']);
+            } elseif ($query->getModel() instanceof Dosen) {
+                $query->where('prodi_id', $scopeParams['prodi_id']);
+            } elseif ($query->getModel() instanceof AgentPeringatanLog || $query->getModel() instanceof DokumenBukti) {
+                $query->where(function ($q) use ($scopeParams) {
+                    $q->where('prodi_id', $scopeParams['prodi_id'])
+                        ->orWhereHas('dosen', fn ($q2) => $q2->where('prodi_id', $scopeParams['prodi_id']));
+                });
+            } else {
+                $query->whereHas('dosen', fn ($q) => $q->where('prodi_id', $scopeParams['prodi_id']));
+            }
+        } elseif (! empty($scopeParams['fakultas_id'])) {
+            if ($query->getModel() instanceof Prodi) {
+                $query->where('fakultas_id', $scopeParams['fakultas_id']);
+            } elseif ($query->getModel() instanceof Dosen) {
+                $query->whereHas('prodi', fn ($q) => $q->where('fakultas_id', $scopeParams['fakultas_id']));
+            } elseif ($query->getModel() instanceof AgentPeringatanLog || $query->getModel() instanceof DokumenBukti) {
+                $query->where(function ($q) use ($scopeParams) {
+                    $q->whereHas('prodi', fn ($q2) => $q2->where('fakultas_id', $scopeParams['fakultas_id']))
+                        ->orWhereHas('dosen.prodi', fn ($q2) => $q2->where('fakultas_id', $scopeParams['fakultas_id']));
+                });
+            } else {
+                $query->whereHas('dosen.prodi', fn ($q) => $q->where('fakultas_id', $scopeParams['fakultas_id']));
+            }
+        }
+    }
+
+    public function getStats(array $scopeParams = []): array
+    {
+        $dosenQuery = Dosen::query();
+        $prodiQuery = Prodi::query();
+        $fakultasQuery = Fakultas::query();
+
+        $this->applyScope($dosenQuery, $scopeParams);
+        $this->applyScope($prodiQuery, $scopeParams);
+        // Fakultas count is usually global or filtered by fakultas_id
+        if (! empty($scopeParams['fakultas_id'])) {
+            $fakultasQuery->where('id', $scopeParams['fakultas_id']);
+        }
+
         return [
-            'dosen_count' => Dosen::count(),
-            'prodi_count' => Prodi::count(),
-            'fakultas_count' => Fakultas::count(),
+            'dosen_count' => $dosenQuery->count(),
+            'prodi_count' => $prodiQuery->count(),
+            'fakultas_count' => $fakultasQuery->count(),
         ];
     }
 
-    public function getPortofolioStats(?int $periodeId): array
+    public function getPortofolioStats(?int $periodeId, array $scopeParams = []): array
     {
-        $query = fn ($q) => $periodeId ? $q->where('periode_id', $periodeId) : $q;
+        $query = function ($q) use ($periodeId, $scopeParams) {
+            if ($periodeId) {
+                $q->where('periode_id', $periodeId);
+            }
+            $this->applyScope($q, $scopeParams);
+
+            return $q;
+        };
+
+        $dokumenQuery = DokumenBukti::query();
+        $this->applyScope($dokumenQuery, $scopeParams);
 
         return [
             'pendidikan_count' => $query(KegiatanPendidikan::query())->count(),
@@ -44,13 +104,20 @@ class DashboardService
             'penunjang_count' => $query(Penunjang::query())->count(),
             'bkd_count' => $query(Bkd::query())->count(),
             'bimbingan_count' => $query(MahasiswaBimbingan::query())->count(),
-            'dokumen_count' => DokumenBukti::count(),
+            'dokumen_count' => $dokumenQuery->count(),
         ];
     }
 
-    public function getBkdStats(?int $periodeId): array
+    public function getBkdStats(?int $periodeId, array $scopeParams = []): array
     {
-        $query = fn ($q) => $periodeId ? $q->where('periode_id', $periodeId) : $q;
+        $query = function ($q) use ($periodeId, $scopeParams) {
+            if ($periodeId) {
+                $q->where('periode_id', $periodeId);
+            }
+            $this->applyScope($q, $scopeParams);
+
+            return $q;
+        };
 
         $aggregates = (clone $query(Bkd::query()))
             ->selectRaw('
@@ -72,9 +139,12 @@ class DashboardService
         ];
     }
 
-    public function getPeringatanStats(): array
+    public function getPeringatanStats(array $scopeParams = []): array
     {
-        $aggregates = AgentPeringatanLog::selectRaw("
+        $query = AgentPeringatanLog::query();
+        $this->applyScope($query, $scopeParams);
+
+        $aggregates = (clone $query)->selectRaw("
             COUNT(*) as total,
             SUM(CASE WHEN tingkat = 'critical' THEN 1 ELSE 0 END) as critical,
             SUM(CASE WHEN tingkat = 'warning' THEN 1 ELSE 0 END) as warning,
@@ -152,15 +222,23 @@ class DashboardService
         ];
     }
 
-    public function getKriteriaStats(?int $instrumenId, ?int $periodeId): array
+    public function getKriteriaStats(?int $instrumenId, ?int $periodeId, array $scopeParams = []): array
     {
-        return DB::table('trx_pemenuhan_indikator as pi')
+        $query = DB::table('trx_pemenuhan_indikator as pi')
             ->join('m_indikator_akreditasi as i', 'i.id', '=', 'pi.indikator_id')
             ->join('m_instrumen_akreditasi as ins', 'ins.id', '=', 'i.instrumen_id')
             ->where('ins.lembaga_id', $instrumenId)
             ->select('i.kriteria as kode', DB::raw('AVG(pi.nilai) as skor'))
-            ->when($periodeId, fn ($q) => $q->where('pi.periode_id', $periodeId))
-            ->groupBy('i.kriteria')
+            ->when($periodeId, fn ($q) => $q->where('pi.periode_id', $periodeId));
+
+        if (! empty($scopeParams['prodi_id'])) {
+            $query->where('pi.prodi_id', $scopeParams['prodi_id']);
+        } elseif (! empty($scopeParams['fakultas_id'])) {
+            $query->join('m_prodi as p', 'p.id', '=', 'pi.prodi_id')
+                ->where('p.fakultas_id', $scopeParams['fakultas_id']);
+        }
+
+        return $query->groupBy('i.kriteria')
             ->orderBy('i.kriteria')
             ->get()
             ->map(fn ($item) => [
@@ -182,31 +260,51 @@ class DashboardService
         return Setting::get('dashboard_default_tab', 'overview');
     }
 
-    public function getRecentPendidikan(?int $periodeId): Collection
+    public function getRecentPendidikan(?int $periodeId, array $scopeParams = []): Collection
     {
-        return KegiatanPendidikan::with('dosen')
-            ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
-            ->latest()->take(5)->get();
+        $query = KegiatanPendidikan::with('dosen')
+            ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId));
+
+        $this->applyScope($query, $scopeParams);
+
+        return $query->latest()->take(5)->get();
     }
 
-    public function getRecentPenelitian(?int $periodeId): Collection
+    public function getRecentPenelitian(?int $periodeId, array $scopeParams = []): Collection
     {
-        return Penelitian::with('dosen')
-            ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
-            ->latest()->take(5)->get();
+        $query = Penelitian::with('dosen')
+            ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId));
+
+        $this->applyScope($query, $scopeParams);
+
+        return $query->latest()->take(5)->get();
     }
 
-    public function getLatestPrediction(): ?AgentPredictionHistory
+    public function getLatestPrediction(array $scopeParams = []): ?AgentPredictionHistory
     {
-        return AgentPredictionHistory::latest()->first();
+        $query = AgentPredictionHistory::query();
+        if (! empty($scopeParams['prodi_id'])) {
+            $query->where('prodi_id', $scopeParams['prodi_id']);
+        } elseif (! empty($scopeParams['fakultas_id'])) {
+            $query->whereHas('prodi', fn ($q) => $q->where('fakultas_id', $scopeParams['fakultas_id']));
+        }
+
+        return $query->latest()->first();
     }
 
-    public function getFilterData(?int $instrumenId, ?int $periodeId): array
+    public function getFilterData(?int $instrumenId, ?int $periodeId, array $scopeParams = []): array
     {
+        $prodiQuery = Prodi::where('lembaga_akreditasi_id', $instrumenId)
+            ->with('fakultas');
+
+        if (! empty($scopeParams['prodi_id'])) {
+            $prodiQuery->where('id', $scopeParams['prodi_id']);
+        } elseif (! empty($scopeParams['fakultas_id'])) {
+            $prodiQuery->where('fakultas_id', $scopeParams['fakultas_id']);
+        }
+
         return [
-            'activeProdis' => Prodi::where('lembaga_akreditasi_id', $instrumenId)
-                ->with('fakultas')
-                ->get(),
+            'activeProdis' => $prodiQuery->get(),
             'periode_list' => PeriodeAkademik::select('id', 'nama_periode')->get(),
             'selectedPeriode' => $periodeId ? PeriodeAkademik::find($periodeId) : null,
             'lembaga_list' => LembagaAkreditasi::where('is_active', true)->get(),

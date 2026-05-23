@@ -137,6 +137,9 @@ export default function Theme3Layout({
         { name: 'Indikator Akreditasi', route: 'admin.indikator.index', icon: '🎯', perm: 'admin.view' },
         { name: 'Template', route: 'admin.templates.index', icon: '📄', perm: 'admin.view' },
         { name: 'Knowledge Base', route: 'admin.knowledge-base.index', icon: '📚', perm: 'admin.view' },
+        { name: 'Manajemen Pengguna', route: 'admin.users.index', icon: '👥', perm: 'users.view' },
+        { name: 'Manajemen Role', route: 'admin.roles.index', icon: '🔐', perm: 'admin.view' },
+        { name: 'Daftar Permission', route: 'admin.permissions.index', icon: '📋', perm: 'admin.view' },
     ];
 
     // Sidebar component

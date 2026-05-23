@@ -44,6 +44,9 @@ interface Props {
 export default function Index({ prodi, fakultas_list, lembaga_list, success }: Props) {
     const { props } = usePage();
     const flashSuccess = success || (props as any).flash?.success;
+    const user = (props as any).auth?.user;
+    const permissions = new Set(user?.permissions ?? []);
+    const can = (perm: string) => permissions.has(perm);
 
     const [search, setSearch] = useState(() => {
         return new URLSearchParams(window.location.search).get('search') || '';
@@ -142,13 +145,15 @@ export default function Index({ prodi, fakultas_list, lembaga_list, success }: P
                                         className="w-full md:w-80 rounded-xl border-gray-200 pl-10 text-sm font-medium shadow-sm focus:border-indigo-500 focus:ring-indigo-500 transition-all"
                                     />
                                 </div>
-                                <button
-                                    onClick={openCreate}
-                                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-xs font-black text-white hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all active:scale-95 uppercase tracking-widest"
-                                >
-                                    <span>+</span>
-                                    <span>TAMBAH & PLOTING PRODI</span>
-                                </button>
+                                {can('master-data.create') && (
+                                    <button
+                                        onClick={openCreate}
+                                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-xs font-black text-white hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all active:scale-95 uppercase tracking-widest"
+                                    >
+                                        <span>+</span>
+                                        <span>TAMBAH & PLOTING PRODI</span>
+                                    </button>
+                                )}
                             </div>
                         </div>
 
@@ -188,8 +193,12 @@ export default function Index({ prodi, fakultas_list, lembaga_list, success }: P
                                                 </td>
                                                 <td className="whitespace-nowrap px-6 py-5 text-right">
                                                     <div className="flex justify-end gap-3">
-                                                        <button onClick={() => openEdit(item)} className="text-[10px] font-black text-indigo-600 hover:text-indigo-800 uppercase tracking-widest underline decoration-indigo-200 underline-offset-4">Edit / Plotting</button>
-                                                        <button onClick={() => confirmDelete(item)} className="text-[10px] font-black text-rose-600 hover:text-rose-800 uppercase tracking-widest">Hapus</button>
+                                                        {can('master-data.edit') && (
+                                                            <button onClick={() => openEdit(item)} className="text-[10px] font-black text-indigo-600 hover:text-indigo-800 uppercase tracking-widest underline decoration-indigo-200 underline-offset-4">Edit / Plotting</button>
+                                                        )}
+                                                        {can('master-data.delete') && (
+                                                            <button onClick={() => confirmDelete(item)} className="text-[10px] font-black text-rose-600 hover:text-rose-800 uppercase tracking-widest">Hapus</button>
+                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>

@@ -37,6 +37,11 @@ interface Props {
 }
 
 export default function Index({ indikator, instrumen_list, success }: Props) {
+    const { props } = usePage();
+    const user = (props as any).auth?.user;
+    const permissions = new Set(user?.permissions ?? []);
+    const can = (perm: string) => permissions.has(perm);
+
     const [search, setSearch] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState<Indikator | null>(null);
@@ -96,12 +101,14 @@ export default function Index({ indikator, instrumen_list, success }: Props) {
                                     onChange={(e) => setSearch(e.target.value)}
                                     className="w-full md:w-80 rounded-xl border-gray-200 text-sm font-medium shadow-sm focus:ring-indigo-500"
                                 />
-                                <button
-                                    onClick={() => { reset(); setEditing(null); setShowModal(true); }}
-                                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-xs font-black text-white hover:bg-indigo-700 shadow-lg uppercase tracking-widest"
-                                >
-                                    + TAMBAH INDIKATOR
-                                </button>
+                                {can('admin.create') && (
+                                    <button
+                                        onClick={() => { reset(); setEditing(null); setShowModal(true); }}
+                                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-xs font-black text-white hover:bg-indigo-700 shadow-lg uppercase tracking-widest"
+                                    >
+                                        + TAMBAH INDIKATOR
+                                    </button>
+                                )}
                             </div>
                         </div>
 
@@ -137,20 +144,24 @@ export default function Index({ indikator, instrumen_list, success }: Props) {
                                                 <td className="whitespace-nowrap px-6 py-5 text-center font-black text-indigo-600">{item.bobot}</td>
                                                 <td className="whitespace-nowrap px-6 py-5 text-right">
                                                     <div className="flex justify-end gap-3">
-                                                        <button onClick={() => {
-                                                            setEditing(item);
-                                                            setData({
-                                                                instrumen_id: String(item.instrumen_id),
-                                                                kode_indikator: item.kode_indikator,
-                                                                nama_indikator: item.nama_indikator,
-                                                                kriteria: item.kriteria,
-                                                                bobot: String(item.bobot),
-                                                                target: item.target || '',
-                                                                jenis_akreditasi: item.jenis_akreditasi,
-                                                            });
-                                                            setShowModal(true);
-                                                        }} className="text-[10px] font-black text-indigo-600 hover:text-indigo-800 uppercase tracking-widest underline underline-offset-4">Edit</button>
-                                                        <button onClick={() => setDeleteTarget(item)} className="text-[10px] font-black text-rose-600 hover:text-rose-800 uppercase tracking-widest">Hapus</button>
+                                                        {can('admin.edit') && (
+                                                            <button onClick={() => {
+                                                                setEditing(item);
+                                                                setData({
+                                                                    instrumen_id: String(item.instrumen_id),
+                                                                    kode_indikator: item.kode_indikator,
+                                                                    nama_indikator: item.nama_indikator,
+                                                                    kriteria: item.kriteria,
+                                                                    bobot: String(item.bobot),
+                                                                    target: item.target || '',
+                                                                    jenis_akreditasi: item.jenis_akreditasi,
+                                                                });
+                                                                setShowModal(true);
+                                                            }} className="text-[10px] font-black text-indigo-600 hover:text-indigo-800 uppercase tracking-widest underline underline-offset-4">Edit</button>
+                                                        )}
+                                                        {can('admin.delete') && (
+                                                            <button onClick={() => setDeleteTarget(item)} className="text-[10px] font-black text-rose-600 hover:text-rose-800 uppercase tracking-widest">Hapus</button>
+                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>

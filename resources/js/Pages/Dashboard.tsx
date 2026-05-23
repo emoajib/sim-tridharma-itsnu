@@ -83,6 +83,8 @@ interface Props {
     institutionAccreditation: InstitutionAccreditation | null;
     filters: { periode_id?: string; instrumen_id?: string };
     dashboardDefaultTab?: string;
+    activeRole: string;
+    scopeName: string;
 }
 
 function StatCard({ label, value, color, href, isTheme3 }: { label: string; value: number | string; color: string; href?: string; isTheme3?: boolean }) {
@@ -106,7 +108,7 @@ function StatCard({ label, value, color, href, isTheme3 }: { label: string; valu
     return href ? <Link href={href} className="block transition-transform hover:-translate-y-1">{card}</Link> : card;
 }
 
-export default function Dashboard({ stats, portofolioStats, bkdStats, recentPendidikan, recentPenelitian, periode_list, selectedPeriode, lembaga_list, selectedInstrumenId, peringatanStats, latestPrediction, kriteriaStats, prodiAccreditation, institutionAccreditation, filters }: Props) {
+export default function Dashboard({ stats, portofolioStats, bkdStats, recentPendidikan, recentPenelitian, periode_list, selectedPeriode, lembaga_list, selectedInstrumenId, peringatanStats, latestPrediction, kriteriaStats, prodiAccreditation, institutionAccreditation, filters, activeRole, scopeName }: Props) {
     const { props } = usePage();
     const appSettings = props.appSettings as any;
     const isTheme3 = appSettings?.theme_mode === 'theme3';
@@ -142,7 +144,14 @@ export default function Dashboard({ stats, portofolioStats, bkdStats, recentPend
     };
 
     return (
-        <AuthenticatedLayout header={<h2 className="text-xl font-black leading-tight text-gray-800 uppercase tracking-tighter">Command Center Dashboard</h2>}>
+        <AuthenticatedLayout header={
+            <div className="flex flex-col">
+                <h2 className="text-xl font-black leading-tight text-gray-800 uppercase tracking-tighter">Command Center Dashboard</h2>
+                <p className="text-xs font-bold text-indigo-600 uppercase tracking-widest mt-1">
+                    {activeRole} • {scopeName}
+                </p>
+            </div>
+        }>
             <Head title="Dashboard" />
 
             <div className={isTheme3 ? "main-content py-6" : "py-2"}>

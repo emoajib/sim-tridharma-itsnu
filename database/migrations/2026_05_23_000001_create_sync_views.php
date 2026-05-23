@@ -7,8 +7,8 @@ return new class extends Migration
 {
     public function up(): void
     {
+        DB::statement('DROP VIEW IF EXISTS v_sync_pddikti_dosen');
         DB::statement('
-            DROP VIEW IF EXISTS v_sync_pddikti_dosen;
             CREATE VIEW v_sync_pddikti_dosen AS
             SELECT 
                 ipd.id,
@@ -26,8 +26,8 @@ return new class extends Migration
             LEFT JOIN m_dosen md ON md.id = ipd.dosen_id
         ');
 
+        DB::statement('DROP VIEW IF EXISTS v_sync_sinta_publikasi');
         DB::statement('
-            DROP VIEW IF EXISTS v_sync_sinta_publikasi;
             CREATE VIEW v_sync_sinta_publikasi AS
             SELECT 
                 isp.id,
@@ -41,8 +41,8 @@ return new class extends Migration
             FROM integrasi_sinta_publikasi isp
         ');
 
+        DB::statement('DROP VIEW IF EXISTS v_sync_sister_riwayat');
         DB::statement("
-            DROP VIEW IF EXISTS v_sync_sister_riwayat;
             CREATE VIEW v_sync_sister_riwayat AS
             SELECT 
                 id,

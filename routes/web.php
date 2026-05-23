@@ -259,6 +259,24 @@ Route::middleware(['auth', PermissionMiddleware::class])->group(function () {
     Route::delete('/admin/settings/logo/remove', [AdminSettingController::class, 'removeLogo'])->name('admin.settings.logo.remove');
     Route::delete('/admin/settings/api-key/remove', [AdminSettingController::class, 'removeApiKey'])->name('admin.settings.api-key.remove');
     Route::post('/admin/settings/api-key/test', [AdminSettingController::class, 'testApiKey'])->name('admin.settings.api-key.test');
+
+    // RBAC Management (Super Admin only)
+    Route::middleware(['can:admin.view'])->group(function () {
+        Route::get('/admin/users', [\App\Http\Controllers\Api\Admin\UserController::class, 'index'])->name('admin.users.index');
+        Route::post('/admin/users', [\App\Http\Controllers\Api\Admin\UserController::class, 'store'])->name('admin.users.store');
+        Route::put('/admin/users/{user}', [\App\Http\Controllers\Api\Admin\UserController::class, 'update'])->name('admin.users.update');
+        Route::delete('/admin/users/{user}', [\App\Http\Controllers\Api\Admin\UserController::class, 'destroy'])->name('admin.users.destroy');
+        Route::post('/admin/users/{user}/sync-roles', [\App\Http\Controllers\Api\Admin\UserController::class, 'syncRoles'])->name('admin.users.sync-roles');
+
+        Route::get('/admin/roles', [\App\Http\Controllers\Api\Admin\RoleController::class, 'index'])->name('admin.roles.index');
+        Route::post('/admin/roles', [\App\Http\Controllers\Api\Admin\RoleController::class, 'store'])->name('admin.roles.store');
+        Route::put('/admin/roles/{role}', [\App\Http\Controllers\Api\Admin\RoleController::class, 'update'])->name('admin.roles.update');
+        Route::delete('/admin/roles/{role}', [\App\Http\Controllers\Api\Admin\RoleController::class, 'destroy'])->name('admin.roles.destroy');
+        Route::post('/admin/roles/{role}/sync-permissions', [\App\Http\Controllers\Api\Admin\RoleController::class, 'syncPermissions'])->name('admin.roles.sync-permissions');
+
+        Route::get('/admin/permissions', [\App\Http\Controllers\Api\Admin\PermissionController::class, 'index'])->name('admin.permissions.index');
+    });
+
     Route::get('/aipt', [AiptController::class, 'index'])->name('aipt.index');
 
     // Accreditation Management (Lembaga & Instrumen)

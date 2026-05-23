@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm, router } from '@inertiajs/react';
+import { Head, useForm, router, usePage } from '@inertiajs/react';
 import { useState, useEffect, FormEventHandler } from 'react';
 
 interface MataKuliah {
@@ -31,6 +31,11 @@ interface Props {
 }
 
 export default function Index({ mataKuliah, success }: Props) {
+    const { props } = usePage();
+    const user = (props as any).auth?.user;
+    const permissions = new Set(user?.permissions ?? []);
+    const can = (perm: string) => permissions.has(perm);
+
     const [search, setSearch] = useState(() => {
         return new URLSearchParams(window.location.search).get('search') || '';
     });
@@ -117,12 +122,14 @@ export default function Index({ mataKuliah, success }: Props) {
                                     onChange={(e) => setSearch(e.target.value)}
                                     className="w-64 rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                 />
-                                <button
-                                    onClick={openCreate}
-                                    className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-                                >
-                                    + Tambah Mata Kuliah
-                                </button>
+                                {can('master-data.create') && (
+                                    <button
+                                        onClick={openCreate}
+                                        className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                                    >
+                                        + Tambah Mata Kuliah
+                                    </button>
+                                )}
                             </div>
                         </div>
 
@@ -152,8 +159,12 @@ export default function Index({ mataKuliah, success }: Props) {
                                                 <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">{item.prodi?.nama_prodi || '-'}</td>
                                                 <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">{item.semester ?? '-'}</td>
                                                 <td className="whitespace-nowrap px-6 py-4 text-sm">
-                                                    <button onClick={() => openEdit(item)} className="mr-2 text-indigo-600 hover:text-indigo-900">Edit</button>
-                                                    <button onClick={() => confirmDelete(item)} className="text-red-600 hover:text-red-900">Hapus</button>
+                                                    {can('master-data.edit') && (
+                                                        <button onClick={() => openEdit(item)} className="mr-2 text-indigo-600 hover:text-indigo-900">Edit</button>
+                                                    )}
+                                                    {can('master-data.delete') && (
+                                                        <button onClick={() => confirmDelete(item)} className="text-red-600 hover:text-red-900">Hapus</button>
+                                                    )}
                                                 </td>
                                             </tr>
                                         ))

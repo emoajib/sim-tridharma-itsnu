@@ -35,11 +35,15 @@ const themeColorClasses: Record<string, { border: string; bg: string; text: stri
 };
 
 export default function Index({ settings }: Props) {
+    const { props } = usePage();
+    const user = (props as any).auth?.user;
+    const permissions = new Set(user?.permissions ?? []);
+    const can = (perm: string) => permissions.has(perm);
+
     const [formData, setFormData] = useState<Settings>(settings);
     const [saving, setSaving] = useState(false);
     const [testingKey, setTestingKey] = useState(false);
     const [showKey, setShowKey] = useState(false);
-    const { props } = usePage();
     const flashSuccess = (props as any).flash?.success;
     const colors = themeColorClasses[formData.theme_color] || themeColorClasses.indigo;
 
@@ -457,20 +461,24 @@ export default function Index({ settings }: Props) {
                         )}
 
                         <div className="flex flex-wrap gap-3 pt-4 mt-4 border-t border-gray-100">
-                            <button
-                                onClick={handleTestApiKey}
-                                disabled={testingKey}
-                                className="rounded-lg border border-indigo-200 px-4 py-2 text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition-all uppercase tracking-wider"
-                            >
-                                {testingKey ? '🔄 Mengetes...' : '⚡ Test Koneksi'}
-                            </button>
-                            {((formData.ai_provider === 'gemini' && formData.gemini_api_key) || (formData.ai_provider === 'openai' && formData.openai_api_key)) && (
-                                <button
-                                    onClick={handleRemoveApiKey}
-                                    className="rounded-lg border border-rose-200 px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-all uppercase tracking-wider"
-                                >
-                                    🗑 Hapus API Key
-                                </button>
+                            {can('admin.edit') && (
+                                <>
+                                    <button
+                                        onClick={handleTestApiKey}
+                                        disabled={testingKey}
+                                        className="rounded-lg border border-indigo-200 px-4 py-2 text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition-all uppercase tracking-wider"
+                                    >
+                                        {testingKey ? '🔄 Mengetes...' : '⚡ Test Koneksi'}
+                                    </button>
+                                    {((formData.ai_provider === 'gemini' && formData.gemini_api_key) || (formData.ai_provider === 'openai' && formData.openai_api_key)) && (
+                                        <button
+                                            onClick={handleRemoveApiKey}
+                                            className="rounded-lg border border-rose-200 px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-all uppercase tracking-wider"
+                                        >
+                                            🗑 Hapus API Key
+                                        </button>
+                                    )}
+                                </>
                             )}
                         </div>
                     </div>
@@ -505,23 +513,29 @@ export default function Index({ settings }: Props) {
                                     </div>
 
                                     <div className="flex flex-wrap gap-3">
-                                        <label className="cursor-pointer rounded-lg bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700 transition-all uppercase tracking-wider">
-                                            {formData.logo_path ? 'Ganti Logo' : 'Upload Logo'}
-                                            <input
-                                                type="file"
-                                                accept=".png,.jpg,.jpeg,.svg,.webp"
-                                                onChange={handleLogoUpload}
-                                                className="hidden"
-                                            />
-                                        </label>
+                                        {can('admin.edit') ? (
+                                            <>
+                                                <label className="cursor-pointer rounded-lg bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700 transition-all uppercase tracking-wider">
+                                                    {formData.logo_path ? 'Ganti Logo' : 'Upload Logo'}
+                                                    <input
+                                                        type="file"
+                                                        accept=".png,.jpg,.jpeg,.svg,.webp"
+                                                        onChange={handleLogoUpload}
+                                                        className="hidden"
+                                                    />
+                                                </label>
 
-                                        {formData.logo_path && (
-                                            <button
-                                                onClick={handleLogoRemove}
-                                                className="rounded-lg border border-rose-200 px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-all uppercase tracking-wider"
-                                            >
-                                                Hapus Logo
-                                            </button>
+                                                {formData.logo_path && (
+                                                    <button
+                                                        onClick={handleLogoRemove}
+                                                        className="rounded-lg border border-rose-200 px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-all uppercase tracking-wider"
+                                                    >
+                                                        Hapus Logo
+                                                    </button>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <p className="text-xs text-gray-400 italic font-medium">Anda tidak memiliki hak akses untuk mengubah branding.</p>
                                         )}
                                     </div>
                                 </div>
@@ -554,23 +568,29 @@ export default function Index({ settings }: Props) {
                                     </div>
 
                                     <div className="flex flex-wrap gap-3">
-                                        <label className="cursor-pointer rounded-lg bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700 transition-all uppercase tracking-wider">
-                                            {formData.favicon_path ? 'Ganti Favicon' : 'Upload Favicon'}
-                                            <input
-                                                type="file"
-                                                accept=".ico,.png,.svg"
-                                                onChange={handleFaviconUpload}
-                                                className="hidden"
-                                            />
-                                        </label>
+                                        {can('admin.edit') ? (
+                                            <>
+                                                <label className="cursor-pointer rounded-lg bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700 transition-all uppercase tracking-wider">
+                                                    {formData.favicon_path ? 'Ganti Favicon' : 'Upload Favicon'}
+                                                    <input
+                                                        type="file"
+                                                        accept=".ico,.png,.svg"
+                                                        onChange={handleFaviconUpload}
+                                                        className="hidden"
+                                                    />
+                                                </label>
 
-                                        {formData.favicon_path && (
-                                            <button
-                                                onClick={handleFaviconRemove}
-                                                className="rounded-lg border border-rose-200 px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-all uppercase tracking-wider"
-                                            >
-                                                Hapus Favicon
-                                            </button>
+                                                {formData.favicon_path && (
+                                                    <button
+                                                        onClick={handleFaviconRemove}
+                                                        className="rounded-lg border border-rose-200 px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-all uppercase tracking-wider"
+                                                    >
+                                                        Hapus Favicon
+                                                    </button>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <p className="text-xs text-gray-400 italic font-medium">Anda tidak memiliki hak akses untuk mengubah favicon.</p>
                                         )}
                                     </div>
                                 </div>
@@ -579,15 +599,17 @@ export default function Index({ settings }: Props) {
                     </div>
 
                     {/* Save Button */}
-                    <div className="flex justify-end">
-                        <button
-                            onClick={handleSave}
-                            disabled={saving}
-                            className={`rounded-lg px-6 py-2 text-sm font-medium text-white ${colors.button} ${colors.buttonHover} disabled:opacity-50`}
-                        >
-                            {saving ? 'Menyimpan...' : 'Simpan Pengaturan'}
-                        </button>
-                    </div>
+                    {can('admin.edit') && (
+                        <div className="flex justify-end">
+                            <button
+                                onClick={handleSave}
+                                disabled={saving}
+                                className={`rounded-lg px-6 py-2 text-sm font-medium text-white ${colors.button} ${colors.buttonHover} disabled:opacity-50`}
+                            >
+                                {saving ? 'Menyimpan...' : 'Simpan Pengaturan'}
+                            </button>
+                        </div>
+                    )}
 
                     {/* Info Box */}
                     <div className="mt-6 rounded-lg bg-blue-50 p-4 text-sm text-blue-700">

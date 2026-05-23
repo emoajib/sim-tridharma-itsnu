@@ -44,6 +44,9 @@ interface Props {
 export default function Index({ documents, categories }: Props) {
     const { props } = usePage();
     const flash = (props as any).flash || {};
+    const user = (props as any).auth?.user;
+    const permissions = new Set(user?.permissions ?? []);
+    const can = (perm: string) => permissions.has(perm);
     
     // Modal states
     const [showUpload, setShowUpload] = useState(false);
@@ -196,15 +199,17 @@ export default function Index({ documents, categories }: Props) {
                         <div>
                             <p className="text-xs text-gray-500 font-medium">Total: {documents.total} dokumen</p>
                         </div>
-                        <button
-                            onClick={() => {
-                                resetForm();
-                                setShowUpload(true);
-                            }}
-                            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-xs font-black text-white hover:bg-indigo-700 shadow-lg uppercase tracking-widest"
-                        >
-                            + Upload PDF
-                        </button>
+                        {can('admin.create') && (
+                            <button
+                                onClick={() => {
+                                    resetForm();
+                                    setShowUpload(true);
+                                }}
+                                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-xs font-black text-white hover:bg-indigo-700 shadow-lg uppercase tracking-widest"
+                            >
+                                + Upload PDF
+                            </button>
+                        )}
                     </div>
 
                     <div className="overflow-hidden bg-white shadow-sm border border-gray-100 rounded-2xl">
@@ -256,30 +261,36 @@ export default function Index({ documents, categories }: Props) {
                                                 </td>
                                                 <td className="px-6 py-5 text-right">
                                                     <div className="flex justify-end items-center gap-3">
-                                                        <button
-                                                            onClick={() => openEdit(doc)}
-                                                            className="text-[10px] font-black text-indigo-600 hover:text-indigo-800 uppercase tracking-widest underline underline-offset-4"
-                                                        >
-                                                            Edit
-                                                        </button>
-                                                        <button
-                                                            onClick={() => openManageChunks(doc)}
-                                                            className="text-[10px] font-black text-amber-600 hover:text-amber-800 uppercase tracking-widest underline underline-offset-4"
-                                                        >
-                                                            Kelola Teks
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleReindex(doc)}
-                                                            className="text-[10px] font-black text-indigo-600 hover:text-indigo-800 uppercase tracking-widest underline underline-offset-4"
-                                                        >
-                                                            Re-index
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDelete(doc)}
-                                                            className="text-[10px] font-black text-rose-600 hover:text-rose-800 uppercase tracking-widest"
-                                                        >
-                                                            Hapus
-                                                        </button>
+                                                        {can('admin.edit') && (
+                                                            <>
+                                                                <button
+                                                                    onClick={() => openEdit(doc)}
+                                                                    className="text-[10px] font-black text-indigo-600 hover:text-indigo-800 uppercase tracking-widest underline underline-offset-4"
+                                                                >
+                                                                    Edit
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => openManageChunks(doc)}
+                                                                    className="text-[10px] font-black text-amber-600 hover:text-amber-800 uppercase tracking-widest underline underline-offset-4"
+                                                                >
+                                                                    Kelola Teks
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleReindex(doc)}
+                                                                    className="text-[10px] font-black text-indigo-600 hover:text-indigo-800 uppercase tracking-widest underline underline-offset-4"
+                                                                >
+                                                                    Re-index
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                        {can('admin.delete') && (
+                                                            <button
+                                                                onClick={() => handleDelete(doc)}
+                                                                className="text-[10px] font-black text-rose-600 hover:text-rose-800 uppercase tracking-widest"
+                                                            >
+                                                                Hapus
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>

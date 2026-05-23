@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import { useState, FormEventHandler, useRef } from 'react';
 import axios from 'axios';
 
@@ -23,6 +23,11 @@ interface Props {
 }
 
 export default function Index({ instrumen, lembaga_list, success }: Props) {
+    const { props } = usePage();
+    const user = (props as any).auth?.user;
+    const permissions = new Set(user?.permissions ?? []);
+    const can = (perm: string) => permissions.has(perm);
+
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState<Instrumen | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<Instrumen | null>(null);
@@ -132,12 +137,14 @@ export default function Index({ instrumen, lembaga_list, success }: Props) {
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="border-b border-gray-200 p-6 flex justify-between items-center">
                             <h3 className="text-lg font-bold text-gray-700">Daftar Instrumen Penilaian</h3>
-                            <button
-                                onClick={openCreate}
-                                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 shadow-md"
-                            >
-                                + Tambah Instrumen
-                            </button>
+                            {can('admin.create') && (
+                                <button
+                                    onClick={openCreate}
+                                    className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 shadow-md"
+                                >
+                                    + Tambah Instrumen
+                                </button>
+                            )}
                         </div>
 
                         <div className="overflow-x-auto">
@@ -162,8 +169,12 @@ export default function Index({ instrumen, lembaga_list, success }: Props) {
                                                 <td className="px-6 py-4 text-sm text-gray-700 font-bold">{item.nama_instrumen}</td>
                                                 <td className="px-6 py-4 text-sm text-gray-600">{(item.matriks_kriteria || []).length} Kriteria</td>
                                                 <td className="whitespace-nowrap px-6 py-4 text-sm">
-                                                    <button onClick={() => openEdit(item)} className="mr-3 font-bold text-indigo-600 hover:text-indigo-900 underline">Kelola Kriteria</button>
-                                                    <button onClick={() => setDeleteTarget(item)} className="font-bold text-red-600 hover:text-red-900">Hapus</button>
+                                                    {can('admin.edit') && (
+                                                        <button onClick={() => openEdit(item)} className="mr-3 font-bold text-indigo-600 hover:text-indigo-900 underline">Kelola Kriteria</button>
+                                                    )}
+                                                    {can('admin.delete') && (
+                                                        <button onClick={() => setDeleteTarget(item)} className="font-bold text-red-600 hover:text-red-900">Hapus</button>
+                                                    )}
                                                 </td>
                                             </tr>
                                         ))
