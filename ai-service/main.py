@@ -307,6 +307,7 @@ def answer(req: AnswerRequest):
 # =============================================================================
 # MCP Server Integration
 # =============================================================================
+import json
 from mcp.server.fastmcp import FastMCP, Context
 
 rag_mcp = FastMCP(
@@ -347,8 +348,51 @@ async def rag_answer(
     answer_text = _format_answer(question, top_sentences)
     return {"answer": answer_text, "count": len(top_sentences)}
 
-# Mount RAG MCP server
-app.mount("/mcp", rag_mcp.streamable_http_app())
+
+# -----------------------------------------------------------------------
+# REST Proxy endpoints for PHP client compatibility
+# PHP MCPClientService sends: POST /mcp/tools/call with {"name":"...","arguments":{...}}
+# -----------------------------------------------------------------------
+@app.post("/mcp/tools/call")
+async def mcp_tools_call(data: dict):
+    """REST proxy — translates PHP REST format to MCP tool call."""
+    if not model_manager.is_ready:
+        raise HTTPException(503, "Models are not ready")
+    
+    name = data.get("name")
+    arguments = data.get("arguments", {})
+    
+    if not name:
+        raise HTTPException(400, "Missing 'name' in request body")
+    
+    try:
+        result = await rag_mcp.call_tool(name, arguments)
+        
+        if isinstance(result, list) and len(result) == 1:
+            block = result[0]
+            if hasattr(block, 'type') and block.type == 'text':
+                return json.loads(block.text)
+        
+        return {"result": result}
+    except Exception as e:
+        logger.error(f"MCP tool call '{name}' failed: {e}")
+        raise HTTPException(500, str(e))
+
+
+@app.get("/mcp/tools/list")
+async def mcp_tools_list():
+    """List available MCP tools."""
+    tools = await rag_mcp.list_tools()
+    return {
+        "tools": [
+            {
+                "name": t.name,
+                "description": t.description,
+                "inputSchema": t.inputSchema,
+            }
+            for t in tools
+        ]
+    }
 
 if __name__ == "__main__":
     import uvicorn

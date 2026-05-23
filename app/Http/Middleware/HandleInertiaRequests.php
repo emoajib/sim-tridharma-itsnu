@@ -38,6 +38,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $user ? array_merge($user->toArray(), [
                     'active_role' => $user->activeRole(),
                     'role_list' => $user->roleList(),
+                    'permissions' => $user->getAllPermissions()->pluck('name'),
                 ]) : null,
             ],
             'flash' => [
@@ -52,15 +53,23 @@ class HandleInertiaRequests extends Middleware
     {
         try {
             return [
-                'theme_mode' => Setting::get('theme_mode', 'klasik'),
+                'theme_mode' => Setting::get('theme_mode', 'theme3'),
                 'theme_color' => Setting::get('theme_color', 'indigo'),
                 'chat_enabled' => Setting::get('chat_enabled', true),
+                'layout_type' => Setting::get('layout_type', 'navbar'),
+                'dashboard_default_tab' => Setting::get('dashboard_default_tab', 'overview'),
+                'logo_path' => Setting::get('logo_path'),
+                'favicon_path' => Setting::get('favicon_path'),
             ];
         } catch (\Exception $e) {
             return [
-                'theme_mode' => 'klasik',
+                'theme_mode' => 'theme3',
                 'theme_color' => 'indigo',
                 'chat_enabled' => true,
+                'layout_type' => 'navbar',
+                'dashboard_default_tab' => 'overview',
+                'logo_path' => null,
+                'favicon_path' => null,
             ];
         }
     }

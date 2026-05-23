@@ -13,7 +13,8 @@ class FileUploadRequest extends FormRequest
 
     public function rules(): array
     {
-        $field = $this->route()->parameter('field', 'file');
+        $field = $this->has('logo') ? 'logo' : ($this->has('favicon') ? 'favicon' : 'file');
+        
         $rules = [
             "{$field}" => 'required|image|mimes:png,jpg,jpeg,svg,webp,ico|max:2048',
         ];
