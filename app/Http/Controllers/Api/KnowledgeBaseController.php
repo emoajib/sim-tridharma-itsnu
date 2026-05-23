@@ -120,13 +120,27 @@ class KnowledgeBaseController extends Controller
 
     public function ask(AskRequest $request)
     {
-        $result = $this->knowledgeBase->askQuestion($request->validated()['question'], $request->validated()['category_id'] ?? null);
+        try {
+            $question = $request->validated()['question'];
+            Log::info('KnowledgeBase: ask request', ['question' => $question]);
 
-        if (isset($result['error'])) {
-            return response()->json($result, 500);
+            $result = $this->knowledgeBase->askQuestion($question, $request->validated()['category_id'] ?? null);
+
+            if (isset($result['error'])) {
+                Log::error('KnowledgeBase: ask error from service', ['error' => $result['error']]);
+
+                return response()->json($result, 500);
+            }
+
+            return response()->json($result);
+        } catch (\Exception $e) {
+            Log::error('KnowledgeBase: ask exception', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json(['error' => 'Internal Server Error: '.$e->getMessage()], 500);
         }
-
-        return response()->json($result);
     }
 
     public function status()
