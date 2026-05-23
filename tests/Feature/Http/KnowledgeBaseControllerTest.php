@@ -5,6 +5,7 @@ namespace Tests\Feature\Http;
 use App\Models\KnowledgeBaseCategory;
 use App\Models\KnowledgeBaseDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\Feature\SeedRolePermission;
 use Tests\TestCase;
 
@@ -40,6 +41,17 @@ class KnowledgeBaseControllerTest extends TestCase
 
     public function test_ask_returns_answer(): void
     {
+        Http::fake([
+            'localhost:5001/mcp/tools/call' => Http::response(['task_id' => 'test-123'], 200),
+            'localhost:5001/mcp/tasks/test-123' => Http::response([
+                'status' => 'completed',
+                'result' => [
+                    'answer' => 'Akreditasi adalah proses evaluasi...',
+                    'sources' => [],
+                ],
+            ], 200),
+        ]);
+
         $response = $this->actingAs($this->admin())->postJson('/api/rag/ask', [
             'question' => 'Apa itu akreditasi?',
         ]);
