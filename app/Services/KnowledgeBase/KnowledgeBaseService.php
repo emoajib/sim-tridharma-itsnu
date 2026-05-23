@@ -5,6 +5,7 @@ namespace App\Services\KnowledgeBase;
 use App\Models\KnowledgeBaseCategory;
 use App\Models\KnowledgeBaseChunk;
 use App\Models\KnowledgeBaseDocument;
+use App\Models\Setting;
 use App\Services\MCP\MCPClientService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -70,13 +71,15 @@ class KnowledgeBaseService
 
     private function callGemini(string $prompt): ?string
     {
-        $apiKey = env('GEMINI_API_KEY');
+        $apiKey = Setting::get('gemini_api_key') ?? env('GEMINI_API_KEY');
+        $model = Setting::get('gemini_model', 'gemini-1.5-flash');
+
         if (! $apiKey) {
             return null;
         }
 
         try {
-            $response = Http::timeout(20)->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={$apiKey}", [
+            $response = Http::timeout(20)->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}", [
                 'contents' => [
                     ['parts' => [['text' => $prompt]]],
                 ],
