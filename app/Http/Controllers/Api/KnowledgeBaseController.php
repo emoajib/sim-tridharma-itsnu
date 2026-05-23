@@ -120,6 +120,7 @@ class KnowledgeBaseController extends Controller
 
     public function ask(AskRequest $request)
     {
+        Log::info('CHATBOT_HIT: Request received in KnowledgeBaseController@ask');
         try {
             $question = $request->validated()['question'];
             Log::info('KnowledgeBase: ask request', ['question' => $question]);
