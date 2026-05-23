@@ -57,8 +57,8 @@ export default function Index({ settings }: Props) {
     }
 
     function handleTestApiKey() {
-        const isGemini = formData.ai_provider === 'gemini';
-        const apiKey = isGemini ? formData.gemini_api_key : formData.openai_api_key;
+        const provider = formData.ai_provider === 'gemini' ? 'gemini' : 'openai';
+        const apiKey = provider === 'gemini' ? formData.gemini_api_key : formData.openai_api_key;
         
         if (!apiKey) {
             alert('Silakan isi API Key terlebih dahulu.');
@@ -67,22 +67,13 @@ export default function Index({ settings }: Props) {
         
         setTestingKey(true);
 
-        if (isGemini) {
-            axios.post(route('admin.settings.api-key.test'), {
-                api_key: apiKey,
-            })
-            .then((res: any) => alert(res.data.message))
-            .catch((err: any) => alert(err.response?.data?.message || 'Terjadi kesalahan saat pengetesan.'))
-            .finally(() => setTestingKey(false));
-        } else {
-            // Test Custom OpenAI via Direct Call
-            axios.get((String(formData.openai_base_url) + '/models').replace('//models', '/models'), {
-                headers: { 'Authorization': 'Bearer ' + apiKey }
-            })
-            .then(() => alert('Koneksi Berhasil! API Provider Custom Valid.'))
-            .catch((err: any) => alert('Koneksi Gagal: ' + (err.response?.data?.error?.message || err.message)))
-            .finally(() => setTestingKey(false));
-        }
+        axios.post(route('admin.settings.api-key.test'), {
+            api_key: apiKey,
+            provider: provider,
+        })
+        .then((res: any) => alert(res.data.message))
+        .catch((err: any) => alert(err.response?.data?.message || 'Terjadi kesalahan saat pengetesan.'))
+        .finally(() => setTestingKey(false));
     }
 
     const aiPresets = [
@@ -107,10 +98,15 @@ export default function Index({ settings }: Props) {
     };
 
     function handleRemoveApiKey() {
-        if (confirm('Apakah Anda yakin ingin menghapus API Key Gemini dari database?')) {
+        const provider = formData.ai_provider === 'gemini' ? 'gemini' : 'openai';
+        const label = provider === 'gemini' ? 'API Key Gemini' : 'API Key OpenAI/Custom';
+
+        if (confirm(`Apakah Anda yakin ingin menghapus ${label} dari database?`)) {
             router.delete(route('admin.settings.api-key.remove'), {
+                data: { provider },
                 onFinish: () => {
-                    handleChange('gemini_api_key', null);
+                    const key = provider === 'gemini' ? 'gemini_api_key' : 'openai_api_key';
+                    handleChange(key, null);
                     window.location.reload();
                 },
             });
@@ -468,6 +464,14 @@ export default function Index({ settings }: Props) {
                             >
                                 {testingKey ? '🔄 Mengetes...' : '⚡ Test Koneksi'}
                             </button>
+                            {((formData.ai_provider === 'gemini' && formData.gemini_api_key) || (formData.ai_provider === 'openai' && formData.openai_api_key)) && (
+                                <button
+                                    onClick={handleRemoveApiKey}
+                                    className="rounded-lg border border-rose-200 px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-all uppercase tracking-wider"
+                                >
+                                    🗑 Hapus API Key
+                                </button>
+                            )}
                         </div>
                     </div>
 

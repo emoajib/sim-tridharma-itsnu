@@ -260,7 +260,7 @@ Route::middleware(['auth', PermissionMiddleware::class])->group(function () {
     Route::post('/admin/settings/logo/upload', [AdminSettingController::class, 'uploadLogo'])->name('admin.settings.logo.upload');
     Route::delete('/admin/settings/logo/remove', [AdminSettingController::class, 'removeLogo'])->name('admin.settings.logo.remove');
     Route::delete('/admin/settings/api-key/remove', [AdminSettingController::class, 'removeApiKey'])->name('admin.settings.api-key.remove');
-    Route::post('/admin/settings/api-key/test', [AdminSettingController::class, 'testGeminiApiKey'])->name('admin.settings.api-key.test');
+    Route::post('/admin/settings/api-key/test', [AdminSettingController::class, 'testApiKey'])->name('admin.settings.api-key.test');
     Route::get('/aipt', [AiptController::class, 'index'])->name('aipt.index');
 
     // Accreditation Management (Lembaga & Instrumen)

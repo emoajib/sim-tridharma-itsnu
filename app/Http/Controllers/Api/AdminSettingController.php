@@ -86,22 +86,25 @@ class AdminSettingController extends Controller
         return back()->with('success', 'Logo dikembalikan ke default');
     }
 
-    /**
-     * Remove Gemini API Key from database
-     */
-    public function removeApiKey()
+    public function removeApiKey(Request $request)
     {
-        Setting::set('gemini_api_key', null);
+        $provider = $request->input('provider', 'gemini');
 
-        return back()->with('success', 'API Key Gemini berhasil dihapus');
+        $key = match ($provider) {
+            'openai' => 'openai_api_key',
+            default => 'gemini_api_key',
+        };
+
+        Setting::set($key, null);
+
+        $label = $provider === 'openai' ? 'Custom OpenAI' : 'Gemini';
+        return back()->with('success', "API Key {$label} berhasil dihapus");
     }
 
-    /**
-     * Test Gemini API Key validity
-     */
-    public function testGeminiApiKey(Request $request)
+    public function testApiKey(Request $request)
     {
         $key = $request->input('api_key');
+        $provider = $request->input('provider', 'gemini');
 
         if (! $key) {
             return response()->json([
@@ -111,14 +114,34 @@ class AdminSettingController extends Controller
         }
 
         try {
-            // Hit Google Gemini Beta Models endpoint to verify key
+            if ($provider === 'openai') {
+                $baseUrl = Setting::get('openai_base_url', 'https://api.openai.com/v1');
+                $response = Http::timeout(15)
+                    ->withHeaders(['Authorization' => "Bearer {$key}"])
+                    ->get("{$baseUrl}/models");
+
+                if ($response->successful()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Koneksi Berhasil! API Key valid.',
+                    ]);
+                }
+
+                $errorData = $response->json();
+                $errorMessage = $errorData['error']['message'] ?? 'API Key tidak valid.';
+
+                return response()->json([
+                    'success' => false,
+                    'message' => "Koneksi Gagal: {$errorMessage}",
+                ], 400);
+            }
+
             $response = Http::timeout(15)->get("https://generativelanguage.googleapis.com/v1beta/models?key={$key}");
 
             if ($response->successful()) {
                 return response()->json([
                     'success' => true,
                     'message' => 'Koneksi Berhasil! API Key valid.',
-                    'details' => 'Berhasil menghubungi endpoint Gemini API.',
                 ]);
             }
 
@@ -130,9 +153,10 @@ class AdminSettingController extends Controller
                 'message' => "Koneksi Gagal: {$errorMessage}",
             ], 400);
         } catch (Exception $e) {
+            $label = $provider === 'openai' ? 'server AI' : 'server Google';
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal menghubungi server Google. Pastikan server memiliki koneksi internet.',
+                'message' => "Gagal menghubungi {$label}. Pastikan server memiliki koneksi internet.",
             ], 500);
         }
     }
