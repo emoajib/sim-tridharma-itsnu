@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
 
 interface Message {
     id: number;
@@ -53,19 +54,11 @@ export default function ChatModal({ isOpen, onClose }: Props) {
         setLoading(true);
 
         try {
-            const response = await fetch('/api/rag/ask', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({ question: input }),
+            const response = await axios.post('/api/rag/ask', {
+                question: input
             });
 
-            if (!response.ok) throw new Error('API error');
-
-            const data = await response.json();
+            const data = response.data;
 
             let content = data.answer || 'Maaf, tidak dapat memproses pertanyaan.';
 
@@ -84,11 +77,14 @@ export default function ChatModal({ isOpen, onClose }: Props) {
                 timestamp: new Date().toISOString(),
             };
             setMessages((prev) => [...prev, assistantMessage]);
-        } catch {
+        } catch (error: any) {
+            console.error('Chat Assistant Error:', error);
+            const errorMessage = error.response?.data?.error || 'Maaf, AI Service sedang tidak tersedia. Pastikan Python AI Service berjalan di port 5001.';
+            
             const fallbackMessage: Message = {
                 id: Date.now() + 1,
                 role: 'assistant',
-                content: 'Maaf, AI Service sedang tidak tersedia. Pastikan Python AI Service berjalan di port 5001.\n\n`cd ai-service && python main.py`',
+                content: errorMessage,
                 timestamp: new Date().toISOString(),
             };
             setMessages((prev) => [...prev, fallbackMessage]);
