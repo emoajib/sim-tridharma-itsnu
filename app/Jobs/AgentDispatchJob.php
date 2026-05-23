@@ -48,6 +48,7 @@ class AgentDispatchJob implements ShouldQueue
             if ($mcpTool) {
                 $mcp->callTool($mcpTool, $this->data);
                 Log::info("Agent dispatched via MCP: {$this->agent}.{$this->action}");
+
                 return;
             }
 

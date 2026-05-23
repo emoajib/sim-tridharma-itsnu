@@ -51,8 +51,8 @@ class AppServiceProvider extends ServiceProvider
             config(['app-brain.ai.default' => $dbProvider]);
 
             // Logic: If the selected provider is disabled, disable the entire brain engine
-            if (($dbProvider === 'gemini' && !$isGeminiEnabled) || 
-                ($dbProvider === 'openai' && !$isOpenAIEnabled)) {
+            if (($dbProvider === 'gemini' && ! $isGeminiEnabled) ||
+                ($dbProvider === 'openai' && ! $isOpenAIEnabled)) {
                 config(['app-brain.enabled' => false]);
             }
 

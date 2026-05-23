@@ -16,7 +16,7 @@ class CompleteUserSeeder extends Seeder
     public function run(): void
     {
         $password = Hash::make('password');
-        
+
         $roles = [
             1 => ['name' => 'Super Admin', 'email' => 'superadmin@itsnu.ac.id'],
             2 => ['name' => 'Rektor', 'email' => 'rektor@itsnu.ac.id'],
@@ -42,16 +42,24 @@ class CompleteUserSeeder extends Seeder
                     'name' => $data['name'],
                     'password' => $password,
                     'email_verified_at' => now(),
-                    'is_active' => true
+                    'is_active' => true,
                 ]
             );
 
             // Mapping blueprint name to internal role name if different
             $roleName = $data['name'];
-            if ($roleName === 'Wakil Rektor 1') $roleName = 'WR 1 Akademik';
-            if ($roleName === 'Wakil Rektor 2') $roleName = 'WR 2 Keuangan & Sarpras';
-            if ($roleName === 'Kepala Lembaga Kerjasama') $roleName = 'Kepala Kerjasama';
-            if ($roleName === 'Staf Kerjasama') $roleName = 'Staf Kerjasama';
+            if ($roleName === 'Wakil Rektor 1') {
+                $roleName = 'WR 1 Akademik';
+            }
+            if ($roleName === 'Wakil Rektor 2') {
+                $roleName = 'WR 2 Keuangan & Sarpras';
+            }
+            if ($roleName === 'Kepala Lembaga Kerjasama') {
+                $roleName = 'Kepala Kerjasama';
+            }
+            if ($roleName === 'Staf Kerjasama') {
+                $roleName = 'Staf Kerjasama';
+            }
 
             $user->syncRoles([$roleName]);
         }

@@ -98,6 +98,7 @@ class AdminSettingController extends Controller
         Setting::set($key, null);
 
         $label = $provider === 'openai' ? 'Custom OpenAI' : 'Gemini';
+
         return back()->with('success', "API Key {$label} berhasil dihapus");
     }
 
@@ -154,6 +155,7 @@ class AdminSettingController extends Controller
             ], 400);
         } catch (Exception $e) {
             $label = $provider === 'openai' ? 'server AI' : 'server Google';
+
             return response()->json([
                 'success' => false,
                 'message' => "Gagal menghubungi {$label}. Pastikan server memiliki koneksi internet.",
@@ -161,4 +163,3 @@ class AdminSettingController extends Controller
         }
     }
 }
-
