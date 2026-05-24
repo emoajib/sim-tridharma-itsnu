@@ -40,6 +40,11 @@ use App\Http\Controllers\Api\RoleSwitchController;
 use App\Http\Controllers\Api\RpsController;
 use App\Http\Controllers\Api\SaranaController;
 use App\Http\Controllers\Api\SintaImportController;
+use App\Http\Controllers\Api\DataImportController;
+use App\Http\Controllers\Api\ReconciliationController;
+use App\Http\Controllers\Api\IkuController;
+use App\Http\Controllers\Api\CascadingIkuController;
+use App\Http\Controllers\Api\RkatController;
 use App\Http\Controllers\Api\TemplateController;
 use App\Http\Controllers\Api\TracerJawabanController;
 use App\Http\Controllers\Api\VerifikasiController;
@@ -250,6 +255,46 @@ Route::middleware(['auth', PermissionMiddleware::class])->group(function () {
     Route::post('/import/sinta/penelitian', [SintaImportController::class, 'importPenelitian'])->name('import.sinta.penelitian');
     Route::post('/import/sinta/pkm', [SintaImportController::class, 'importPkm'])->name('import.sinta.pkm');
 
+    // ===== DATA IMPORT ROUTES =====
+    Route::middleware('can:data-import.download-template')->group(function () {
+        Route::get('/data-import/templates', [DataImportController::class, 'templates'])
+            ->name('data-import.templates');
+        Route::get('/data-import/templates/download/{type}', [DataImportController::class, 'downloadTemplate'])
+            ->name('data-import.templates.download');
+    });
+
+    Route::middleware('can:data-import.upload')->group(function () {
+        Route::post('/data-import/upload', [DataImportController::class, 'upload'])
+            ->name('data-import.upload');
+    });
+
+    Route::middleware('can:data-import.view')->group(function () {
+        Route::get('/data-import/history', [DataImportController::class, 'history'])
+            ->name('data-import.history');
+    });
+
+    // ===== RECONCILIATION ROUTES =====
+    Route::middleware('can:reconciliation.view')->group(function () {
+        Route::get('/reconciliation', [ReconciliationController::class, 'index'])
+            ->name('reconciliation.index');
+        Route::get('/reconciliation/{id}', [ReconciliationController::class, 'show'])
+            ->name('reconciliation.show');
+        Route::get('/reconciliation/stats', [ReconciliationController::class, 'stats'])
+            ->name('reconciliation.stats');
+    });
+
+    Route::middleware('can:reconciliation.approve')->group(function () {
+        Route::post('/reconciliation/{id}/approve', [ReconciliationController::class, 'approve'])
+            ->name('reconciliation.approve');
+        Route::post('/reconciliation/batch-approve', [ReconciliationController::class, 'batchApprove'])
+            ->name('reconciliation.batch-approve');
+    });
+
+    Route::middleware('can:reconciliation.reject')->group(function () {
+        Route::post('/reconciliation/{id}/reject', [ReconciliationController::class, 'reject'])
+            ->name('reconciliation.reject');
+    });
+
     // Template Routes
     Route::get('/admin/templates', [TemplateController::class, 'index'])->name('admin.templates.index');
     Route::get('/admin/templates/download/{filename}', [TemplateController::class, 'download'])->name('admin.templates.download');
@@ -272,6 +317,9 @@ Route::middleware(['auth', PermissionMiddleware::class])->group(function () {
         Route::put('/admin/users/{user}', [\App\Http\Controllers\Api\Admin\UserController::class, 'update'])->name('admin.users.update');
         Route::delete('/admin/users/{user}', [\App\Http\Controllers\Api\Admin\UserController::class, 'destroy'])->name('admin.users.destroy');
         Route::post('/admin/users/{user}/sync-roles', [\App\Http\Controllers\Api\Admin\UserController::class, 'syncRoles'])->name('admin.users.sync-roles');
+        Route::get('/admin/users/download-template', [\App\Http\Controllers\Api\Admin\UserController::class, 'downloadTemplate'])->name('admin.users.download-template');
+        Route::post('/admin/users/import', [\App\Http\Controllers\Api\Admin\UserController::class, 'import'])->name('admin.users.import');
+        Route::post('/admin/users/import-preview', [\App\Http\Controllers\Api\Admin\UserController::class, 'importPreview'])->name('admin.users.import-preview');
 
         Route::get('/admin/roles', [\App\Http\Controllers\Api\Admin\RoleController::class, 'index'])->name('admin.roles.index');
         Route::post('/admin/roles', [\App\Http\Controllers\Api\Admin\RoleController::class, 'store'])->name('admin.roles.store');
@@ -309,6 +357,28 @@ Route::middleware(['auth', PermissionMiddleware::class])->group(function () {
     Route::post('/admin/knowledge-base/{knowledgeBaseDocument}/reindex', [KnowledgeBaseController::class, 'reindex'])->name('admin.knowledge-base.reindex');
     Route::get('/admin/knowledge-base/{knowledgeBaseDocument}/chunks', [KnowledgeBaseController::class, 'getChunks'])->name('admin.knowledge-base.chunks');
     Route::put('/admin/knowledge-base/chunks/{knowledgeBaseChunk}', [KnowledgeBaseController::class, 'updateChunk'])->name('admin.knowledge-base.chunks.update');
+
+    // RKAT
+    Route::prefix('rkat')->name('rkat.')->group(function () {
+        Route::get('/', [RkatController::class, 'index'])->name('index')->can('rkat.view');
+        Route::post('/', [RkatController::class, 'store'])->name('store')->can('rkat.create');
+        Route::get('/create', [RkatController::class, 'create'])->name('create')->can('rkat.create');
+        Route::get('/{id}', [RkatController::class, 'show'])->name('show')->can('rkat.view');
+        Route::post('/{id}/approve', [RkatController::class, 'approve'])->name('approve')->can('rkat.approve');
+        Route::get('/pagu/manage', [RkatController::class, 'paguIndex'])->name('pagu')->can('rkat.configure');
+        Route::post('/pagu/store', [RkatController::class, 'paguStore'])->name('pagu.store')->can('rkat.configure');
+    });
+
+    // IKU & Cascading
+    Route::prefix('iku')->name('iku.')->group(function () {
+        Route::get('/', [IkuController::class, 'index'])->name('index')->can('iku.view');
+        Route::post('/', [IkuController::class, 'store'])->name('store')->can('iku.create');
+        Route::put('/{iku}', [IkuController::class, 'update'])->name('update')->can('iku.edit');
+        Route::delete('/{iku}', [IkuController::class, 'destroy'])->name('destroy')->can('iku.delete');
+        Route::get('/cascading', [CascadingIkuController::class, 'index'])->name('cascading')->can('cascading.view');
+        Route::post('/cascading/store', [CascadingIkuController::class, 'store'])->name('cascading.store')->can('cascading.create');
+        Route::post('/cascading/{cascading}/capaian', [CascadingIkuController::class, 'updateCapaian'])->name('cascading.capaian')->can('cascading.edit');
+    });
 });
 
 require __DIR__.'/auth.php';

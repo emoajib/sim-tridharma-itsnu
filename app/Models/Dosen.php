@@ -37,6 +37,13 @@ class Dosen extends Model
         ];
     }
 
+    protected $appends = ['nama'];
+
+    public function getNamaAttribute(): string
+    {
+        return trim("{$this->nama_depan} {$this->nama_belakang}");
+    }
+
     public function prodi(): BelongsTo
     {
         return $this->belongsTo(Prodi::class);
@@ -65,5 +72,15 @@ class Dosen extends Model
     public function bkd(): HasMany
     {
         return $this->hasMany(Bkd::class, 'dosen_id');
+    }
+
+    /**
+     * TEMPORARY relationship added for A1 analysis (multiple user links).
+     * This is READ-ONLY and for investigation purposes only.
+     * Can be removed later once analysis is complete.
+     */
+    public function users(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\User::class, 'dosen_id');
     }
 }
