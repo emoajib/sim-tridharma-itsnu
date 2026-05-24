@@ -11,74 +11,84 @@ class DataAkademikSeeder extends Seeder
 {
     public function run(): void
     {
-        // Create Faculties
-        $saintek = Fakultas::firstOrCreate(
+        // Create Faculties (updateOrCreate to handle existing records)
+        $saintek = Fakultas::updateOrCreate(
             ['kode_fakultas' => 'SAINTEK'],
-            ['nama_fakultas' => 'Fakultas Sains dan Teknologi', 'is_active' => true]
+            ['nama_fakultas' => 'Fakultas SAINTEK', 'is_active' => true]
         );
 
-        $dekabita = Fakultas::firstOrCreate(
+        $dekabita = Fakultas::updateOrCreate(
             ['kode_fakultas' => 'DEKABITA'],
-            ['nama_fakultas' => 'Fakultas Ekonomi dan Bisnis', 'is_active' => true]
+            ['nama_fakultas' => 'Fakultas DEKABITA', 'is_active' => true]
         );
 
-        // Create Prodi for SAINTEK
-        Prodi::firstOrCreate(
+        // Create Prodi for SAINTEK (updateOrCreate to rename existing)
+        Prodi::updateOrCreate(
             ['kode_prodi' => 'FIS'],
-            ['fakultas_id' => $saintek->id, 'nama_prodi' => 'Fisika', 'jenjang' => 'S1', 'is_active' => true]
+            ['fakultas_id' => $saintek->id, 'nama_prodi' => 'S1 Fisika', 'jenjang' => 'S1', 'is_active' => true]
         );
 
-        Prodi::firstOrCreate(
+        Prodi::updateOrCreate(
             ['kode_prodi' => 'IF'],
-            ['fakultas_id' => $saintek->id, 'nama_prodi' => 'Informatika', 'jenjang' => 'S1', 'is_active' => true]
+            ['fakultas_id' => $saintek->id, 'nama_prodi' => 'S1 Informatika', 'jenjang' => 'S1', 'is_active' => true]
         );
 
-        Prodi::firstOrCreate(
+        Prodi::updateOrCreate(
             ['kode_prodi' => 'TI'],
-            ['fakultas_id' => $saintek->id, 'nama_prodi' => 'Teknik Industri', 'jenjang' => 'S1', 'is_active' => true]
+            ['fakultas_id' => $saintek->id, 'nama_prodi' => 'S1 Teknik Industri', 'jenjang' => 'S1', 'is_active' => true]
         );
 
-        Prodi::firstOrCreate(
+        Prodi::updateOrCreate(
             ['kode_prodi' => 'ARS'],
-            ['fakultas_id' => $saintek->id, 'nama_prodi' => 'Arsitektur', 'jenjang' => 'S1', 'is_active' => true]
+            ['fakultas_id' => $saintek->id, 'nama_prodi' => 'S1 Arsitektur', 'jenjang' => 'S1', 'is_active' => true]
         );
 
-        // Create Prodi for DEKABITA
-        Prodi::firstOrCreate(
+        // Create Prodi for DEKABITA (updateOrCreate to rename existing)
+        Prodi::updateOrCreate(
             ['kode_prodi' => 'AK'],
-            ['fakultas_id' => $dekabita->id, 'nama_prodi' => 'Akuntansi', 'jenjang' => 'S1', 'is_active' => true]
+            ['fakultas_id' => $dekabita->id, 'nama_prodi' => 'S1 Akuntansi', 'jenjang' => 'S1', 'is_active' => true]
         );
 
-        Prodi::firstOrCreate(
+        Prodi::updateOrCreate(
             ['kode_prodi' => 'MJ'],
-            ['fakultas_id' => $dekabita->id, 'nama_prodi' => 'Manajemen', 'jenjang' => 'S1', 'is_active' => true]
+            ['fakultas_id' => $dekabita->id, 'nama_prodi' => 'S1 Manajemen', 'jenjang' => 'S1', 'is_active' => true]
         );
 
-        Prodi::firstOrCreate(
+        Prodi::updateOrCreate(
             ['kode_prodi' => 'EP'],
-            ['fakultas_id' => $dekabita->id, 'nama_prodi' => 'Ekonomi Pembangunan', 'jenjang' => 'S1', 'is_active' => true]
+            ['fakultas_id' => $dekabita->id, 'nama_prodi' => 'S1 Ekonomi Pembangunan', 'jenjang' => 'S1', 'is_active' => true]
         );
 
-        Prodi::firstOrCreate(
+        Prodi::updateOrCreate(
             ['kode_prodi' => 'EB'],
-            ['fakultas_id' => $dekabita->id, 'nama_prodi' => 'Ekonomi Bisnis', 'jenjang' => 'S1', 'is_active' => true]
-        );
-
-        $dekabita = Fakultas::firstOrCreate(
-            ['kode_fakultas' => 'DEKABITA'],
-            ['nama_fakultas' => 'Fakultas Ekonomi dan Bisnis', 'is_active' => true]
+            ['fakultas_id' => $dekabita->id, 'nama_prodi' => 'S1 Ekonomi Bisnis', 'jenjang' => 'S1', 'is_active' => true]
         );
 
         // Additional Prodi for SAINTEK with akreditasi
-        Prodi::firstOrCreate(
+        Prodi::updateOrCreate(
             ['kode_prodi' => 'TTI'],
             ['fakultas_id' => $saintek->id, 'nama_prodi' => 'S1 Teknologi Informasi', 'jenjang' => 'S1', 'akreditasi' => 'Baik Sekali', 'tanggal_kadaluarsa' => '2028-06-30', 'is_active' => true]
         );
 
         // Additional Prodi for DEKABITA with akreditasi
-        Prodi::firstOrCreate(
+        Prodi::updateOrCreate(
             ['kode_prodi' => 'BD'],
             ['fakultas_id' => $dekabita->id, 'nama_prodi' => 'S1 Bisnis Digital', 'jenjang' => 'S1', 'akreditasi' => 'Baik', 'tanggal_kadaluarsa' => '2027-06-30', 'is_active' => true]
+        );
+
+        Prodi::updateOrCreate(
+            ['kode_prodi' => 'AKT'],
+            ['fakultas_id' => $dekabita->id, 'nama_prodi' => 'D3 Akuntansi', 'jenjang' => 'D3', 'akreditasi' => 'Baik', 'is_active' => true]
+        );
+
+        Prodi::updateOrCreate(
+            ['kode_prodi' => 'AP'],
+            ['fakultas_id' => $dekabita->id, 'nama_prodi' => 'D3 Administrasi Perkantoran', 'jenjang' => 'D3', 'akreditasi' => 'Baik', 'is_active' => true]
+        );
+
+        Prodi::updateOrCreate(
+            ['kode_prodi' => 'KB'],
+            ['fakultas_id' => $dekabita->id, 'nama_prodi' => 'D3 Kriya Batik', 'jenjang' => 'D3', 'akreditasi' => 'Baik', 'is_active' => true]
         );
 
         // Create Periode Akademik
@@ -96,7 +106,7 @@ class DataAkademikSeeder extends Seeder
 
         echo "Data dummy berhasil dibuat:\n";
         echo "- 2 Fakultas (SAINTEK, DEKABITA)\n";
-        echo "- 12 Prodi\n";
+        echo "- 15 Prodi\n";
         echo "- 2 Periode Akademik\n";
     }
 }

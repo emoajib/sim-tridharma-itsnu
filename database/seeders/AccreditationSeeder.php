@@ -39,8 +39,9 @@ class AccreditationSeeder extends Seeder
         // LAMSAMA: S1 Fisika (FIS)
         Prodi::whereIn('kode_prodi', ['FIS'])->update(['lembaga_akreditasi_id' => $lamsama->id]);
 
-        // BAN-PT: D3 Kriya Batik (KB)
+        // BAN-PT: D3 Kriya Batik (KB) + default untuk prodi lain
         Prodi::whereIn('kode_prodi', ['KB'])->update(['lembaga_akreditasi_id' => $banpt->id]);
+        Prodi::whereNull('lembaga_akreditasi_id')->update(['lembaga_akreditasi_id' => $banpt->id]);
 
         echo "✅ Ploting Lembaga Akreditasi berhasil diperbarui.\n";
     }

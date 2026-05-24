@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             DataAkademikSeeder::class,
             AccreditationSeeder::class,
+            IndikatorAkreditasiSeeder::class,
             DosenSeeder::class,
             SettingsSeeder::class,
             KnowledgeBaseCategorySeeder::class,
@@ -40,6 +41,9 @@ class DatabaseSeeder extends Seeder
             AkreditasiSeeder::class,
             AgentHistorySeeder::class,
             TransaksiPortofolioSeeder::class,
+            // \Database\Seeders\StressTestSeeder::class,   // Comment out - data already exists
+            IndikatorIkuSeeder::class,
+            RkatDemoSeeder::class,
         ]);
     }
 }
