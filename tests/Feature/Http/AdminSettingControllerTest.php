@@ -101,7 +101,7 @@ class AdminSettingControllerTest extends TestCase
     public function test_test_gemini_api_key_success(): void
     {
         Http::fake([
-            'generativelanguage.googleapis.com/*' => Http::response(['models' => []], 200),
+            '*/models?key=*' => Http::response(['models' => []], 200),
         ]);
 
         $response = $this->actingAs($this->admin())
@@ -117,7 +117,7 @@ class AdminSettingControllerTest extends TestCase
     public function test_test_gemini_api_key_failure(): void
     {
         Http::fake([
-            'generativelanguage.googleapis.com/*' => Http::response([
+            '*/models?key=*' => Http::response([
                 'error' => ['message' => 'API_KEY_INVALID'],
             ], 403),
         ]);
@@ -135,7 +135,7 @@ class AdminSettingControllerTest extends TestCase
     public function test_test_openai_api_key_success(): void
     {
         Http::fake([
-            'https://api.openai.com/v1/models' => Http::response(['data' => []], 200),
+            '*/models' => Http::response(['data' => []], 200),
         ]);
 
         $response = $this->actingAs($this->admin())
@@ -151,7 +151,7 @@ class AdminSettingControllerTest extends TestCase
     public function test_test_api_key_handles_connection_error(): void
     {
         Http::fake([
-            'generativelanguage.googleapis.com/*' => Http::response(null, 500),
+            '*/models?key=*' => Http::response(null, 500),
         ]);
 
         $response = $this->actingAs($this->admin())

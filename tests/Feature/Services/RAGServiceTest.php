@@ -27,8 +27,11 @@ class RAGServiceTest extends TestCase
         $user = User::factory()->create(['id' => 1]);
         Auth::login($user);
 
+        // Standardizing to 384 dimensions for compatibility with local AI model
+        $vector384 = array_fill(0, 384, 0.1);
+
         $embedding = $this->createMock(EmbeddingService::class);
-        $embedding->method('embedText')->willReturn([0.1, 0.2, 0.3]);
+        $embedding->method('embedText')->willReturn($vector384);
         app()->instance(EmbeddingService::class, $embedding);
 
         $this->service = app(RAGService::class);
@@ -53,10 +56,13 @@ class RAGServiceTest extends TestCase
         $doc = KnowledgeBaseDocument::create([
             'judul' => 'Doc', 'file_path' => 'd.pdf', 'file_size' => 100, 'status' => 'active',
         ]);
+
+        $lowSimilarityVector = array_fill(0, 384, -0.9);
+
         KnowledgeBaseChunk::create([
             'document_id' => $doc->id, 'chunk_index' => 0,
             'content' => 'Low relevance content',
-            'embedding' => [0.9, -0.9, 0.1], // Very different from [0.1, 0.2, 0.3]
+            'embedding' => $lowSimilarityVector,
         ]);
 
         $result = $this->service->ask('test question');
@@ -71,9 +77,12 @@ class RAGServiceTest extends TestCase
             'judul' => 'Doc', 'file_path' => 'd.pdf',
             'file_size' => 100, 'status' => 'active',
         ]);
+
+        $matchingVector = array_fill(0, 384, 0.1);
+
         KnowledgeBaseChunk::create([
             'document_id' => $doc->id, 'chunk_index' => 0,
-            'content' => 'Test content', 'embedding' => [0.1, 0.2, 0.3],
+            'content' => 'Test content', 'embedding' => $matchingVector,
         ]);
 
         Http::fake([
@@ -91,9 +100,12 @@ class RAGServiceTest extends TestCase
         $doc = KnowledgeBaseDocument::create([
             'judul' => 'Doc', 'file_path' => 'd.pdf', 'file_size' => 100, 'status' => 'active',
         ]);
+
+        $matchingVector = array_fill(0, 384, 0.1);
+
         KnowledgeBaseChunk::create([
             'document_id' => $doc->id, 'chunk_index' => 0,
-            'content' => 'Relevant content', 'embedding' => [0.1, 0.2, 0.3],
+            'content' => 'Relevant content', 'embedding' => $matchingVector,
         ]);
 
         Http::fake([
@@ -110,7 +122,8 @@ class RAGServiceTest extends TestCase
 
     public function test_search_similar_returns_empty_when_no_chunks(): void
     {
-        $result = $this->service->searchSimilar([0.1, 0.2, 0.3]);
+        $matchingVector = array_fill(0, 384, 0.1);
+        $result = $this->service->searchSimilar($matchingVector);
 
         $this->assertEmpty($result);
     }
@@ -122,13 +135,15 @@ class RAGServiceTest extends TestCase
             'file_path' => 'test.pdf', 'file_size' => 100, 'status' => 'active',
         ]);
 
+        $matchingVector = array_fill(0, 384, 0.1);
+
         KnowledgeBaseChunk::create([
             'document_id' => $doc->id, 'chunk_index' => 0,
             'content' => 'Standar akreditasi perguruan tinggi',
-            'embedding' => [0.1, 0.2, 0.3],
+            'embedding' => $matchingVector,
         ]);
 
-        $result = $this->service->searchSimilar([0.1, 0.2, 0.3]);
+        $result = $this->service->searchSimilar($matchingVector);
 
         $this->assertCount(1, $result);
         $this->assertEquals('Dokumen Akreditasi', $result[0]['document_judul']);

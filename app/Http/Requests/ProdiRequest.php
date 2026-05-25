@@ -4,6 +4,8 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
+use Illuminate\Validation\Rule;
+
 class ProdiRequest extends FormRequest
 {
     public function authorize(): bool
@@ -16,7 +18,11 @@ class ProdiRequest extends FormRequest
         $prodiId = $this->route('prodi')?->id;
 
         return [
-            'kode_prodi' => 'required|string|unique:m_prodi,kode_prodi,'.($prodiId ?? 'NULL').',id',
+            'kode_prodi' => [
+                'required', 
+                'string', 
+                Rule::unique('m_prodi', 'kode_prodi')->ignore($prodiId)
+            ],
             'nama_prodi' => 'required|string',
             'fakultas_id' => 'required|exists:m_fakultas,id',
             'lembaga_akreditasi_id' => 'nullable|exists:m_lembaga_akreditasi,id',

@@ -42,8 +42,8 @@ class KnowledgeBaseControllerTest extends TestCase
     public function test_ask_returns_answer(): void
     {
         Http::fake([
-            'localhost:5001/mcp/tools/call' => Http::response(['task_id' => 'test-123'], 200),
-            'localhost:5001/mcp/tasks/test-123' => Http::response([
+            '*/mcp/tools/call' => Http::response(['task_id' => 'test-123'], 200),
+            '*/mcp/tasks/test-123' => Http::response([
                 'status' => 'completed',
                 'result' => [
                     'answer' => 'Akreditasi adalah proses evaluasi...',
@@ -52,7 +52,7 @@ class KnowledgeBaseControllerTest extends TestCase
             ], 200),
         ]);
 
-        $response = $this->actingAs($this->admin())->postJson('/api/rag/ask', [
+        $response = $this->actingAs($this->admin())->postJson(route('rag.ask'), [
             'question' => 'Apa itu akreditasi?',
         ]);
 
@@ -61,7 +61,7 @@ class KnowledgeBaseControllerTest extends TestCase
 
     public function test_ask_validates_question(): void
     {
-        $response = $this->actingAs($this->admin())->postJson('/api/rag/ask', []);
+        $response = $this->actingAs($this->admin())->postJson(route('rag.ask'), []);
         $response->assertStatus(422);
     }
 }

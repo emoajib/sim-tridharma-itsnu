@@ -60,7 +60,7 @@ class AgentControllerTest extends TestCase
         $prodi = Prodi::factory()->create();
 
         Http::fake([
-            'localhost:8001/mcp/tools/call' => Http::response(['result' => ['skor' => 85.5]], 200),
+            '*/mcp/tools/call' => Http::response(['result' => ['skor' => 85.5]], 200),
         ]);
 
         $response = $this->actingAs($this->admin())->postJson('/api/agents/prediksi/run', [

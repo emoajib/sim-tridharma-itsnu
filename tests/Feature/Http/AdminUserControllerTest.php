@@ -43,6 +43,8 @@ class AdminUserControllerTest extends TestCase
     public function test_admin_can_create_user(): void
     {
         $role = Role::where('name', 'Dosen')->firstOrFail();
+        $prodi = \App\Models\Prodi::factory()->create();
+        $dosen = \App\Models\Dosen::factory()->create(['prodi_id' => $prodi->id]);
 
         $response = $this->actingAs($this->admin())->post(route('admin.users.store'), [
             'name' => 'Test User',
@@ -51,12 +53,15 @@ class AdminUserControllerTest extends TestCase
             'password_confirmation' => 'password123',
             'is_active' => true,
             'role_ids' => [$role->id],
+            'dosen_id' => $dosen->id,
+            'prodi_id' => $prodi->id,
         ]);
 
         $response->assertSessionHas('success');
         $this->assertDatabaseHas('users', [
             'email' => 'testuser@itsnu.ac.id',
             'name' => 'Test User',
+            'dosen_id' => $dosen->id,
         ]);
         $user = User::where('email', 'testuser@itsnu.ac.id')->firstOrFail();
         $this->assertTrue($user->hasRole('Dosen'));
@@ -66,15 +71,17 @@ class AdminUserControllerTest extends TestCase
     {
         $user = User::factory()->create(['name' => 'Old Name']);
         $role = Role::where('name', 'Kaprodi')->firstOrFail();
+        $prodi = \App\Models\Prodi::factory()->create();
 
         $response = $this->actingAs($this->admin())->put(route('admin.users.update', $user), [
             'name' => 'New Name',
             'email' => $user->email,
             'role_ids' => [$role->id],
+            'prodi_id' => $prodi->id,
         ]);
 
         $response->assertSessionHas('success');
-        $this->assertDatabaseHas('users', ['id' => $user->id, 'name' => 'New Name']);
+        $this->assertDatabaseHas('users', ['id' => $user->id, 'name' => 'New Name', 'prodi_id' => $prodi->id]);
         $user->refresh();
         $this->assertTrue($user->hasRole('Kaprodi'));
     }

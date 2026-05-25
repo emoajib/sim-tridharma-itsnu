@@ -46,8 +46,8 @@ class VerifikasiControllerTest extends TestCase
         Prodi::factory()->create();
 
         Http::fake([
-            'localhost:8001/mcp/tools/call' => Http::response(['task_id' => 'test-123'], 200),
-            'localhost:8001/mcp/tasks/test-123' => Http::response([
+            '*/mcp/tools/call' => Http::response(['task_id' => 'test-123'], 200),
+            '*/mcp/tasks/test-123' => Http::response([
                 'status' => 'completed',
                 'result' => [
                     'valid_count' => 5,
