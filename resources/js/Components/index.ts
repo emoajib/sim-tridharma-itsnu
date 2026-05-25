@@ -11,3 +11,5 @@ export { default as ResponsiveNavLink } from './ResponsiveNavLink';
 export { default as RoleSwitcher } from './RoleSwitcher';
 export { default as SecondaryButton } from './SecondaryButton';
 export { default as TextInput } from './TextInput';
+export { default as RoleGate } from './RoleGate';
+export { default as SimilarityBadge } from './Reconciliation/SimilarityBadge';

@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm, router, Link } from '@inertiajs/react';
+import { Head, useForm, router, Link, usePage } from '@inertiajs/react';
 import { useState, useEffect, FormEventHandler } from 'react';
 
 interface Instrumen {

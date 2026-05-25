@@ -46,7 +46,6 @@ export default function Index({ roles, allPermissions, filters }: Props) {
     });
     const [saving, setSaving] = useState(false);
     const [matrixOpen, setMatrixOpen] = useState<number | null>(null);
-    const { props } = usePage();
     const flashSuccess = (props as any).flash?.success;
 
     // Group permissions by module

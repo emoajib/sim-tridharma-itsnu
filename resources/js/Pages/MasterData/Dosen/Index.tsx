@@ -34,13 +34,19 @@ interface PaginatedData<T> {
     links: { url: string | null; label: string; active: boolean }[];
 }
 
+interface ProdiItem {
+    id: number;
+    nama_prodi: string;
+}
+
 interface Props {
     dosen: PaginatedData<Dosen>;
+    prodi_list: ProdiItem[];
     success?: string;
     errors?: Record<string, string>;
 }
 
-export default function Index({ dosen, success }: Props) {
+export default function Index({ dosen, prodi_list, success }: Props) {
     const { props } = usePage();
     const user = (props as any).auth?.user;
     const permissions = new Set(user?.permissions ?? []);
@@ -68,6 +74,7 @@ export default function Index({ dosen, success }: Props) {
         jabatan_fungsional: '',
         email: '',
         telepon: '',
+        is_active: true,
     });
 
     useEffect(() => {
@@ -100,6 +107,7 @@ export default function Index({ dosen, success }: Props) {
             jabatan_fungsional: item.jabatan_fungsional || '',
             email: item.email || '',
             telepon: item.telepon || '',
+            is_active: item.is_active,
         });
         setShowModal(true);
     }
@@ -142,6 +150,13 @@ export default function Index({ dosen, success }: Props) {
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
                     {success && (
                         <div className="mb-4 rounded-lg bg-green-100 p-4 text-sm text-green-700">{success}</div>
+                    )}
+                    {errors && Object.keys(errors).length > 0 && (
+                        <div className="mb-4 rounded-lg bg-red-100 p-4 text-sm text-red-700">
+                            {Object.entries(errors).map(([key, msg]) => (
+                                <p key={key}>{msg as string}</p>
+                            ))}
+                        </div>
                     )}
 
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
@@ -225,8 +240,9 @@ export default function Index({ dosen, success }: Props) {
                                                 if (link.url) router.get(link.url, {}, { preserveState: true, replace: true });
                                             }}
                                             className={`rounded px-3 py-1 text-sm ${link.active ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'} ${!link.url ? 'cursor-not-allowed opacity-50' : ''}`}
-                                            dangerouslySetInnerHTML={{ __html: link.label }}
-                                        />
+                                        >
+                                            {link.label}
+                                        </button>
                                     ))}
                                 </div>
                             </div>
@@ -297,8 +313,8 @@ export default function Index({ dosen, success }: Props) {
                                     <label className="mb-1 block text-sm font-medium text-gray-700">Prodi</label>
                                     <select value={data.prodi_id} onChange={(e) => setData('prodi_id', e.target.value)} className="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                         <option value="">Pilih Prodi</option>
-                                        {dosen.data.map((d) => d.prodi).filter((p, i, arr) => p && arr.findIndex((x) => x?.id === p?.id) === i).map((p) => (
-                                            <option key={p!.id} value={p!.id}>{p!.nama_prodi}</option>
+                                        {prodi_list.map((p) => (
+                                            <option key={p.id} value={p.id}>{p.nama_prodi}</option>
                                         ))}
                                     </select>
                                     {errors.prodi_id && <p className="mt-1 text-xs text-red-600">{errors.prodi_id}</p>}
@@ -329,6 +345,10 @@ export default function Index({ dosen, success }: Props) {
                                     <label className="mb-1 block text-sm font-medium text-gray-700">Telepon</label>
                                     <input type="text" value={data.telepon} onChange={(e) => setData('telepon', e.target.value)} className="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
                                     {errors.telepon && <p className="mt-1 text-xs text-red-600">{errors.telepon}</p>}
+                                </div>
+                                <div className="mb-4 flex items-center gap-2">
+                                    <input type="checkbox" id="is_active" checked={data.is_active} onChange={(e) => setData('is_active', e.target.checked)} className="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                    <label htmlFor="is_active" className="text-sm font-medium text-gray-700">Aktif</label>
                                 </div>
                             </div>
                             <div className="flex justify-end gap-2">

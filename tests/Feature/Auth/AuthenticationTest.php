@@ -4,6 +4,7 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
@@ -25,6 +26,10 @@ class AuthenticationTest extends TestCase
             'email' => $user->email,
             'password' => 'password',
         ]);
+
+        if ($response->status() === 500) {
+            dump($response->getContent());
+        }
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('dashboard', absolute: false));

@@ -121,3 +121,22 @@ Semua akun di bawah ini menggunakan password default: password
 ================================================================================
 "Integrity is the Foundation, Efficiency is the Goal."
 Vetted by AI - Manual Review Required by Senior Engineer/Manager
+
+Kebutuhan WR 3 modul dan fitur :
+1. prestasi ormawa nasional, internasional, wilayah dan bukti yang upload mahasiswa untuk mendapatkan reward 
+2. Dosen pembina ormawa bisa mengajukan reward 
+3. aset mahasiswa (inventaris sarpras)
+4. data fasilitas internet 
+5. data SKPI (keaktifan mahasiswa)
+6. sertifikat ostamaru bisa di download oleh mahasiswa 
+7. AD ART ORMAWA DAN DATA ORMAWA
+8. RKAT ORMAWA PENGAJUAN KE WR3
+9. PROPOSAL KEGIATAN ORMAWA - PANITIA- PEMBINA - WR 3 
+10. LAPORAN KEGIATAN ORMAWA - PANITIA - PEMBINA - WR3
+11. PROPOSAL HIMA - KAPRODI - DEKAN
+12. SELEKSI PMB (DALAM FORMAT LAPORAN)
+13. BIMBINGAN DAN KONSELING (KARIR DLL) 
+
+
+
+
