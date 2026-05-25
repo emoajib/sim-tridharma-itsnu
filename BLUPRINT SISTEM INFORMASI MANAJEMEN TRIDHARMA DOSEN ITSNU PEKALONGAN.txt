@@ -364,12 +364,16 @@ dokumen resmi.
 
 Berikut adalah tabel yang berisi hanya Nama Prodi dan Lembaga Akreditasi (Ploting) yang valid dan terbaru:
 
-Nama Prodi	                     Lembaga Akreditasi (Ploting)
-S1 Teknologi Informasi	         LAM INFOKOM
-S1 Informatika	                  LAM INFOKOM
-S1 Teknik Industri	            LAM Teknik
-S1 Bisnis Digital	               LAMEMBA
-D3 Akuntansi	                  LAMEMBA
-D3 Administrasi Perkantoran	   LAMEMBA
-S1 Fisika	                     LAMSAMA
-D3 Kriya Batik	                  BAN-PT
+Nama Fakultas dan Prodi	                Lembaga Akreditasi (Ploting)
+
+Fakultas SAINTEK
+S1 Teknologi Informasi	         	LAM INFOKOM
+S1 Informatika	                  	LAM INFOKOM
+S1 Teknik Industri	            	LAM Teknik
+S1 Fisika	                     	LAMSAMA
+
+Fakultas DEKABITA
+S1 Bisnis Digital	               	LAMEMBA
+D3 Akuntansi	                  	LAMEMBA
+D3 Administrasi Perkantoran	   	LAMEMBA
+D3 Kriya Batik	                  	BAN-PT
