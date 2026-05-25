@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('m_kerjasama', function (Blueprint $table) {
-            $table->string('tingkat', 50)->default('Lokal')->after('judul_kerjasama'); // Internasional, Nasional, Lokal
+            $table->string('tingkat', 50)->default('Lokal')->after('jenis_kerjasama'); // Internasional, Nasional, Lokal
         });
     }
 

@@ -3,11 +3,12 @@
 namespace App\Models;
 
 use App\Models\Traits\HasActiveScope;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class LembagaAkreditasi extends Model
 {
-    use HasActiveScope;
+    use HasActiveScope, HasFactory;
 
     protected $table = 'm_lembaga_akreditasi';
 

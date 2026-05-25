@@ -9,6 +9,10 @@ use App\Http\Requests\Rkat\ApprovalRequest;
 use App\Http\Requests\Rkat\StoreUsulanRequest;
 use App\Models\RkatPagu;
 use App\Models\UsulanRkat;
+use App\Models\PeriodeAkademik;
+use App\Models\IndikatorIku;
+use App\Models\Prodi;
+use App\Models\Fakultas;
 use App\Services\Rkat\RkatService;
 use App\Traits\HasRoleScope;
 use Exception;
@@ -52,6 +56,8 @@ class RkatController extends Controller
         return Inertia::render('Keuangan/Rkat/Index', [
             'proposals' => $proposals,
             'filters' => $request->only(['status', 'periode_id', 'prodi_id']),
+            'periode_list' => PeriodeAkademik::orderBy('kode_periode', 'desc')->get(['id', 'kode_periode', 'nama_periode']),
+            'prodi_list' => Prodi::all(['id', 'nama_prodi']),
         ]);
     }
 
@@ -60,7 +66,11 @@ class RkatController extends Controller
      */
     public function create()
     {
-        return Inertia::render('Keuangan/Rkat/Create');
+        return Inertia::render('Keuangan/Rkat/Create', [
+            'periode_list' => PeriodeAkademik::orderBy('kode_periode', 'desc')->get(['id', 'kode_periode', 'nama_periode']),
+            'iku_list' => IndikatorIku::where('is_active', true)->get(['id', 'nama_indikator', 'kode_iku']),
+            'prodi_list' => Prodi::all(['id', 'nama_prodi']),
+        ]);
     }
 
     /**
@@ -153,6 +163,9 @@ class RkatController extends Controller
 
         return Inertia::render('Keuangan/Rkat/Pagu', [
             'paginations' => $paginations,
+            'periode_list' => PeriodeAkademik::orderBy('kode_periode', 'desc')->get(['id', 'kode_periode', 'nama_periode']),
+            'prodi_list' => Prodi::all(['id', 'nama_prodi']),
+            'fakultas_list' => Fakultas::all(['id', 'nama_fakultas']),
         ]);
     }
 

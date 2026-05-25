@@ -153,6 +153,14 @@ export default function Authenticated({
         { name: 'RPS', route: 'kurikulum.rps', icon: '📃', perm: 'kurikulum.view' },
         { name: 'Audit Mutu', route: 'spmi.audit', icon: '✅', perm: 'spmi.view' },
         { name: 'Risk Register', route: 'spmi.risk', icon: '⚠️', perm: 'spmi.view' },
+        { name: 'Dashboard SPMI', route: 'spmi.dashboard', icon: '📊', perm: 'spmi.view' },
+        { name: 'Standar Mutu', route: 'spmi.standar-mutu', icon: '🎯', perm: 'spmi.view' },
+        { name: 'CAPA', route: 'spmi.capa', icon: '🔄', perm: 'spmi.view' },
+        { name: 'Siklus PPEPP', route: 'spmi.cycle', icon: '📅', perm: 'spmi.view' },
+        { name: 'EDPS', route: 'spmi.edps', icon: '📋', perm: 'spmi.view' },
+        { name: 'RTM', route: 'spmi.rtm', icon: '🗂️', perm: 'spmi.view' },
+        { name: 'Dokumen Mutu', route: 'spmi.dokumen-mutu', icon: '📄', perm: 'spmi.view' },
+        { name: 'Survey SPMI', route: 'spmi.survey', icon: '📮', perm: 'spmi.view' },
     ];
 
     const aiAgentLinks = [

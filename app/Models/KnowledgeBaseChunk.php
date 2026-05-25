@@ -13,11 +13,11 @@ class KnowledgeBaseChunk extends Model
 
     protected $fillable = ['document_id', 'chunk_index', 'content', 'embedding'];
 
+    // NOTE: 'embedding' column is vector(384) from pgvector, NOT json/array.
+    // Eloquent cannot cast vector type, so no cast is defined here.
     protected function casts(): array
     {
-        return [
-            'embedding' => 'array',
-        ];
+        return [];
     }
 
     public function document(): BelongsTo

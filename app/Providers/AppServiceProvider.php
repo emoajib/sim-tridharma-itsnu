@@ -24,6 +24,24 @@ class AppServiceProvider extends ServiceProvider
     {
         AgentExecutionLog::observe(AgentExecutionLogObserver::class);
 
+        // ------------------------------
+        // SPMI Event-Listener Registrations
+        // ------------------------------
+        \Illuminate\Support\Facades\Event::listen(
+            \App\Events\AuditSevereFindingCreated::class,
+            \App\Listeners\CreateRiskRegisterFromSevereFinding::class,
+        );
+
+        \Illuminate\Support\Facades\Event::listen(
+            \App\Events\AuditStatusChanged::class,
+            \App\Listeners\SendPeringatanOnAuditAssignment::class,
+        );
+
+        \Illuminate\Support\Facades\Event::listen(
+            \App\Events\AuditStatusChanged::class,
+            \App\Listeners\SyncAuditToPythonAgent::class,
+        );
+
         // Register authorization gates (policies)
         Gate::policy(Prodi::class, ProdiPolicy::class);
         Gate::policy(Dosen::class, DosenPolicy::class);

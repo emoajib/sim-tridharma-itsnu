@@ -57,6 +57,17 @@ class RolePermissionSeeder extends Seeder
             'laporan' => ['view', 'export', 'generate'],
             'users' => ['view', 'create', 'edit', 'delete'],
             'admin' => ['view', 'create', 'edit', 'delete', 'upload'],
+
+            // === SPMI Granular Permissions ===
+            'standar-mutu' => ['list', 'create', 'edit', 'delete'],
+            'audit-mutu' => ['list', 'create', 'edit', 'delete', 'verify', 'transition', 'bulk-transition'],
+            'capa' => ['list', 'create', 'edit', 'delete', 'verify', 'submit-verification'],
+            'spmi-dashboard' => ['view'],
+            'spmi-cycle' => ['list', 'create', 'edit'],
+            'edps' => ['list', 'create', 'edit'],
+            'rtm' => ['list', 'create', 'edit'],
+            'dokumen-mutu' => ['list', 'create', 'edit', 'delete'],
+            'survey-spmi' => ['list', 'create'],
         ];
 
         foreach ($permissionsByModule as $module => $actions) {
@@ -65,22 +76,63 @@ class RolePermissionSeeder extends Seeder
             }
         }
 
+        $spmiModules = ['standar-mutu', 'audit-mutu', 'capa', 'spmi-dashboard', 'spmi-cycle', 'edps', 'rtm', 'dokumen-mutu', 'survey-spmi'];
+
         $roles = [
             'Super Admin' => ['all' => true],
+            'Admin' => ['all' => true],
             'Rektor' => ['akreditasi' => ['view', 'generate'], 'laporan' => ['view', 'export'], 'agent-ai' => ['view'], 'data-import' => ['download-template', 'view'], 'reconciliation' => ['view'], 'rkat' => ['view'], 'iku' => ['view'], 'cascading' => ['view']],
             'WR 1 Akademik' => ['master-data' => ['view'], 'portofolio' => ['view'], 'bkd' => ['view'], 'akreditasi' => ['view'], 'kurikulum' => ['view'], 'data-import' => ['download-template', 'view']],
             'WR 2 Keuangan & Sarpras' => ['sarpras' => ['view'], 'keuangan' => ['view'], 'laporan' => ['view'], 'data-import' => ['download-template', 'view'], 'rkat' => ['view', 'approve'], 'iku' => ['view'], 'cascading' => ['view']],
-            'LPM' => ['master-data' => ['view'], 'akreditasi' => ['view', 'edit', 'generate'], 'spmi' => ['view', 'create', 'edit', 'delete'], 'laporan' => ['view', 'export', 'generate'], 'agent-ai' => ['view', 'trigger'], 'data-import' => ['download-template', 'upload', 'view'], 'reconciliation' => ['view', 'approve', 'reject'], 'rkat' => ['view', 'create', 'approve', 'configure'], 'iku' => ['view', 'create', 'edit', 'delete'], 'cascading' => ['view', 'create', 'edit']],
+            'LPM' => array_merge([
+                'master-data' => ['view'],
+                'akreditasi' => ['view', 'edit', 'generate'],
+                'spmi' => ['view', 'create', 'edit', 'delete'],
+                'laporan' => ['view', 'export', 'generate'],
+                'agent-ai' => ['view', 'trigger'],
+                'data-import' => ['download-template', 'upload', 'view'],
+                'reconciliation' => ['view', 'approve', 'reject'],
+                'rkat' => ['view', 'create', 'approve', 'configure'],
+                'iku' => ['view', 'create', 'edit', 'delete'],
+                'cascading' => ['view', 'create', 'edit'],
+            ], array_fill_keys($spmiModules, ['list', 'create', 'edit'])),
             'Kepala LPPM' => ['master-data' => ['view'], 'portofolio' => ['view', 'verify'], 'bkd' => ['view'], 'agent-ai' => ['view', 'trigger'], 'data-import' => ['download-template', 'upload', 'view'], 'reconciliation' => ['view', 'approve', 'reject']],
             'Staf LPPM' => ['portofolio' => ['view'], 'dokumen' => ['view', 'upload'], 'data-import' => ['download-template', 'upload', 'view'], 'reconciliation' => ['view']],
             'Kepala Kerjasama' => ['master-data' => ['view'], 'kerjasama' => ['view', 'create', 'edit', 'delete'], 'laporan' => ['view', 'export'], 'agent-ai' => ['view'], 'data-import' => ['download-template', 'upload', 'view'], 'reconciliation' => ['view', 'approve', 'reject']],
             'Staf Kerjasama' => ['kerjasama' => ['view', 'create', 'edit'], 'data-import' => ['download-template', 'upload', 'view'], 'reconciliation' => ['view']],
-            'Dekan' => ['master-data' => ['view'], 'portofolio' => ['view'], 'bkd' => ['view'], 'akreditasi' => ['view'], 'laporan' => ['view', 'export'], 'agent-ai' => ['view'], 'data-import' => ['download-template', 'view'], 'rkat' => ['view', 'approve'], 'iku' => ['view'], 'cascading' => ['view']],
-            'Kaprodi' => ['master-data' => ['view', 'create', 'edit'], 'portofolio' => ['view', 'create'], 'bkd' => ['view', 'create'], 'dokumen' => ['view', 'upload'], 'akreditasi' => ['view', 'generate'], 'spmi' => ['view'], 'kurikulum' => ['view', 'edit'], 'laporan' => ['view', 'export'], 'agent-ai' => ['view', 'trigger'], 'data-import' => ['download-template', 'upload', 'view'], 'reconciliation' => ['view', 'approve', 'reject'], 'rkat' => ['view', 'create', 'approve'], 'iku' => ['view'], 'cascading' => ['view']],
+            'Dekan' => array_merge([
+                'master-data' => ['view'],
+                'portofolio' => ['view'],
+                'bkd' => ['view'],
+                'akreditasi' => ['view'],
+                'laporan' => ['view', 'export'],
+                'agent-ai' => ['view'],
+                'data-import' => ['download-template', 'view'],
+                'rkat' => ['view', 'approve'],
+                'iku' => ['view'],
+                'cascading' => ['view'],
+            ], array_fill_keys($spmiModules, ['list'])),
+            'Kaprodi' => array_merge([
+                'master-data' => ['view', 'create', 'edit'],
+                'portofolio' => ['view', 'create'],
+                'bkd' => ['view', 'create'],
+                'dokumen' => ['view', 'upload'],
+                'akreditasi' => ['view', 'generate'],
+                'spmi' => ['view'],
+                'kurikulum' => ['view', 'edit'],
+                'laporan' => ['view', 'export'],
+                'agent-ai' => ['view', 'trigger'],
+                'data-import' => ['download-template', 'upload', 'view'],
+                'reconciliation' => ['view', 'approve', 'reject'],
+                'rkat' => ['view', 'create', 'approve'],
+                'iku' => ['view'],
+                'cascading' => ['view'],
+            ], array_fill_keys($spmiModules, ['list'])),
             'Staf Prodi' => ['master-data' => ['view'], 'portofolio' => ['view'], 'dokumen' => ['view', 'upload'], 'data-import' => ['download-template', 'upload', 'view'], 'reconciliation' => ['view'], 'rkat' => ['view'], 'iku' => ['view']],
             'Dosen' => ['portofolio' => ['view', 'create', 'edit'], 'bkd' => ['view', 'create'], 'dokumen' => ['view', 'upload'], 'data-import' => ['download-template', 'view'], 'rkat' => ['view'], 'iku' => ['view']],
             'Asesor Tamu' => ['akreditasi' => ['view'], 'laporan' => ['view']],
             'Bagian Akademik' => ['master-data' => ['view', 'create', 'edit'], 'kurikulum' => ['view', 'create', 'edit'], 'portofolio' => ['view'], 'data-import' => ['download-template', 'upload', 'view'], 'reconciliation' => ['view'], 'rkat' => ['view'], 'iku' => ['view']],
+            'Auditor' => array_fill_keys($spmiModules, ['list', 'verify', 'transition']),
         ];
 
         foreach ($roles as $roleName => $rolePerms) {

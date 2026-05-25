@@ -1,30 +1,72 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, useForm, router } from '@inertiajs/react';
-import { useState, useEffect, FormEventHandler } from 'react';
+import { Head, Link, router } from '@inertiajs/react';
+import { useState, useEffect } from 'react';
+import {
+    AlertTriangle,
+    Clock,
+    CheckCircle2,
+    TrendingUp,
+    Search,
+    X,
+    RefreshCw,
+    Users,
+} from 'lucide-react';
+import KpiCard from '@/Components/SPMI/KpiCard';
+import AuditTable from './Partials/AuditTable';
+import AuditFormModal from './Partials/AuditFormModal';
 
-interface Prodi {
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface ProdiItem {
     id: number;
     nama_prodi: string;
 }
 
-interface Periode {
+interface PeriodeItem {
     id: number;
     nama_periode: string;
+}
+
+interface StandarItem {
+    id: number;
+    kode_standar: string;
+    nama_standar: string;
+}
+
+interface UserItem {
+    id: number;
+    name: string;
 }
 
 interface AuditItem {
     id: number;
     prodi_id: number;
     periode_id: number;
+    standar_mutu_id: number | null;
     judul_audit: string;
     tanggal_audit: string;
     auditor: string | null;
     temuan: string | null;
     rekomendasi: string | null;
     tindak_lanjut: string | null;
-    status: string | null;
-    prodi?: { nama_prodi: string };
-    periode?: { nama_periode: string };
+    status: string;
+    severity: string | null;
+    pic_user_id: number | null;
+    auditor_user_id: number | null;
+    deadline_tindak_lanjut: string | null;
+    closed_at: string | null;
+    evidence_file: string | null;
+    verification_note: string | null;
+    verified_by: number | null;
+    verified_at: string | null;
+    is_locked: boolean;
+    locked_at: string | null;
+    created_at: string;
+    prodi?: ProdiItem;
+    periode?: PeriodeItem;
+    standarMutu?: StandarItem;
+    picUser?: UserItem;
+    capas?: { id: number; status: string }[];
 }
 
 interface PaginatedData<T> {
@@ -38,92 +80,97 @@ interface PaginatedData<T> {
     links: { url: string | null; label: string; active: boolean }[];
 }
 
+interface DashboardStats {
+    total_temuan: number;
+    open_temuan: number;
+    in_progress_temuan: number;
+    closed_temuan: number;
+    close_rate: number;
+    skor_mutu: number;
+    capa_overdue_count: number;
+    capa_approaching_count: number;
+}
+
+interface Filters {
+    search: string;
+    status: string;
+    standar_mutu_id: string;
+    severity: string;
+    pic_user_id: string;
+    prodi_id: string;
+    periode_id: string;
+}
+
 interface Props {
     audit: PaginatedData<AuditItem>;
-    prodi_list: Prodi[];
-    periode_list: Periode[];
+    prodi_list: ProdiItem[];
+    periode_list: PeriodeItem[];
+    standar_mutu_list: StandarItem[];
+    user_list: UserItem[];
+    filters: Filters;
+    dashboard_stats?: DashboardStats;
     success?: string;
     errors?: Record<string, string>;
 }
 
-function dampakBadge(value: string | null) {
-    const map: Record<string, string> = {
-        rendah: 'bg-green-100 text-green-800',
-        sedang: 'bg-yellow-100 text-yellow-800',
-        tinggi: 'bg-red-100 text-red-800',
-    };
-    const v = value || '';
-    return (
-        <span className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${map[v] || 'bg-gray-100 text-gray-800'}`}>
-            {v ? v.charAt(0).toUpperCase() + v.slice(1) : '-'}
-        </span>
-    );
-}
+export default function Index({
+    audit,
+    prodi_list,
+    periode_list,
+    standar_mutu_list,
+    user_list,
+    filters,
+    dashboard_stats,
+    success,
+}: Props) {
+    // ── Local state for filters (debounced) ──
+    const [search, setSearch] = useState(filters.search || '');
+    const [statusFilter, setStatusFilter] = useState(filters.status || '');
+    const [standarFilter, setStandarFilter] = useState(filters.standar_mutu_id || '');
+    const [severityFilter, setSeverityFilter] = useState(filters.severity || '');
+    const [picFilter, setPicFilter] = useState(filters.pic_user_id || '');
+    const [prodiFilter, setProdiFilter] = useState(filters.prodi_id || '');
+    const [periodeFilter, setPeriodeFilter] = useState(filters.periode_id || '');
 
-export default function Index({ audit, prodi_list, periode_list, success }: Props) {
-    const [search, setSearch] = useState(() => {
-        return new URLSearchParams(window.location.search).get('search') || '';
-    });
-    const [statusFilter, setStatusFilter] = useState(() => {
-        return new URLSearchParams(window.location.search).get('status') || '';
-    });
+    // ── Modal state ──
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState<AuditItem | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<AuditItem | null>(null);
+    const [transitionTarget, setTransitionTarget] = useState<{ item: AuditItem; toStatus: string } | null>(null);
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [bulkStatus, setBulkStatus] = useState('');
+    const [bulkProcessing, setBulkProcessing] = useState(false);
 
-    const { data, setData, post, put, delete: destroy, errors, processing, reset } = useForm({
-        prodi_id: '',
-        periode_id: '',
-        judul_audit: '',
-        tanggal_audit: '',
-        auditor: '',
-        temuan: '',
-        rekomendasi: '',
-        tindak_lanjut: '',
-        status: 'open',
-    });
-
+    // ── Debounced filter change ──
     useEffect(() => {
         const timer = setTimeout(() => {
-            router.get(route('spmi.audit'), { search, status: statusFilter }, { preserveState: true, replace: true });
+            router.get(
+                route('spmi.audit'),
+                {
+                    search,
+                    status: statusFilter,
+                    standar_mutu_id: standarFilter,
+                    severity: severityFilter,
+                    pic_user_id: picFilter,
+                    prodi_id: prodiFilter,
+                    periode_id: periodeFilter,
+                },
+                { preserveState: true, replace: true }
+            );
         }, 500);
         return () => clearTimeout(timer);
-    }, [search, statusFilter]);
+    }, [search, statusFilter, standarFilter, severityFilter, picFilter, prodiFilter, periodeFilter]);
 
+    // ── Modal handlers ──
     function openCreate() {
-        reset();
         setEditing(null);
         setShowModal(true);
     }
 
     function openEdit(item: AuditItem) {
         setEditing(item);
-        setData({
-            prodi_id: String(item.prodi_id),
-            periode_id: String(item.periode_id),
-            judul_audit: item.judul_audit,
-            tanggal_audit: item.tanggal_audit,
-            auditor: item.auditor || '',
-            temuan: item.temuan || '',
-            rekomendasi: item.rekomendasi || '',
-            tindak_lanjut: item.tindak_lanjut || '',
-            status: item.status || 'open',
-        });
         setShowModal(true);
     }
-
-    const submit: FormEventHandler = (e) => {
-        e.preventDefault();
-        if (editing) {
-            put(route('spmi.audit.update', editing.id), {
-                onSuccess: () => { setShowModal(false); reset(); setEditing(null); },
-            });
-        } else {
-            post(route('spmi.audit.store'), {
-                onSuccess: () => { setShowModal(false); reset(); },
-            });
-        }
-    };
 
     function confirmDelete(item: AuditItem) {
         setDeleteTarget(item);
@@ -131,27 +178,64 @@ export default function Index({ audit, prodi_list, periode_list, success }: Prop
 
     function executeDelete() {
         if (!deleteTarget) return;
-        destroy(route('spmi.audit.destroy', deleteTarget.id), {
+        router.delete(route('spmi.audit.destroy', deleteTarget.id), {
             onSuccess: () => setDeleteTarget(null),
         });
     }
 
-    const statusBadge: Record<string, string> = {
-        open: 'bg-yellow-100 text-yellow-800',
-        in_progress: 'bg-blue-100 text-blue-800',
-        closed: 'bg-green-100 text-green-800',
-    };
+    // ── Transition handler ──
+    function requestTransition(item: AuditItem, toStatus: string) {
+        setTransitionTarget({ item, toStatus });
+    }
 
+    function executeTransition() {
+        if (!transitionTarget) return;
+        router.post(
+            route('spmi.audit.transition', transitionTarget.item.id),
+            { status: transitionTarget.toStatus },
+            {
+                onSuccess: () => {
+                    setTransitionTarget(null);
+                    setSelectedIds([]);
+                },
+            }
+        );
+    }
+
+    // ── Bulk action ──
+    function executeBulkTransition() {
+        if (!bulkStatus || selectedIds.length === 0) return;
+        setBulkProcessing(true);
+        router.post(
+            route('spmi.audit.batch-transition'),
+            { ids: selectedIds, status: bulkStatus },
+            {
+                onSuccess: () => {
+                    setBulkProcessing(false);
+                    setSelectedIds([]);
+                    setBulkStatus('');
+                },
+                onError: () => setBulkProcessing(false),
+            }
+        );
+    }
+
+    // ── Render ──
     return (
         <AuthenticatedLayout
-            header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Audit Mutu</h2>}
+            header={
+                <h2 className="text-xl font-semibold leading-tight text-gray-800">Audit Mutu</h2>
+            }
         >
             <Head title="Audit Mutu" />
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                    {/* Breadcrumb */}
                     <nav className="mb-4 text-sm text-gray-500">
-                        <Link href={route('dashboard')} className="text-indigo-600 hover:text-indigo-900">Dashboard</Link>
+                        <Link href={route('dashboard')} className="text-indigo-600 hover:text-indigo-900">
+                            Dashboard
+                        </Link>
                         <span className="mx-2">/</span>
                         <span className="text-indigo-600 hover:text-indigo-900">SPMI</span>
                         <span className="mx-2">/</span>
@@ -159,35 +243,180 @@ export default function Index({ audit, prodi_list, periode_list, success }: Prop
                     </nav>
 
                     <div className="mb-4">
-                        <Link href={route('dashboard')} className="text-sm text-indigo-600 hover:text-indigo-900">&larr; Kembali ke Dashboard</Link>
+                        <Link
+                            href={route('spmi.dashboard')}
+                            className="text-sm text-indigo-600 hover:text-indigo-900"
+                        >
+                            &larr; Kembali ke Dashboard SPMI
+                        </Link>
                     </div>
 
                     {success && (
-                        <div className="mb-4 rounded-lg bg-green-100 p-4 text-sm text-green-700">{success}</div>
+                        <div className="mb-4 rounded-lg bg-green-100 p-4 text-sm text-green-700">
+                            {success}
+                        </div>
                     )}
 
+                    {/* ════════════════════════════════════════════════════════════════
+                        KPI Summary Cards
+                        ════════════════════════════════════════════════════════════════ */}
+                    {dashboard_stats && (
+                        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+                            <KpiCard
+                                title="Total Temuan"
+                                value={dashboard_stats.total_temuan}
+                                icon={<AlertTriangle className="h-5 w-5" />}
+                                color="blue"
+                            />
+                            <KpiCard
+                                title="Open"
+                                value={dashboard_stats.open_temuan}
+                                icon={<Clock className="h-5 w-5" />}
+                                color="yellow"
+                            />
+                            <KpiCard
+                                title="In Progress"
+                                value={dashboard_stats.in_progress_temuan}
+                                icon={<RefreshCw className="h-5 w-5" />}
+                                color="purple"
+                            />
+                            <KpiCard
+                                title="Close Rate"
+                                value={`${dashboard_stats.close_rate}%`}
+                                icon={<CheckCircle2 className="h-5 w-5" />}
+                                color="green"
+                                trend={{
+                                    value: dashboard_stats.close_rate,
+                                    direction:
+                                        dashboard_stats.close_rate >= 70
+                                            ? 'up'
+                                            : dashboard_stats.close_rate >= 40
+                                              ? 'flat'
+                                              : 'down',
+                                }}
+                            />
+                            <KpiCard
+                                title="Skor Mutu"
+                                value={dashboard_stats.skor_mutu.toFixed(2)}
+                                icon={<TrendingUp className="h-5 w-5" />}
+                                color="purple"
+                            />
+                            <KpiCard
+                                title="CAPA Overdue"
+                                value={dashboard_stats.capa_overdue_count}
+                                icon={<AlertTriangle className="h-5 w-5" />}
+                                color="red"
+                            />
+                            <KpiCard
+                                title="CAPA Mendekat"
+                                value={dashboard_stats.capa_approaching_count}
+                                icon={<Clock className="h-5 w-5" />}
+                                color="yellow"
+                            />
+                        </div>
+                    )}
+
+                    {/* ════════════════════════════════════════════════════════════════
+                        Main Card
+                        ════════════════════════════════════════════════════════════════ */}
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                        {/* Filter Bar */}
                         <div className="border-b border-gray-200 p-6">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <input
-                                        type="text"
-                                        placeholder="Cari judul atau auditor..."
-                                        value={search}
-                                        onChange={(e) => setSearch(e.target.value)}
-                                        className="w-64 rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                    />
+                            <div className="flex flex-wrap items-center justify-between gap-4">
+                                <div className="flex flex-wrap items-center gap-3">
+                                    {/* Search */}
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                        <input
+                                            type="text"
+                                            placeholder="Cari judul atau auditor..."
+                                            value={search}
+                                            onChange={(e) => setSearch(e.target.value)}
+                                            className="w-56 rounded-lg border-gray-300 pl-9 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        />
+                                        {search && (
+                                            <button
+                                                onClick={() => setSearch('')}
+                                                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Status Filter */}
                                     <select
                                         value={statusFilter}
                                         onChange={(e) => setStatusFilter(e.target.value)}
                                         className="rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     >
                                         <option value="">Semua Status</option>
-                                        <option value="open">Open</option>
+                                        <option value="draft">Draft</option>
+                                        <option value="submitted">Submitted</option>
+                                        <option value="assigned">Assigned</option>
                                         <option value="in_progress">In Progress</option>
+                                        <option value="awaiting_verification">Awaiting Verification</option>
+                                        <option value="verified">Verified</option>
                                         <option value="closed">Closed</option>
+                                        <option value="rejected">Rejected</option>
+                                    </select>
+
+                                    {/* Standar Mutu Filter */}
+                                    <select
+                                        value={standarFilter}
+                                        onChange={(e) => setStandarFilter(e.target.value)}
+                                        className="rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    >
+                                        <option value="">Semua Standar</option>
+                                        {standar_mutu_list.map((s) => (
+                                            <option key={s.id} value={s.id}>
+                                                {s.kode_standar}
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                    {/* Severity Filter */}
+                                    <select
+                                        value={severityFilter}
+                                        onChange={(e) => setSeverityFilter(e.target.value)}
+                                        className="rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    >
+                                        <option value="">Semua Severity</option>
+                                        <option value="ringan">Ringan</option>
+                                        <option value="sedang">Sedang</option>
+                                        <option value="berat">Berat</option>
+                                        <option value="kritis">Kritis</option>
+                                    </select>
+
+                                    {/* Prodi Filter */}
+                                    <select
+                                        value={prodiFilter}
+                                        onChange={(e) => setProdiFilter(e.target.value)}
+                                        className="rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    >
+                                        <option value="">Semua Prodi</option>
+                                        {prodi_list.map((p) => (
+                                            <option key={p.id} value={p.id}>
+                                                {p.nama_prodi}
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                    {/* PIC Filter */}
+                                    <select
+                                        value={picFilter}
+                                        onChange={(e) => setPicFilter(e.target.value)}
+                                        className="rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    >
+                                        <option value="">Semua PIC</option>
+                                        {user_list.map((u) => (
+                                            <option key={u.id} value={u.id}>
+                                                {u.name}
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
+
                                 <button
                                     onClick={openCreate}
                                     className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
@@ -197,183 +426,125 @@ export default function Index({ audit, prodi_list, periode_list, success }: Prop
                             </div>
                         </div>
 
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Judul Audit</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Prodi</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Tanggal</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Auditor</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200 bg-white">
-                                    {audit.data.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={6} className="px-6 py-12 text-center text-gray-500">Tidak ada data</td>
-                                        </tr>
-                                    ) : (
-                                        audit.data.map((item) => (
-                                            <tr key={item.id} className="hover:bg-gray-50">
-                                                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">{item.judul_audit}</td>
-                                                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">{item.prodi?.nama_prodi || '-'}</td>
-                                                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">{item.tanggal_audit}</td>
-                                                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">{item.auditor || '-'}</td>
-                                                <td className="whitespace-nowrap px-6 py-4">
-                                                    <span className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${statusBadge[item.status || ''] || 'bg-gray-100 text-gray-800'}`}>
-                                                        {item.status ? item.status.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : '-'}
-                                                    </span>
-                                                </td>
-                                                <td className="whitespace-nowrap px-6 py-4 text-sm">
-                                                    <button onClick={() => openEdit(item)} className="mr-2 text-indigo-600 hover:text-indigo-900">Edit</button>
-                                                    <button onClick={() => confirmDelete(item)} className="text-red-600 hover:text-red-900">Hapus</button>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {audit.last_page > 1 && (
-                            <div className="flex items-center justify-between border-t border-gray-200 px-6 py-4">
-                                <div className="text-sm text-gray-700">
-                                    Menampilkan {audit.from} - {audit.to} dari {audit.total}
-                                </div>
-                                <div className="flex gap-1">
-                                    {audit.links.map((link, i) => (
-                                        <button
-                                            key={i}
-                                            disabled={!link.url}
-                                            onClick={() => {
-                                                if (link.url) router.get(link.url, {}, { preserveState: true, replace: true });
-                                            }}
-                                            className={`rounded px-3 py-1 text-sm ${link.active ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'} ${!link.url ? 'cursor-not-allowed opacity-50' : ''}`}
-                                            dangerouslySetInnerHTML={{ __html: link.label }}
-                                        />
-                                    ))}
-                                </div>
+                        {/* Bulk Actions Bar */}
+                        {selectedIds.length > 0 && (
+                            <div className="flex items-center gap-3 border-b border-gray-200 bg-indigo-50 px-6 py-3">
+                                <span className="text-sm font-medium text-indigo-700">
+                                    <Users className="mr-1 inline-block h-4 w-4" />
+                                    {selectedIds.length} terpilih
+                                </span>
+                                <select
+                                    value={bulkStatus}
+                                    onChange={(e) => setBulkStatus(e.target.value)}
+                                    className="rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                >
+                                    <option value="">Ubah Status</option>
+                                    <option value="submitted">Submitted</option>
+                                    <option value="assigned">Assigned</option>
+                                    <option value="in_progress">In Progress</option>
+                                    <option value="awaiting_verification">Awaiting Verification</option>
+                                    <option value="verified">Verified</option>
+                                    <option value="closed">Closed</option>
+                                </select>
+                                <button
+                                    onClick={executeBulkTransition}
+                                    disabled={!bulkStatus || bulkProcessing}
+                                    className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+                                >
+                                    {bulkProcessing ? 'Memproses...' : 'Terapkan'}
+                                </button>
+                                <button
+                                    onClick={() => setSelectedIds([])}
+                                    className="text-xs font-medium text-gray-500 hover:text-gray-700"
+                                >
+                                    Batalkan pilihan
+                                </button>
                             </div>
                         )}
+
+                        {/* Table */}
+                        <AuditTable
+                            audit={audit}
+                            filters={{
+                                search,
+                                status: statusFilter,
+                                standar_mutu_id: standarFilter,
+                                severity: severityFilter,
+                                prodi_id: prodiFilter,
+                                periode_id: periodeFilter,
+                            }}
+                            onEdit={openEdit}
+                            onDelete={confirmDelete}
+                            onTransition={requestTransition}
+                            selectedIds={selectedIds}
+                            onSelectChange={setSelectedIds}
+                        />
                     </div>
                 </div>
             </div>
 
-            {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                    <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
-                        <div className="mb-4 flex items-center justify-between">
-                            <h3 className="text-lg font-semibold text-gray-900">{editing ? 'Edit Audit Mutu' : 'Tambah Audit Mutu'}</h3>
-                            <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">&times;</button>
-                        </div>
-                        <form onSubmit={submit}>
-                            <div className="mb-4">
-                                <label className="mb-1 block text-sm font-medium text-gray-700">Prodi</label>
-                                <select value={data.prodi_id} onChange={(e) => setData('prodi_id', e.target.value)} className="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                    <option value="">Pilih Prodi</option>
-                                    {prodi_list.map((p) => (
-                                        <option key={p.id} value={p.id}>{p.nama_prodi}</option>
-                                    ))}
-                                </select>
-                                {errors.prodi_id && <p className="mt-1 text-xs text-red-600">{errors.prodi_id}</p>}
-                            </div>
-                            <div className="mb-4">
-                                <label className="mb-1 block text-sm font-medium text-gray-700">Periode</label>
-                                <select value={data.periode_id} onChange={(e) => setData('periode_id', e.target.value)} className="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                    <option value="">Pilih Periode</option>
-                                    {periode_list.map((p) => (
-                                        <option key={p.id} value={p.id}>{p.nama_periode}</option>
-                                    ))}
-                                </select>
-                                {errors.periode_id && <p className="mt-1 text-xs text-red-600">{errors.periode_id}</p>}
-                            </div>
-                            <div className="mb-4">
-                                <label className="mb-1 block text-sm font-medium text-gray-700">Judul Audit</label>
-                                <input type="text" value={data.judul_audit} onChange={(e) => setData('judul_audit', e.target.value)} className="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                                {errors.judul_audit && <p className="mt-1 text-xs text-red-600">{errors.judul_audit}</p>}
-                            </div>
-                            <div className="mb-4">
-                                <label className="mb-1 block text-sm font-medium text-gray-700">Tanggal Audit</label>
-                                <input type="date" value={data.tanggal_audit} onChange={(e) => setData('tanggal_audit', e.target.value)} className="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                                {errors.tanggal_audit && <p className="mt-1 text-xs text-red-600">{errors.tanggal_audit}</p>}
-                            </div>
-                            <div className="mb-4">
-                                <label className="mb-1 block text-sm font-medium text-gray-700">Auditor</label>
-                                <input type="text" value={data.auditor} onChange={(e) => setData('auditor', e.target.value)} className="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                                {errors.auditor && <p className="mt-1 text-xs text-red-600">{errors.auditor}</p>}
-                            </div>
-                            <div className="mb-4">
-                                <label className="mb-1 block text-sm font-medium text-gray-700">Temuan</label>
-                                <textarea value={data.temuan} onChange={(e) => setData('temuan', e.target.value)} rows={3} className="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                                {errors.temuan && <p className="mt-1 text-xs text-red-600">{errors.temuan}</p>}
-                            </div>
-                            <div className="mb-4">
-                                <label className="mb-1 block text-sm font-medium text-gray-700">Rekomendasi</label>
-                                <textarea value={data.rekomendasi} onChange={(e) => setData('rekomendasi', e.target.value)} rows={3} className="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                                {errors.rekomendasi && <p className="mt-1 text-xs text-red-600">{errors.rekomendasi}</p>}
-                            </div>
-                            {editing && (
-                                <>
-                                    <div className="mb-4">
-                                        <div className="flex justify-between items-center mb-1">
-                                            <label className="block text-sm font-medium text-gray-700">Tindak Lanjut</label>
-                                            <button 
-                                                type="button"
-                                                onClick={async () => {
-                                                    if (!editing) return;
-                                                    const res = await fetch(route('spmi.audit.ai-resolve', editing.id), {
-                                                        method: 'POST',
-                                                        headers: {
-                                                            'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as any)?.content,
-                                                            'Accept': 'application/json',
-                                                        }
-                                                    });
-                                                    const json = await res.json();
-                                                    if (json.success) {
-                                                        setData('tindak_lanjut', json.suggestion);
-                                                    }
-                                                }}
-                                                className="text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-900 bg-indigo-50 px-2 py-1 rounded border border-indigo-200"
-                                            >
-                                                ✨ BUAT SARAN VIA AI
-                                            </button>
-                                        </div>
-                                        <textarea value={data.tindak_lanjut} onChange={(e) => setData('tindak_lanjut', e.target.value)} rows={3} className="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                                        {errors.tindak_lanjut && <p className="mt-1 text-xs text-red-600">{errors.tindak_lanjut}</p>}
-                                    </div>
-                                    <div className="mb-4">
-                                        <label className="mb-1 block text-sm font-medium text-gray-700">Status</label>
-                                        <select value={data.status} onChange={(e) => setData('status', e.target.value)} className="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                            <option value="open">Open</option>
-                                            <option value="in_progress">In Progress</option>
-                                            <option value="closed">Closed</option>
-                                        </select>
-                                        {errors.status && <p className="mt-1 text-xs text-red-600">{errors.status}</p>}
-                                    </div>
-                                </>
-                            )}
-                            <div className="flex justify-end gap-2">
-                                <button type="button" onClick={() => setShowModal(false)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Batal</button>
-                                <button type="submit" disabled={processing} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700 disabled:opacity-50">
-                                    {processing ? 'Menyimpan...' : 'Simpan'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+            {/* ─── Create/Edit Modal ─── */}
+            <AuditFormModal
+                show={showModal}
+                editing={editing}
+                prodi_list={prodi_list}
+                periode_list={periode_list}
+                standar_list={standar_mutu_list}
+                user_list={user_list}
+                onClose={() => {
+                    setShowModal(false);
+                    setEditing(null);
+                }}
+                onSuccess={() => {}}
+            />
 
+            {/* ─── Delete Confirmation ─── */}
             {deleteTarget && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
                     <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
                         <h3 className="mb-2 text-lg font-semibold text-gray-900">Konfirmasi Hapus</h3>
-                        <p className="mb-4 text-sm text-gray-600">Yakin ingin menghapus audit <strong>{deleteTarget.judul_audit}</strong>?</p>
+                        <p className="mb-4 text-sm text-gray-600">
+                            Yakin ingin menghapus audit <strong>{deleteTarget.judul_audit}</strong>?
+                        </p>
                         <div className="flex justify-end gap-2">
-                            <button onClick={() => setDeleteTarget(null)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Batal</button>
-                            <button onClick={executeDelete} disabled={processing} className="rounded-lg bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-50">
-                                {processing ? 'Menghapus...' : 'Hapus'}
+                            <button
+                                onClick={() => setDeleteTarget(null)}
+                                className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                onClick={executeDelete}
+                                className="rounded-lg bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700"
+                            >
+                                Hapus
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ─── Transition Confirmation ─── */}
+            {transitionTarget && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                    <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
+                        <h3 className="mb-2 text-lg font-semibold text-gray-900">Konfirmasi Perubahan Status</h3>
+                        <p className="mb-4 text-sm text-gray-600">
+                            Ubah status <strong>{transitionTarget.item.judul_audit}</strong> ke{' '}
+                            <strong>{transitionTarget.toStatus.replace(/_/g, ' ')}</strong>?
+                        </p>
+                        <div className="flex justify-end gap-2">
+                            <button
+                                onClick={() => setTransitionTarget(null)}
+                                className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                onClick={executeTransition}
+                                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700"
+                            >
+                                Konfirmasi
                             </button>
                         </div>
                     </div>

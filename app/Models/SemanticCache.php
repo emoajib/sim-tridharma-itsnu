@@ -22,11 +22,12 @@ class SemanticCache extends Model
         'last_hit_at',
     ];
 
+    // NOTE: 'question_vector' column is vector(384) from pgvector, NOT json/array.
+    // Eloquent cannot cast vector type, so no cast is defined for it here.
     protected function casts(): array
     {
         return [
             'sources' => 'array',
-            'question_vector' => 'array',
             'last_hit_at' => 'datetime',
         ];
     }

@@ -4,13 +4,15 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\DashboardService;
+use App\Services\SPMI\SpmiDashboardService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
     public function __construct(
-        private DashboardService $dashboardService
+        private DashboardService $dashboardService,
+        private SpmiDashboardService $spmiDashboardService
     ) {}
 
     public function index(Request $request)
@@ -72,6 +74,19 @@ class DashboardController extends Controller
             $institutionAccreditation = $this->dashboardService->getInstitutionAccreditation($instrumenId);
         }
 
+        $prodiId = $scopeParams['prodi_id'] ?? null;
+
+        $spmiOverview = [];
+        $spmiCharts = [];
+        $spmiPpepp = [];
+        try {
+            $spmiOverview = $this->spmiDashboardService->getOverview($prodiId, $periodeId);
+            $spmiCharts = $this->spmiDashboardService->getChartData($prodiId, $periodeId);
+            $spmiPpepp = $this->spmiDashboardService->getPpeppProgress($prodiId);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Failed to load SPMI dashboard data: ' . $e->getMessage());
+        }
+
         return Inertia::render('Dashboard', [
             'stats' => $this->dashboardService->getStats($scopeParams),
             'portofolioStats' => $this->dashboardService->getPortofolioStats($periodeId, $scopeParams),
@@ -92,6 +107,9 @@ class DashboardController extends Controller
             'kriteriaStats' => $this->dashboardService->getKriteriaStats($instrumenId, $periodeId, $scopeParams),
             'prodiAccreditation' => $this->dashboardService->getProdiAccreditation($filterData['activeProdis'], $periodeId),
             'institutionAccreditation' => $institutionAccreditation,
+            'spmi_overview' => $spmiOverview,
+            'spmi_charts' => $spmiCharts,
+            'spmi_ppepp' => $spmiPpepp,
             'activeRole' => $activeRole,
             'scopeName' => $this->getScopeName($user, $activeRole),
         ]);

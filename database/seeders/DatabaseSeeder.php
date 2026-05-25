@@ -43,8 +43,7 @@ class DatabaseSeeder extends Seeder
             AgentHistorySeeder::class,
             TransaksiPortofolioSeeder::class,
             // \Database\Seeders\StressTestSeeder::class,   // Comment out - data already exists
-            IndikatorIkuSeeder::class,
-            RkatDemoSeeder::class,
+            StandarMutuSeeder::class,
         ]);
     }
 }

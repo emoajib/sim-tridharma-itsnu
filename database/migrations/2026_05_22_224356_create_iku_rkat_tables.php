@@ -15,10 +15,12 @@ return new class extends Migration
         Schema::create('m_indikator_iku', function (Blueprint $blueprint) {
             $blueprint->id();
             $blueprint->string('kode_iku')->unique(); // IKU 1, IKU 2, etc.
-            $blueprint->string('nama_iku');
+            $blueprint->string('nama_indikator');
             $blueprint->text('deskripsi')->nullable();
             $blueprint->string('satuan')->default('persentase');
             $blueprint->decimal('bobot', 5, 2)->default(0);
+            $blueprint->decimal('target', 10, 2)->default(0);
+            $blueprint->boolean('is_active')->default(true);
             $blueprint->timestamps();
             $blueprint->softDeletes();
         });

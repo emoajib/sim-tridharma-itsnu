@@ -17,3 +17,8 @@ Schedule::command('reconcile:auto --hours=24')
     ->dailyAt('02:00')
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/reconcile.log'));
+
+Schedule::job(new \App\Jobs\CheckCapaDeadline())
+    ->dailyAt('06:00')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/capa-deadline.log'));

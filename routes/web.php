@@ -5,6 +5,14 @@ use App\Http\Controllers\Api\AiptController;
 use App\Http\Controllers\Api\AlumniController;
 use App\Http\Controllers\Api\AuditMutuController;
 use App\Http\Controllers\Api\BkdController;
+use App\Http\Controllers\Api\CapaController;
+use App\Http\Controllers\Api\EdpsController;
+use App\Http\Controllers\Api\RtmController;
+use App\Http\Controllers\Api\SpmiCycleController;
+use App\Http\Controllers\Api\SpmiDashboardController;
+use App\Http\Controllers\Api\SpmiDokumenController;
+use App\Http\Controllers\Api\StandarMutuController;
+use App\Http\Controllers\Api\SurveySpmiController;
 use App\Http\Controllers\Api\CplController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DokumenBuktiController;
@@ -157,9 +165,12 @@ Route::middleware(['auth', PermissionMiddleware::class])->group(function () {
 
     // SPMI Routes
     Route::get('/spmi/audit', [AuditMutuController::class, 'index'])->name('spmi.audit');
+    Route::get('/spmi/audit/{auditMutu}', [AuditMutuController::class, 'show'])->name('spmi.audit.show');
     Route::post('/spmi/audit', [AuditMutuController::class, 'store'])->name('spmi.audit.store');
     Route::put('/spmi/audit/{auditMutu}', [AuditMutuController::class, 'update'])->name('spmi.audit.update');
     Route::post('/spmi/audit/{auditMutu}/ai-resolve', [AuditMutuController::class, 'aiResolve'])->name('spmi.audit.ai-resolve');
+    Route::post('/spmi/audit/{auditMutu}/transition', [AuditMutuController::class, 'transition'])->name('spmi.audit.transition');
+    Route::post('/spmi/audit/batch-transition', [AuditMutuController::class, 'batchTransition'])->name('spmi.audit.batch-transition');
     Route::delete('/spmi/audit/{auditMutu}', [AuditMutuController::class, 'destroy'])->name('spmi.audit.destroy');
 
     Route::get('/spmi/risk', [RiskRegisterController::class, 'index'])->name('spmi.risk');
@@ -172,6 +183,58 @@ Route::middleware(['auth', PermissionMiddleware::class])->group(function () {
     Route::delete('/spmi/risk/{riskRegister}', [RiskRegisterController::class, 'destroy'])
         ->name('spmi.risk.destroy')
         ->middleware('throttle:10,1');
+
+    // SPMI Dashboard
+    Route::get('/spmi/dashboard', [SpmiDashboardController::class, 'overview'])->name('spmi.dashboard');
+    Route::get('/spmi/dashboard/chart-data', [SpmiDashboardController::class, 'chartData'])->name('spmi.dashboard.chart-data');
+
+    // Standar Mutu
+    Route::get('/spmi/standar-mutu', [StandarMutuController::class, 'index'])->name('spmi.standar-mutu');
+    Route::post('/spmi/standar-mutu', [StandarMutuController::class, 'store'])->name('spmi.standar-mutu.store');
+    Route::put('/spmi/standar-mutu/{standarMutu}', [StandarMutuController::class, 'update'])->name('spmi.standar-mutu.update');
+    Route::delete('/spmi/standar-mutu/{standarMutu}', [StandarMutuController::class, 'destroy'])->name('spmi.standar-mutu.destroy');
+
+    // CAPA
+    Route::get('/spmi/capa', [CapaController::class, 'index'])->name('spmi.capa');
+    Route::get('/spmi/capa/{capa}', [CapaController::class, 'show'])->name('spmi.capa.show');
+    Route::put('/spmi/capa/{capa}', [CapaController::class, 'update'])->name('spmi.capa.update');
+    Route::post('/spmi/capa/{capa}/submit-verification', [CapaController::class, 'submitVerification'])->name('spmi.capa.submit-verification');
+    Route::post('/spmi/capa/{capa}/verify', [CapaController::class, 'verify'])->name('spmi.capa.verify');
+    Route::get('/spmi/capa/{capa}/timeline', [CapaController::class, 'getTimeline'])->name('spmi.capa.timeline');
+
+    // PPEPP Cycle
+    Route::get('/spmi/cycle', [SpmiCycleController::class, 'index'])->name('spmi.cycle');
+    Route::post('/spmi/cycle', [SpmiCycleController::class, 'store'])->name('spmi.cycle.store');
+    Route::put('/spmi/cycle/{spmiCycle}', [SpmiCycleController::class, 'update'])->name('spmi.cycle.update');
+    Route::delete('/spmi/cycle/{spmiCycle}', [SpmiCycleController::class, 'destroy'])->name('spmi.cycle.destroy');
+
+    // EDPS
+    Route::get('/spmi/edps', [EdpsController::class, 'index'])->name('spmi.edps');
+    Route::post('/spmi/edps', [EdpsController::class, 'store'])->name('spmi.edps.store');
+    Route::put('/spmi/edps/{edps}', [EdpsController::class, 'update'])->name('spmi.edps.update');
+    Route::delete('/spmi/edps/{edps}', [EdpsController::class, 'destroy'])->name('spmi.edps.destroy');
+
+    // RTM
+    Route::get('/spmi/rtm', [RtmController::class, 'index'])->name('spmi.rtm');
+    Route::post('/spmi/rtm', [RtmController::class, 'store'])->name('spmi.rtm.store');
+    Route::get('/spmi/rtm/{rtm}', [RtmController::class, 'show'])->name('spmi.rtm.show');
+    Route::put('/spmi/rtm/{rtm}', [RtmController::class, 'update'])->name('spmi.rtm.update');
+    Route::delete('/spmi/rtm/{rtm}', [RtmController::class, 'destroy'])->name('spmi.rtm.destroy');
+    // RTM Action Items
+    Route::post('/spmi/rtm/{rtm}/action-items', [RtmController::class, 'storeActionItem'])->name('spmi.rtm.action-item.store');
+    Route::put('/spmi/rtm/{rtm}/action-items/{rtmActionItem}', [RtmController::class, 'updateActionItem'])->name('spmi.rtm.action-item.update');
+    Route::post('/spmi/rtm/{rtm}/action-items/{rtmActionItem}/transition', [RtmController::class, 'transitionActionItem'])->name('spmi.rtm.action-item.transition');
+    Route::delete('/spmi/rtm/{rtm}/action-items/{rtmActionItem}', [RtmController::class, 'destroyActionItem'])->name('spmi.rtm.action-item.destroy');
+
+    // Dokumen Mutu
+    Route::get('/spmi/dokumen-mutu', [SpmiDokumenController::class, 'index'])->name('spmi.dokumen-mutu');
+    Route::post('/spmi/dokumen-mutu', [SpmiDokumenController::class, 'store'])->name('spmi.dokumen-mutu.store');
+    Route::put('/spmi/dokumen-mutu/{spmiDokumen}', [SpmiDokumenController::class, 'update'])->name('spmi.dokumen-mutu.update');
+    Route::delete('/spmi/dokumen-mutu/{spmiDokumen}', [SpmiDokumenController::class, 'destroy'])->name('spmi.dokumen-mutu.destroy');
+
+    // Survey
+    Route::get('/spmi/survey', [SurveySpmiController::class, 'index'])->name('spmi.survey');
+    Route::post('/spmi/survey', [SurveySpmiController::class, 'store'])->name('spmi.survey.store');
 
     // Kurikulum Mapping + RPS Routes
     Route::get('/kurikulum/mapping', [KurikulumMappingController::class, 'index'])->name('kurikulum.mapping');

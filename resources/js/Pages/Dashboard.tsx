@@ -5,6 +5,7 @@ import PeringatanBadge from '@/Components/Agent/PeringatanBadge';
 import PrediksiWidget from '@/Components/Agent/PrediksiWidget';
 import RadarChart from '@/Components/Agent/RadarChart';
 import KriteriaDetailModal from '@/Components/Agent/KriteriaDetailModal';
+import { SkeletonCard, SkeletonChart } from '@/Components/Skeleton';
 
 interface Periode {
     id: number;
@@ -85,6 +86,25 @@ interface Props {
     dashboardDefaultTab?: string;
     activeRole: string;
     scopeName: string;
+    spmi_overview?: {
+        total_temuan: number;
+        open_temuan: number;
+        in_progress_temuan: number;
+        closed_temuan: number;
+        close_rate: number;
+        skor_mutu: number;
+        capa_overdue_count: number;
+        capa_approaching_count: number;
+    };
+    spmi_charts?: {
+        temuan_per_standar: Array<{ standar_id: number; kode_standar: string; nama_standar: string; count: number }>;
+        temuan_per_bulan: Array<{ bulan: string; count: number }>;
+        severity_distribution: { ringan: number; sedang: number; berat: number; kritis: number };
+    };
+    spmi_ppepp?: {
+        stages: Array<{ key: string; label: string; count: number; percentage: number; icon: string; color: string }>;
+        total_audits: number;
+    };
 }
 
 function StatCard({ label, value, color, href, isTheme3 }: { label: string; value: number | string; color: string; href?: string; isTheme3?: boolean }) {
@@ -108,7 +128,7 @@ function StatCard({ label, value, color, href, isTheme3 }: { label: string; valu
     return href ? <Link href={href} className="block transition-transform hover:-translate-y-1">{card}</Link> : card;
 }
 
-export default function Dashboard({ stats, portofolioStats, bkdStats, recentPendidikan, recentPenelitian, periode_list, selectedPeriode, lembaga_list, selectedInstrumenId, peringatanStats, latestPrediction, kriteriaStats, prodiAccreditation, institutionAccreditation, filters, activeRole, scopeName, dashboardDefaultTab }: Props) {
+export default function Dashboard({ stats, portofolioStats, bkdStats, recentPendidikan, recentPenelitian, periode_list, selectedPeriode, lembaga_list, selectedInstrumenId, peringatanStats, latestPrediction, kriteriaStats, prodiAccreditation, institutionAccreditation, filters, activeRole, scopeName, dashboardDefaultTab, spmi_overview, spmi_charts, spmi_ppepp }: Props) {
     const { props, url } = usePage();
     const appSettings = props.appSettings as any;
     const isTheme3 = appSettings?.theme_mode === 'theme3';
@@ -116,6 +136,31 @@ export default function Dashboard({ stats, portofolioStats, bkdStats, recentPend
     const [showKinerja, setShowKinerja] = useState(false);
     const [searchProdi, setSearchProdi] = useState('');
     const [showAllProdi, setShowAllProdi] = useState(false);
+
+    // Loading state: show skeleton while Inertia navigates or data is not ready
+    const isPageLoading = !stats || stats.prodi_count === undefined;
+
+    if (isPageLoading) {
+        return (
+            <AuthenticatedLayout>
+                <Head title="Dashboard" />
+                <div className="py-2">
+                    <div className="mx-auto max-w-7xl">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-4 mb-8">
+                            <SkeletonCard />
+                            <SkeletonCard />
+                            <SkeletonCard />
+                            <SkeletonCard />
+                        </div>
+                        <SkeletonChart />
+                        <div className="mt-8">
+                            <SkeletonChart />
+                        </div>
+                    </div>
+                </div>
+            </AuthenticatedLayout>
+        );
+    }
 
     // Route-based Tab System (#7-8) — reads ?tab= from URL for back/forward/refresh support
     const tabFromUrl = new URL(url, window.location.origin).searchParams.get('tab');
@@ -299,6 +344,7 @@ export default function Dashboard({ stats, portofolioStats, bkdStats, recentPend
                           { id: 'prediksi', label: '🤖 Prediksi AI' },
                           { id: 'kinerja', label: '📈 Kinerja' },
                           { id: 'peringatan', label: '⚠️ Peringatan' },
+                          { id: 'spmi', label: '📋 SPMI' },
                         ].map((tab) => (
                           <button
                             key={tab.id}
@@ -324,6 +370,45 @@ export default function Dashboard({ stats, portofolioStats, bkdStats, recentPend
                         <StatCard label="Program Studi" value={stats.prodi_count} color="bg-blue-500" href={route('master-data.prodi')} isTheme3={isTheme3} />
                         <StatCard label="Dosen Aktif" value={stats.dosen_count} color="bg-teal-500" href={route('master-data.dosen')} isTheme3={isTheme3} />
                         <StatCard label="Rata-rata Skor" value={prodiAccreditation.length > 0 ? (prodiAccreditation.reduce((sum, p) => sum + p.skor_simulasi, 0) / prodiAccreditation.length).toFixed(2) : '0.00'} color="bg-purple-500" isTheme3={isTheme3} />
+                    </div>
+
+                    {/* SPMI Quick Access */}
+                    <div className="mb-10">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">
+                                📋 SPMI — Sistem Penjaminan Mutu Internal
+                            </h3>
+                            <Link href={route('spmi.dashboard')} className="text-[10px] font-black text-indigo-600 hover:text-indigo-800 uppercase tracking-widest underline decoration-indigo-200 underline-offset-4 whitespace-nowrap">
+                                Dashboard SPMI →
+                            </Link>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                            {[
+                                { label: 'Dashboard SPMI', route: 'spmi.dashboard', color: 'bg-indigo-500' },
+                                { label: 'Audit Mutu', route: 'spmi.audit', color: 'bg-red-500' },
+                                { label: 'Standar Mutu', route: 'spmi.standar-mutu', color: 'bg-blue-500' },
+                                { label: 'CAPA', route: 'spmi.capa', color: 'bg-orange-500' },
+                                { label: 'Siklus PPEPP', route: 'spmi.cycle', color: 'bg-emerald-500' },
+                                { label: 'EDPS', route: 'spmi.edps', color: 'bg-teal-500' },
+                                { label: 'RTM', route: 'spmi.rtm', color: 'bg-purple-500' },
+                                { label: 'Dokumen Mutu', route: 'spmi.dokumen-mutu', color: 'bg-cyan-500' },
+                                { label: 'Survey SPMI', route: 'spmi.survey', color: 'bg-pink-500' },
+                                { label: 'Risk Register', route: 'spmi.risk', color: 'bg-amber-500' },
+                            ].map((modul) => (
+                                <Link
+                                    key={modul.route}
+                                    href={route(modul.route)}
+                                    className="rounded-xl bg-white p-4 shadow-sm border border-gray-100 hover:border-indigo-200 hover:-translate-y-1 transition-all group flex items-center gap-3"
+                                >
+                                    <div className={`w-8 h-8 rounded-lg ${modul.color} flex items-center justify-center text-white text-sm font-bold shrink-0`}>
+                                        {modul.label.charAt(0)}
+                                    </div>
+                                    <p className="text-xs font-bold text-gray-700 group-hover:text-indigo-600 transition-colors leading-tight">
+                                        {modul.label}
+                                    </p>
+                                </Link>
+                            ))}
+                        </div>
                     </div>
 
                     {/* Ringkasan Akreditasi Semua Prodi (#6) */}
@@ -509,6 +594,108 @@ export default function Dashboard({ stats, portofolioStats, bkdStats, recentPend
                                     Lihat Detail Peringatan →
                                 </Link>
                             </div>
+                        </div>
+                    </div>
+                    </>
+                    )}
+
+                    {/* SPMI Tab */}
+                    {activeTab === 'spmi' && (
+                    <>
+                    <div className="mb-12">
+                        {/* SPMI KPI Cards */}
+                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 mb-8">
+                            <StatCard label="Total Temuan" value={spmi_overview?.total_temuan ?? 0} color="bg-indigo-500" href={route('spmi.audit')} isTheme3={isTheme3} />
+                            <StatCard label="Open" value={spmi_overview?.open_temuan ?? 0} color="bg-amber-500" isTheme3={isTheme3} />
+                            <StatCard label="Close Rate" value={spmi_overview?.close_rate != null ? `${spmi_overview.close_rate}%` : '0%'} color="bg-emerald-500" isTheme3={isTheme3} />
+                            <StatCard label="Skor Mutu" value={spmi_overview?.skor_mutu ?? 0} color="bg-purple-500" isTheme3={isTheme3} />
+                            <StatCard label="CAPA Overdue" value={spmi_overview?.capa_overdue_count ?? 0} color="bg-red-500" href={route('spmi.capa')} isTheme3={isTheme3} />
+                        </div>
+
+                        {/* PPEPP Progress */}
+                        {spmi_ppepp && spmi_ppepp.stages && spmi_ppepp.stages.length > 0 && (
+                            <div className="mb-8 rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+                                <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4">
+                                    🔄 Siklus PPEPP — {spmi_ppepp.total_audits} Total Audit
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                                    {spmi_ppepp.stages.map((stage) => (
+                                        <div key={stage.key} className="text-center">
+                                            <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{stage.label}</div>
+                                            <div className="relative h-3 bg-gray-100 rounded-full overflow-hidden mb-2">
+                                                <div
+                                                    className="h-full rounded-full transition-all duration-500"
+                                                    style={{ width: `${stage.percentage}%`, backgroundColor: stage.color }}
+                                                />
+                                            </div>
+                                            <div className="text-sm font-black" style={{ color: stage.color }}>{stage.percentage}%</div>
+                                            <div className="text-[10px] text-gray-400 font-medium">{stage.count} temuan</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Severity Distribution + Temuan per Bulan */}
+                        {spmi_charts && (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                                <div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+                                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4">
+                                        🥧 Distribusi Severity
+                                    </h3>
+                                    {(() => {
+                                        const sd = spmi_charts?.severity_distribution;
+                                        if (!sd) return <p className="text-gray-400 italic text-sm">Tidak ada data.</p>;
+                                        const items = [
+                                            { label: 'Ringan', count: sd.ringan, color: 'bg-green-500' },
+                                            { label: 'Sedang', count: sd.sedang, color: 'bg-yellow-500' },
+                                            { label: 'Berat', count: sd.berat, color: 'bg-orange-500' },
+                                            { label: 'Kritis', count: sd.kritis, color: 'bg-red-500' },
+                                        ];
+                                        const total = items.reduce((s, i) => s + i.count, 0) || 1;
+                                        return (
+                                            <div className="space-y-3">
+                                                {items.map((item) => (
+                                                    <div key={item.label} className="flex items-center gap-3">
+                                                        <div className="w-16 text-xs font-bold text-gray-600">{item.label}</div>
+                                                        <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden">
+                                                            <div className={`h-full rounded-full ${item.color}`} style={{ width: `${(item.count / total) * 100}%` }} />
+                                                        </div>
+                                                        <div className="w-10 text-right text-xs font-black text-gray-700">{item.count}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    })()}
+                                </div>
+                                <div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+                                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4">
+                                        📈 Tren Temuan per Bulan (12 bulan)
+                                    </h3>
+                                    {spmi_charts?.temuan_per_bulan && spmi_charts.temuan_per_bulan.length > 0 ? (
+                                        <div className="space-y-2">
+                                            {spmi_charts.temuan_per_bulan.slice(-6).map((item) => (
+                                                <div key={item.bulan} className="flex items-center gap-3">
+                                                    <div className="w-16 text-[10px] font-bold text-gray-500">{item.bulan}</div>
+                                                    <div className="flex-1 h-5 bg-gray-100 rounded-full overflow-hidden">
+                                                        <div className="h-full rounded-full bg-indigo-500" style={{ width: `${Math.min((item.count / Math.max(...spmi_charts.temuan_per_bulan.map(b => b.count), 1)) * 100, 100)}%` }} />
+                                                    </div>
+                                                    <div className="w-6 text-right text-xs font-black text-gray-700">{item.count}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-400 italic text-sm">Belum ada data temuan.</p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Link ke Halaman SPMI */}
+                        <div className="text-center">
+                            <Link href={route('spmi.dashboard')} className="inline-flex px-6 py-3 rounded-xl bg-indigo-600 text-white text-xs font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">
+                                Buka Dashboard SPMI Lengkap →
+                            </Link>
                         </div>
                     </div>
                     </>

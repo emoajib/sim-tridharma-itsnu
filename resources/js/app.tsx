@@ -1,6 +1,7 @@
 import '../css/app.css';
 import '../css/app-modern.css';
 import '../css/app-theme3.css';
+import '../css/app-klasik.css';
 import './bootstrap';
 
 import { createInertiaApp } from '@inertiajs/react';

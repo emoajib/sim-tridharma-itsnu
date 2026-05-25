@@ -110,6 +110,19 @@ export default function Theme3Layout({
         { name: 'Cascading IKU', route: 'iku.cascading', icon: '🔀', perm: 'cascading.view' },
     ];
 
+    const spmiLinks = [
+        { name: 'Dashboard SPMI', route: 'spmi.dashboard', icon: '📊', perm: 'spmi.view' },
+        { name: 'Audit Mutu', route: 'spmi.audit', icon: '✅', perm: 'spmi.view' },
+        { name: 'Standar Mutu', route: 'spmi.standar-mutu', icon: '🎯', perm: 'spmi.view' },
+        { name: 'CAPA', route: 'spmi.capa', icon: '🔄', perm: 'spmi.view' },
+        { name: 'Siklus PPEPP', route: 'spmi.cycle', icon: '📅', perm: 'spmi.view' },
+        { name: 'EDPS', route: 'spmi.edps', icon: '📋', perm: 'spmi.view' },
+        { name: 'RTM', route: 'spmi.rtm', icon: '🗂️', perm: 'spmi.view' },
+        { name: 'Dokumen Mutu', route: 'spmi.dokumen-mutu', icon: '📄', perm: 'spmi.view' },
+        { name: 'Survey SPMI', route: 'spmi.survey', icon: '📮', perm: 'spmi.view' },
+        { name: 'Risk Register', route: 'spmi.risk', icon: '⚠️', perm: 'spmi.view' },
+    ];
+
     const otherLinks = [
         { name: 'BKD', route: 'bkd', icon: '📄', perm: 'bkd.view' },
         { name: 'Dokumen', route: 'dokumen', icon: '📑', perm: 'dokumen.view' },
@@ -121,8 +134,6 @@ export default function Theme3Layout({
         { name: 'Keuangan', route: 'keuangan', icon: '💰', perm: 'keuangan.view' },
         { name: 'Mapping CPL-MK', route: 'kurikulum.mapping', icon: '🔀', perm: 'kurikulum.view' },
         { name: 'RPS', route: 'kurikulum.rps', icon: '📃', perm: 'kurikulum.view' },
-        { name: 'Audit Mutu', route: 'spmi.audit', icon: '✅', perm: 'spmi.view' },
-        { name: 'Risk Register', route: 'spmi.risk', icon: '⚠️', perm: 'spmi.view' },
         { name: 'Tracer Kuisioner', route: 'tracer.kuisioner', icon: '🗂️' },
         { name: 'Tracer Jawaban', route: 'tracer.jawaban', icon: '📮' },
     ];
@@ -227,6 +238,25 @@ export default function Theme3Layout({
                     <div className="nav-group pt-4">
                         <p className="nav-group-title">Anggaran & Kinerja</p>
                         {budgetKinerjaLinks.filter(l => can(l.perm)).map((link) => (
+                            <Link
+                                key={link.route}
+                                href={route(link.route)}
+                                className={`nav-item ${isActive(link.route) ? 'active' : ''}`}
+                            >
+                                <div className="nav-item-left">
+                                    {(() => {
+                                        const Icon = sidebarIcons[link.icon];
+                                        return Icon ? <Icon className="h-5 w-5" /> : <span>{link.icon}</span>;
+                                    })()}
+                                    <span>{link.name}</span>
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+
+                    <div className="nav-group pt-4">
+                        <p className="nav-group-title">Penjaminan Mutu</p>
+                        {spmiLinks.filter(l => can(l.perm)).map((link) => (
                             <Link
                                 key={link.route}
                                 href={route(link.route)}
