@@ -4,13 +4,33 @@
 
 namespace App\Http\Requests\Rkat;
 
+use App\Models\Prodi;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreUsulanRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $user = $this->user();
+        $role = $user->activeRole();
+        $prodiId = $this->input('prodi_id');
+
+        if (! $prodiId) {
+            return false;
+        }
+
+        $user->loadMissing(['dosen', 'prodi']);
+
+        return match ($role) {
+            'Dosen' => $user->dosen_id && $user->dosen && $user->dosen->prodi_id == $prodiId,
+            'Kaprodi', 'Staf Prodi' => $user->prodi_id == $prodiId,
+            'Dekan' => $user->prodi &&
+                $user->prodi->fakultas_id &&
+                Prodi::where('fakultas_id', $user->prodi->fakultas_id)
+                    ->where('id', $prodiId)
+                    ->exists(),
+            default => false,
+        };
     }
 
     public function rules(): array
