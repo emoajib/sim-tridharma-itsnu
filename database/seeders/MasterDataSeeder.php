@@ -67,7 +67,7 @@ class MasterDataSeeder extends Seeder
 
             if (isset($mkData[$prodi->id])) {
                 foreach ($mkData[$prodi->id] as $mkId) {
-                    DB::table('m_mk_kurikulum')->insert([
+                    DB::table('m_mk_kurikulum')->insertOrIgnore([
                         'kurikulum_id' => $kurikulumId,
                         'mata_kuliah_id' => $mkId,
                         'semester_rekomendasi' => rand(1, 8),
@@ -79,7 +79,7 @@ class MasterDataSeeder extends Seeder
 
             $cplJenis = ['Sikap', 'Pengetahuan', 'Keterampilan Umum', 'Keterampilan Khusus'];
             for ($i = 0; $i < rand(8, 12); $i++) {
-                DB::table('m_cpl')->insert([
+                DB::table('m_cpl')->insertOrIgnore([
                     'prodi_id' => $prodi->id,
                     'kode_cpl' => 'CPL'.($i + 1),
                     'deskripsi' => 'CPL '.($i + 1).': '.Str::random(40),
@@ -99,7 +99,7 @@ class MasterDataSeeder extends Seeder
                 $mappings = rand(2, 5);
                 $selectedMk = $mks->random(min($mappings, $mks->count()));
                 foreach ($selectedMk as $mk) {
-                    DB::table('m_cpl_mk')->insert([
+                    DB::table('m_cpl_mk')->insertOrIgnore([
                         'cpl_id' => $cpl->id,
                         'mata_kuliah_id' => $mk->id,
                         'created_at' => now(),
@@ -109,9 +109,9 @@ class MasterDataSeeder extends Seeder
             }
 
             for ($i = 0; $i < rand(2, 4); $i++) {
-                DB::table('m_prodi_keahlian')->insert([
+                DB::table('m_prodi_keahlian')->insertOrIgnore([
                     'prodi_id' => $prodi->id,
-                    'nama_keahlian' => ['Kecerdasan Buatan', 'Rekayasa Perangkat Lunak', 'Data Science', 'Keamanan Siber', 'IoT'][rand(0, 4)],
+                    'nama_keahlian' => ['Kecerdasan Buatan', 'Rekayasa Perangkat Lunak', 'Data Science', 'Keamanan Siber', 'IoT'][rand(0, 2)],
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -124,7 +124,7 @@ class MasterDataSeeder extends Seeder
                 $periode = $periodes->first();
 
                 foreach ($mks->take(5) as $mk) {
-                    DB::table('m_rps')->insert([
+                    DB::table('m_rps')->insertOrIgnore([
                         'prodi_id' => $prodi->id,
                         'mata_kuliah_id' => $mk->id,
                         'periode_id' => $periode->id,
@@ -144,7 +144,7 @@ class MasterDataSeeder extends Seeder
             if ($prodiKeahlian->isNotEmpty()) {
                 $assigned = $prodiKeahlian->random(min(2, $prodiKeahlian->count()));
                 foreach ($assigned as $keahlian) {
-                    DB::table('trx_prodi_keahlian_dosen')->insert([
+                    DB::table('trx_prodi_keahlian_dosen')->insertOrIgnore([
                         'dosen_id' => $dosen->id,
                         'prodi_keahlian_id' => $keahlian->id,
                         'is_utama' => rand(0, 1),

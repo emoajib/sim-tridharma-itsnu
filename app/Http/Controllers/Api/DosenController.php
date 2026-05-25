@@ -7,6 +7,7 @@ use App\Http\Requests\DosenRequest;
 use App\Models\Dosen;
 use App\Models\Prodi;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 
 class DosenController extends Controller
@@ -22,7 +23,7 @@ class DosenController extends Controller
 
         return Inertia::render('MasterData/Dosen/Index', [
             'dosen' => $dosen,
-            'prodi_list' => Prodi::select('id', 'nama_prodi')->get(),
+            'prodi_list' => Cache::remember('prodi_list', 3600, fn () => Prodi::select('id', 'nama_prodi')->get()),
         ]);
     }
 
