@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PeringatanBadge from '@/Components/Agent/PeringatanBadge';
 import PrediksiWidget from '@/Components/Agent/PrediksiWidget';
 import RadarChart from '@/Components/Agent/RadarChart';
@@ -108,11 +108,30 @@ function StatCard({ label, value, color, href, isTheme3 }: { label: string; valu
     return href ? <Link href={href} className="block transition-transform hover:-translate-y-1">{card}</Link> : card;
 }
 
-export default function Dashboard({ stats, portofolioStats, bkdStats, recentPendidikan, recentPenelitian, periode_list, selectedPeriode, lembaga_list, selectedInstrumenId, peringatanStats, latestPrediction, kriteriaStats, prodiAccreditation, institutionAccreditation, filters, activeRole, scopeName }: Props) {
-    const { props } = usePage();
+export default function Dashboard({ stats, portofolioStats, bkdStats, recentPendidikan, recentPenelitian, periode_list, selectedPeriode, lembaga_list, selectedInstrumenId, peringatanStats, latestPrediction, kriteriaStats, prodiAccreditation, institutionAccreditation, filters, activeRole, scopeName, dashboardDefaultTab }: Props) {
+    const { props, url } = usePage();
     const appSettings = props.appSettings as any;
     const isTheme3 = appSettings?.theme_mode === 'theme3';
     const [selectedKriteria, setSelectedKriteria] = useState<any>(null);
+    const [showKinerja, setShowKinerja] = useState(false);
+    const [searchProdi, setSearchProdi] = useState('');
+    const [showAllProdi, setShowAllProdi] = useState(false);
+
+    // Route-based Tab System (#7-8) — reads ?tab= from URL for back/forward/refresh support
+    const tabFromUrl = new URL(url, window.location.origin).searchParams.get('tab');
+    const activeTab = tabFromUrl || dashboardDefaultTab || 'overview';
+
+    function changeTab(tab: string) {
+        if (tab === activeTab) return;
+        router.get(route('dashboard'), 
+            { ...filters, tab }, 
+            { preserveState: true, replace: true }
+        );
+    }
+
+    useEffect(() => {
+        if (activeTab === 'kinerja') setShowKinerja(true);
+    }, [activeTab]);
 
     const handleSelectKriteria = (kriteria: any) => {
         setSelectedKriteria({
@@ -129,7 +148,8 @@ export default function Dashboard({ stats, portofolioStats, bkdStats, recentPend
         router.get(route('dashboard'), 
             { 
                 ...filters,
-                [key]: value 
+                [key]: value,
+                tab: activeTab
             }, 
             { preserveState: true, replace: true }
         );
@@ -142,6 +162,12 @@ export default function Dashboard({ stats, portofolioStats, bkdStats, recentPend
         if (s.includes('baik')) return 'text-amber-600 bg-amber-50 border-amber-200';
         return 'text-gray-600 bg-gray-50 border-gray-200';
     };
+
+    const filteredProdi = prodiAccreditation.filter(p =>
+        p.nama.toLowerCase().includes(searchProdi.toLowerCase()) ||
+        p.fakultas.toLowerCase().includes(searchProdi.toLowerCase())
+    );
+    const displayedProdi = showAllProdi ? filteredProdi : filteredProdi.slice(0, 5);
 
     return (
         <AuthenticatedLayout header={
@@ -159,31 +185,51 @@ export default function Dashboard({ stats, portofolioStats, bkdStats, recentPend
                     
                     {/* Header Institusi (Only if BAN-PT is active) */}
                     {institutionAccreditation && (
-                        <div className="mb-8">
-                            <div className={isTheme3 ? "priority-card overflow-hidden" : "rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-800 p-8 shadow-xl text-white relative overflow-hidden"}>
-                                {!isTheme3 && <div className="absolute top-0 right-0 p-8 opacity-10 text-9xl font-black">ITSNU</div>}
-                                {isTheme3 && <div className="priority-card-header">🏛️ Akreditasi Perguruan Tinggi (AIPT)</div>}
-                                <div className={`${isTheme3 ? "priority-card-body" : "relative z-10"} flex flex-col md:flex-row md:items-center justify-between gap-8`}>
-                                    <div>
-                                        <h3 className="text-3xl font-black">{institutionAccreditation.nama}</h3>
-                                        <p className={`${isTheme3 ? 'text-gray-500' : 'text-indigo-100'} text-sm mt-1 font-medium`}>
-                                            Status Saat Ini: <span className="font-bold underline">{institutionAccreditation.status_saat_ini}</span> • Target: <span className="font-bold underline text-emerald-300">{institutionAccreditation.target}</span>
-                                        </p>
-                                        <p className="mt-4 text-[10px] uppercase tracking-widest opacity-60">Sinkronisasi terakhir: {institutionAccreditation.last_sync}</p>
-                                    </div>
-                                    <div className="flex items-center gap-10">
-                                        <div className="text-center">
-                                            <p className="text-[10px] uppercase tracking-widest opacity-70 mb-1 font-bold">Skor Simulasi</p>
-                                            <p className="text-5xl font-black">{institutionAccreditation.skor_simulasi.toFixed(2)}</p>
+                        <div className="mb-6">
+                            {isTheme3 ? (
+                                <div className="priority-card overflow-hidden">
+                                    <div className="priority-card-header">🏛️ Akreditasi Perguruan Tinggi (AIPT)</div>
+                                    <div className="priority-card-body flex flex-col md:flex-row md:items-center justify-between gap-8">
+                                        <div>
+                                            <h3 className="text-3xl font-black">{institutionAccreditation.nama}</h3>
+                                            <p className="text-gray-500 text-sm mt-1 font-medium">
+                                                Status Saat Ini: <span className="font-bold underline">{institutionAccreditation.status_saat_ini}</span> • Target: <span className="font-bold underline text-emerald-300">{institutionAccreditation.target}</span>
+                                            </p>
+                                            <p className="mt-4 text-[10px] uppercase tracking-widest opacity-60">Sinkronisasi terakhir: {institutionAccreditation.last_sync}</p>
                                         </div>
-                                        <div className="h-16 w-px bg-white/20 hidden md:block"></div>
-                                        <div className="text-center">
-                                            <p className="text-[10px] uppercase tracking-widest opacity-70 mb-2 font-bold">Prediksi Predikat</p>
-                                            <span className="inline-flex px-4 py-1.5 rounded-full text-sm font-black bg-white text-indigo-700 shadow-lg">UNGGUL</span>
+                                        <div className="flex items-center gap-10">
+                                            <div className="text-center">
+                                                <p className="text-[10px] uppercase tracking-widest opacity-70 mb-1 font-bold">Skor Simulasi</p>
+                                                <p className="text-5xl font-black">{institutionAccreditation.skor_simulasi.toFixed(2)}</p>
+                                            </div>
+                                            <div className="h-16 w-px bg-white/20 hidden md:block"></div>
+                                            <div className="text-center">
+                                                <p className="text-[10px] uppercase tracking-widest opacity-70 mb-2 font-bold">Prediksi Predikat</p>
+                                                <span className="inline-flex px-4 py-1.5 rounded-full text-sm font-black bg-white text-indigo-700 shadow-lg">UNGGUL</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            ) : (
+                                <div className="rounded-xl bg-white border border-gray-200 shadow-sm py-3 px-5 flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <div>
+                                            <span className="text-base font-bold text-gray-900">{institutionAccreditation.nama}</span>
+                                            <div className="flex items-center gap-2 mt-0.5">
+                                                <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border border-emerald-200 text-emerald-700 bg-emerald-50">{institutionAccreditation.status_saat_ini}</span>
+                                                <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border border-indigo-200 text-indigo-700 bg-indigo-50">Target: {institutionAccreditation.target}</span>
+                                                <span className="text-[10px] text-gray-400 font-medium">Sync: {institutionAccreditation.last_sync}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <div className="text-right">
+                                            <span className="text-3xl font-black text-gray-900 tabular-nums">{institutionAccreditation.skor_simulasi.toFixed(2)}</span>
+                                        </div>
+                                        <span className="inline-flex px-3 py-1 rounded-full text-xs font-black bg-indigo-600 text-white shadow-sm">UNGGUL</span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -225,21 +271,79 @@ export default function Dashboard({ stats, portofolioStats, bkdStats, recentPend
                         </div>
                     </div>
 
-                    {/* Stats Cards - Master Data */}
-                    <div className="mb-12">
-                        <h3 className="mb-4 text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Master Data Overview</h3>
-                        <div className={isTheme3 ? "kpi-grid" : "grid grid-cols-1 gap-6 sm:grid-cols-3"}>
-                            <StatCard label="Total Fakultas" value={stats.fakultas_count} color="bg-indigo-500" href={route('master-data.fakultas')} isTheme3={isTheme3} />
-                            <StatCard label="Program Studi" value={stats.prodi_count} color="bg-blue-500" href={route('master-data.prodi')} isTheme3={isTheme3} />
-                            <StatCard label="Dosen Aktif" value={stats.dosen_count} color="bg-teal-500" href={route('master-data.dosen')} isTheme3={isTheme3} />
+                    {/* Sticky Toolbar (#2+#3) */}
+                    <div className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-gray-200 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3 mb-6 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            {peringatanStats && (
+                                <PeringatanBadge critical={peringatanStats.critical} warning={peringatanStats.warning} info={peringatanStats.info} unread={peringatanStats.unread} />
+                            )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => window.print()} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-bold uppercase tracking-wider hover:bg-blue-700 transition-all shadow-sm">
+                                Export PDF
+                            </button>
+                            <Link href={route('admin.templates.index')} className="px-4 py-2 rounded-lg bg-gray-900 text-white text-xs font-bold uppercase tracking-wider hover:bg-black transition-all shadow-sm">
+                                Template XL
+                            </Link>
+                            <Link href={route('portofolio.publikasi')} className="px-4 py-2 rounded-lg bg-rose-600 text-white text-xs font-bold uppercase tracking-wider hover:bg-rose-700 transition-all shadow-sm">
+                                Import SINTA
+                            </Link>
                         </div>
                     </div>
 
-                    {/* Ringkasan Akreditasi Semua Prodi */}
+                    {/* Tab Navigation (#7-8) */}
+                    <div className="mb-6">
+                      <div className="flex bg-gray-100 p-1 rounded-lg w-fit">
+                        {[
+                          { id: 'overview', label: '📊 Overview' },
+                          { id: 'prediksi', label: '🤖 Prediksi AI' },
+                          { id: 'kinerja', label: '📈 Kinerja' },
+                          { id: 'peringatan', label: '⚠️ Peringatan' },
+                        ].map((tab) => (
+                          <button
+                            key={tab.id}
+                            onClick={() => changeTab(tab.id)}
+                            className={`px-4 py-1.5 text-xs font-black rounded-md transition-all ${
+                              activeTab === tab.id
+                                ? 'bg-white text-indigo-600 shadow-sm scale-105'
+                                : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                          >
+                            {tab.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Overview Tab */}
+                    {activeTab === 'overview' && (
+                    <>
+                    {/* KPI Row - Master Data (#4) */}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-4 mb-8">
+                        <StatCard label="Fakultas" value={stats.fakultas_count} color="bg-indigo-500" href={route('master-data.fakultas')} isTheme3={isTheme3} />
+                        <StatCard label="Program Studi" value={stats.prodi_count} color="bg-blue-500" href={route('master-data.prodi')} isTheme3={isTheme3} />
+                        <StatCard label="Dosen Aktif" value={stats.dosen_count} color="bg-teal-500" href={route('master-data.dosen')} isTheme3={isTheme3} />
+                        <StatCard label="Rata-rata Skor" value={prodiAccreditation.length > 0 ? (prodiAccreditation.reduce((sum, p) => sum + p.skor_simulasi, 0) / prodiAccreditation.length).toFixed(2) : '0.00'} color="bg-purple-500" isTheme3={isTheme3} />
+                    </div>
+
+                    {/* Ringkasan Akreditasi Semua Prodi (#6) */}
                     <div className="mb-12">
-                        <div className="mb-4 flex items-center justify-between">
-                            <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Monitoring Prodi : {lembaga_list.find(l => l.id === selectedInstrumenId)?.nama_lembaga}</h3>
-                            <Link href={route('master-data.prodi')} className="text-[10px] font-black text-indigo-600 hover:text-indigo-800 uppercase tracking-widest underline decoration-indigo-200 underline-offset-4">Kelola Ploting & Prodi</Link>
+                        <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">
+                                Monitoring Prodi : {lembaga_list.find(l => l.id === selectedInstrumenId)?.nama_lembaga}
+                            </h3>
+                            <div className="flex items-center gap-3">
+                                <input
+                                    type="text"
+                                    placeholder="Cari prodi..."
+                                    value={searchProdi}
+                                    onChange={(e) => { setSearchProdi(e.target.value); setShowAllProdi(false); }}
+                                    className="rounded-lg border-gray-200 bg-gray-50 text-xs font-medium shadow-sm focus:ring-indigo-500 focus:border-indigo-500 px-3 py-1.5 w-48"
+                                />
+                                <Link href={route('master-data.prodi')} className="text-[10px] font-black text-indigo-600 hover:text-indigo-800 uppercase tracking-widest underline decoration-indigo-200 underline-offset-4 whitespace-nowrap">
+                                    Kelola Prodi
+                                </Link>
+                            </div>
                         </div>
                         <div className={isTheme3 ? "table-wrapper" : "rounded-xl bg-white shadow-sm border border-gray-100 overflow-hidden"}>
                             <table className="w-full text-left border-collapse">
@@ -253,10 +357,10 @@ export default function Dashboard({ stats, portofolioStats, bkdStats, recentPend
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
-                                    {prodiAccreditation.length === 0 ? (
-                                        <tr><td colSpan={5} className="px-6 py-16 text-center text-gray-400 italic font-medium">Belum ada prodi yang di-ploting ke lembaga ini.</td></tr>
+                                    {filteredProdi.length === 0 ? (
+                                        <tr><td colSpan={5} className="px-6 py-16 text-center text-gray-400 italic font-medium">Tidak ada prodi yang cocok dengan pencarian.</td></tr>
                                     ) : (
-                                        prodiAccreditation.map((prodi) => (
+                                        displayedProdi.map((prodi) => (
                                             <tr key={prodi.id} className="hover:bg-indigo-50/30 transition-all group">
                                                 <td className="px-6 py-5 whitespace-nowrap">
                                                     <div className="font-black text-gray-900 group-hover:text-indigo-600 transition-colors">{prodi.nama}</div>
@@ -283,23 +387,27 @@ export default function Dashboard({ stats, portofolioStats, bkdStats, recentPend
                                 </tbody>
                             </table>
                         </div>
+                        {filteredProdi.length > 5 && (
+                            <div className="mt-3 text-center">
+                                <button
+                                    onClick={() => setShowAllProdi(!showAllProdi)}
+                                    className="text-xs font-bold text-indigo-600 hover:text-indigo-800 uppercase tracking-widest underline decoration-indigo-200 underline-offset-4"
+                                >
+                                    {showAllProdi ? '▲ Sembunyikan' : `▼ Lihat semua ${filteredProdi.length} prodi`}
+                                </button>
+                            </div>
+                        )}
                     </div>
+                    </>
+                    )}
 
+                    {/* Prediksi AI Tab */}
+                    {activeTab === 'prediksi' && (
+                    <>
                     {/* AI Agent Analysis Grid */}
                     <div className="mb-12">
                         <h3 className="mb-4 text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Analisis Agent AI : {lembaga_list.find(l => l.id === selectedInstrumenId)?.singkatan}</h3>
                         
-                        {peringatanStats && (
-                            <div className="mb-6">
-                                <PeringatanBadge
-                                    critical={peringatanStats.critical}
-                                    warning={peringatanStats.warning}
-                                    info={peringatanStats.info}
-                                    unread={peringatanStats.unread}
-                                />
-                            </div>
-                        )}
-
                         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 items-stretch">
                             <div className="lg:col-span-7">
                                 <div className="h-full">
@@ -344,10 +452,16 @@ export default function Dashboard({ stats, portofolioStats, bkdStats, recentPend
                             </div>
                         </div>
                     </div>
+                    </>
+                    )}
 
-                    {/* Akumulasi Kinerja Section */}
+                    {/* Kinerja Tab */}
+                    {activeTab === 'kinerja' && (
+                    <>
                     <div className="mb-12">
-                        <h3 className="mb-4 text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Akumulasi Kinerja Tridharma</h3>
+                        <div className="flex items-center gap-2 mb-4 text-xs font-black text-gray-400 uppercase tracking-[0.2em]">
+                            <span>▼ Akumulasi Kinerja Tridharma</span>
+                        </div>
                         <div className={isTheme3 ? "kpi-grid" : "grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8"}>
                             <StatCard label="Pendidikan" value={portofolioStats.pendidikan_count} color="bg-blue-400" href={route('portofolio.pendidikan')} isTheme3={isTheme3} />
                             <StatCard label="Penelitian" value={portofolioStats.penelitian_count} color="bg-emerald-400" href={route('portofolio.penelitian')} isTheme3={isTheme3} />
@@ -359,20 +473,47 @@ export default function Dashboard({ stats, portofolioStats, bkdStats, recentPend
                             <StatCard label="Dokumen" value={portofolioStats.dokumen_count} color="bg-amber-400" href={route('dokumen')} isTheme3={isTheme3} />
                         </div>
                     </div>
+                    </>
+                    )}
 
-                    {/* Action Bar / Quick Access */}
-                    <div className="mt-8 border-t border-gray-100 pt-8">
-                        <div className="flex flex-wrap gap-4">
-                            <button
-                                onClick={() => window.print()}
-                                className="px-6 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
-                            >
-                                Export PDF
-                            </button>
-                            <Link href={route('admin.templates.index')} className="px-6 py-2.5 rounded-xl bg-gray-900 text-white text-xs font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-gray-200">Download Template XL</Link>
-                            <Link href={route('portofolio.publikasi')} className="px-6 py-2.5 rounded-xl bg-rose-600 text-white text-xs font-black uppercase tracking-widest hover:bg-rose-700 transition-all shadow-lg shadow-rose-200">Import SINTA Massal</Link>
+                    {/* Peringatan Tab */}
+                    {activeTab === 'peringatan' && (
+                    <>
+                    <div className="mb-12">
+                        <h3 className="mb-4 text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Peringatan & Notifikasi</h3>
+                        <div className="rounded-xl bg-white p-8 shadow-sm border border-gray-100 text-center">
+                            {peringatanStats ? (
+                                <div className="flex items-center justify-center gap-8">
+                                    <div className="text-center">
+                                        <div className="text-5xl font-black text-red-600">{peringatanStats.critical}</div>
+                                        <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Critical</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-5xl font-black text-amber-600">{peringatanStats.warning}</div>
+                                        <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Warning</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-5xl font-black text-blue-600">{peringatanStats.info}</div>
+                                        <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Info</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-5xl font-black text-gray-600">{peringatanStats.unread}</div>
+                                        <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Unread</div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <p className="text-gray-400 italic font-medium">Belum ada data peringatan.</p>
+                            )}
+                            <div className="mt-6">
+                                <Link href={route('peringatan')} className="inline-flex px-6 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">
+                                    Lihat Detail Peringatan →
+                                </Link>
+                            </div>
                         </div>
                     </div>
+                    </>
+                    )}
+
                 </div>
             </div>
 

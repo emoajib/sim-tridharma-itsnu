@@ -16,13 +16,12 @@ class PermissionMiddleware
     ];
 
     private const MODULE_MAP = [
-        'import' => 'portofolio',
-        'aipt' => 'agent-ai',
-        'tracer' => 'tracer-study',
-        'rag' => 'agent-ai',
-        'admin.users' => 'users',
-        'admin.roles' => 'admin',
-        'admin.permissions' => 'admin',
+        'import' => 'data-import',
+        'data-import' => 'data-import',
+        'reconciliation' => 'reconciliation',
+        'rkat' => 'rkat',
+        'iku' => 'iku',
+        'cascading' => 'cascading',
     ];
 
     private const ACTION_MAP = [
@@ -37,6 +36,7 @@ class PermissionMiddleware
         'reindex' => 'trigger', 'sync' => 'trigger',
         'ai-resolve' => 'trigger', 'test' => 'view',
         'import-preview' => 'view', 'chunks' => 'view',
+        'approve' => 'approve', 'reject' => 'reject',
         'toggle' => 'edit', 'markRead' => 'edit',
         'markAllRead' => 'edit', 'kuisioner' => 'view',
         'jawaban' => 'view',

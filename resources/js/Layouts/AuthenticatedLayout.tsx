@@ -86,6 +86,7 @@ export default function Authenticated({
     const [showingMasterData, setShowingMasterData] = useState(false);
     const [showingPortofolio, setShowingPortofolio] = useState(false);
     const [showingSpmi, setShowingSpmi] = useState(false);
+    const [showingBudgetKinerja, setShowingBudgetKinerja] = useState(false);
     const [showingAdmin, setShowingAdmin] = useState(false);
     const [showChat, setShowChat] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -125,6 +126,13 @@ export default function Authenticated({
         { name: 'Publikasi', route: 'portofolio.publikasi', icon: '📝', perm: 'portofolio.view' },
         { name: 'PKM', route: 'portofolio.pkm', icon: '🤝', perm: 'portofolio.view' },
         { name: 'Penunjang', route: 'portofolio.penunjang', icon: '📁', perm: 'portofolio.view' },
+    ];
+
+    const budgetKinerjaLinks = [
+        { name: 'RKAT', route: 'rkat.index', icon: '💰', perm: 'rkat.view' },
+        { name: 'Pagu Anggaran', route: 'rkat.pagu', icon: '📊', perm: 'rkat.configure' },
+        { name: 'IKU', route: 'iku.index', icon: '🎯', perm: 'iku.view' },
+        { name: 'Cascading IKU', route: 'iku.cascading', icon: '🔀', perm: 'cascading.view' },
     ];
 
     const tridharmaOtherLinks = [
@@ -169,6 +177,7 @@ export default function Authenticated({
     const isMasterDataActive = masterDataLinks.some((l) => route().current(l.route));
     const isPortofolioActive = portofolioLinks.some((l) => route().current(l.route));
     const isTridharmaActive = tridharmaOtherLinks.some((l) => route().current(l.route));
+    const isBudgetKinerjaActive = budgetKinerjaLinks.some((l) => route().current(l.route));
     const isSpmiActive = spmiLinks.some((l) => route().current(l.route));
     const isAiAgentActive = aiAgentLinks.some((l) => route().current(l.route));
     const isAdminActive = adminLinks.some((l) => route().current(l.route));
@@ -256,6 +265,25 @@ export default function Authenticated({
 
                     <div className="pt-4 pb-1 px-4 text-[10px] font-black uppercase tracking-widest text-gray-500">Penjaminan Mutu (SPMI)</div>
                     {spmiLinks.filter(l => can(l.perm)).map((link) => (
+                        <Link
+                            key={link.route}
+                            href={route(link.route)}
+                            className={`flex items-center gap-3 rounded-lg px-4 py-2 text-sm transition-all ${
+                                route().current(link.route)
+                                    ? isModernTheme ? 'sidebar-item-active' : `${colors.light} ${colors.text} font-bold`
+                                    : isModernTheme ? 'sidebar-item-modern' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                            }`}
+                        >
+                            {(() => {
+                                const Icon = sidebarIcons[link.icon];
+                                return Icon ? <Icon className="h-5 w-5" /> : <span className="text-base">{link.icon}</span>;
+                            })()}
+                            <span>{link.name}</span>
+                        </Link>
+                    ))}
+
+                    <div className="pt-4 pb-1 px-4 text-[10px] font-black uppercase tracking-widest text-gray-500">Anggaran & Kinerja</div>
+                    {budgetKinerjaLinks.filter(l => can(l.perm)).map((link) => (
                         <Link
                             key={link.route}
                             href={route(link.route)}
@@ -432,6 +460,19 @@ export default function Authenticated({
                                     {showingSpmi && (
                                         <div className="absolute left-0 top-14 mt-2 w-56 rounded-md bg-white shadow-2xl ring-1 ring-black ring-opacity-5 z-50" onMouseLeave={() => setShowingSpmi(false)}>
                                             <div className="py-1">{spmiLinks.filter(l => can(l.perm)).map((link) => (
+                                                <Link key={link.route} href={route(link.route)} className={`block px-4 py-2 text-sm ${route().current(link.route) ? `${colors.light} ${colors.text} font-bold` : 'text-gray-700 hover:bg-gray-50'}`}>{link.name}</Link>
+                                            ))}</div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="relative flex items-center">
+                                    <button onClick={() => setShowingBudgetKinerja(!showingBudgetKinerja)} className={getDropdownActiveClass(isBudgetKinerjaActive)}>
+                                        RKAT & IKU <svg className="ml-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                                    </button>
+                                    {showingBudgetKinerja && (
+                                        <div className="absolute left-0 top-14 mt-2 w-56 rounded-md bg-white shadow-2xl ring-1 ring-black ring-opacity-5 z-50" onMouseLeave={() => setShowingBudgetKinerja(false)}>
+                                            <div className="py-1">{budgetKinerjaLinks.filter(l => can(l.perm)).map((link) => (
                                                 <Link key={link.route} href={route(link.route)} className={`block px-4 py-2 text-sm ${route().current(link.route) ? `${colors.light} ${colors.text} font-bold` : 'text-gray-700 hover:bg-gray-50'}`}>{link.name}</Link>
                                             ))}</div>
                                         </div>

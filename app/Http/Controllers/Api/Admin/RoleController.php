@@ -6,6 +6,8 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -14,8 +16,16 @@ class RoleController extends Controller
 {
     public function index(Request $request)
     {
+        $user = $request->user();
+        Log::info('🔴 DIAGNOSTIC: /admin/roles HIT by user', [
+            'email' => $user?->email,
+            'roles' => $user?->getRoleNames()->toArray(),
+            'has_admin_view_via_gate' => $user?->can('admin.view'),
+            'is_super_admin_role' => $user?->hasRole('Super Admin'),
+        ]);
+
         $search = $request->query('search');
-        $perPage = (int) $request->query('per_page', 20);
+        $perPage = min(max((int) $request->query('per_page', 20), 1), 100);
 
         $roles = Role::query()
             ->when($search, fn ($q) => $q->where('name', 'like', "%{$search}%"))
@@ -24,7 +34,9 @@ class RoleController extends Controller
             ->paginate($perPage)
             ->withQueryString();
 
-        $allPermissions = Permission::orderBy('name')->get(['id', 'name', 'guard_name']);
+        $allPermissions = Cache::remember('all_permissions', 3600, fn () => 
+            Permission::orderBy('name')->get(['id', 'name', 'guard_name'])->toArray()
+        );
 
         return inertia('Admin/Roles/Index', [
             'roles' => $roles,

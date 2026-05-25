@@ -23,13 +23,13 @@ class PermissionController extends Controller
             ->paginate($perPage)
             ->withQueryString();
 
-        // Get distinct modules (SQLite-compatible)
+        // Get distinct modules (Database-agnostic)
         $modules = Permission::query()
-            ->selectRaw("DISTINCT SUBSTR(name, 1, INSTR(name, '.') - 1) as module")
-            ->whereNotNull('name')
-            ->where('name', '!=', '')
-            ->orderBy('module')
-            ->pluck('module');
+            ->pluck('name')
+            ->map(fn ($name) => str_contains((string)$name, '.') ? explode('.', (string)$name)[0] : $name)
+            ->unique()
+            ->sort()
+            ->values();
 
         return inertia('Admin/Permissions/Index', [
             'permissions' => $permissions,

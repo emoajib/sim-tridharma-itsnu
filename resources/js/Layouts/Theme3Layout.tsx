@@ -103,6 +103,13 @@ export default function Theme3Layout({
         { name: 'Penunjang', route: 'portofolio.penunjang', icon: '📁', perm: 'portofolio.view' },
     ];
 
+    const budgetKinerjaLinks = [
+        { name: 'RKAT', route: 'rkat.index', icon: '💰', perm: 'rkat.view' },
+        { name: 'Pagu Anggaran', route: 'rkat.pagu', icon: '📊', perm: 'rkat.configure' },
+        { name: 'IKU', route: 'iku.index', icon: '🎯', perm: 'iku.view' },
+        { name: 'Cascading IKU', route: 'iku.cascading', icon: '🔀', perm: 'cascading.view' },
+    ];
+
     const otherLinks = [
         { name: 'BKD', route: 'bkd', icon: '📄', perm: 'bkd.view' },
         { name: 'Dokumen', route: 'dokumen', icon: '📑', perm: 'dokumen.view' },
@@ -201,6 +208,25 @@ export default function Theme3Layout({
                     <div className="nav-group pt-4">
                         <p className="nav-group-title">Portofolio</p>
                         {portofolioLinks.filter(l => can(l.perm)).map((link) => (
+                            <Link
+                                key={link.route}
+                                href={route(link.route)}
+                                className={`nav-item ${isActive(link.route) ? 'active' : ''}`}
+                            >
+                                <div className="nav-item-left">
+                                    {(() => {
+                                        const Icon = sidebarIcons[link.icon];
+                                        return Icon ? <Icon className="h-5 w-5" /> : <span>{link.icon}</span>;
+                                    })()}
+                                    <span>{link.name}</span>
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+
+                    <div className="nav-group pt-4">
+                        <p className="nav-group-title">Anggaran & Kinerja</p>
+                        {budgetKinerjaLinks.filter(l => can(l.perm)).map((link) => (
                             <Link
                                 key={link.route}
                                 href={route(link.route)}
