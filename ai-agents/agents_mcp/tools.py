@@ -514,93 +514,93 @@ async def integrasi_sync(
 ) -> dict:
     """
     Synchronize data from external sources (PDDIKTI, SINTA, SISTER).
-    Returns count of records pulled and conflicts detected.
+    Fallback chain: API → SQL Views (Excel Import) → Reconciliation.
     """
-    await _ctx(ctx).report_progress(1, 3, f"Connecting to {sumber}...")
+    await _ctx(ctx).report_progress(1, 5, f"Memeriksa {sumber}...")
 
-    import httpx
-    from agents_mcp.config import SINTA_API_URL, SINTA_API_KEY, PDDIKTI_API_URL, PDDIKTI_API_KEY
+    from agents_mcp.database import execute_query
 
-    if sumber == "pddikti":
-        await _ctx(ctx).report_progress(2, 3, "Fetching data from PDDIKTI...")
-        try:
-            prodi_count = 0
-            dosen_count = 0
-            async with httpx.AsyncClient(timeout=30) as client:
-                headers = {}
-                if PDDIKTI_API_KEY:
-                    headers["Authorization"] = f"Bearer {PDDIKTI_API_KEY}"
-                prodi_resp = await client.get(f"{PDDIKTI_API_URL}/prodi", headers=headers)
-                if prodi_resp.status_code == 200:
-                    prodi_count = prodi_resp.json().get("total", 0)
-                dosen_resp = await client.get(f"{PDDIKTI_API_URL}/dosen", headers=headers)
-                if dosen_resp.status_code == 200:
-                    dosen_count = dosen_resp.json().get("total", 0)
-            await _ctx(ctx).report_progress(3, 3, "PDDIKTI sync complete")
-            return {
-                "sumber": "pddikti",
-                "records_pulled": prodi_count + dosen_count,
-                "conflicts_detected": 0,
-                "status": "success",
-                "details": {"prodi": prodi_count, "dosen": dosen_count},
-                "timestamp": datetime.now().isoformat(),
-            }
-        except Exception as e:
-            return {
-                "sumber": "pddikti",
-                "records_pulled": 0,
-                "conflicts_detected": 0,
-                "status": "error",
-                "message": str(e),
-                "timestamp": datetime.now().isoformat(),
-            }
+    view_map = {
+        "pddikti": "v_sync_pddikti_dosen",
+        "sinta": "v_sync_sinta_publikasi",
+        "sister": "v_sync_sister_riwayat",
+    }
 
-    elif sumber == "sinta":
-        await _ctx(ctx).report_progress(2, 3, "Fetching data from SINTA...")
-        try:
-            author_count = 0
-            async with httpx.AsyncClient(timeout=30) as client:
-                headers = {}
-                if SINTA_API_KEY:
-                    headers["Authorization"] = f"Bearer {SINTA_API_KEY}"
-                resp = await client.get(f"{SINTA_API_URL}/authors", params={"q": ""}, headers=headers)
-                if resp.status_code == 200:
-                    author_count = resp.json().get("total", 0)
-            await _ctx(ctx).report_progress(3, 3, "SINTA sync complete")
-            return {
-                "sumber": "sinta",
-                "records_pulled": author_count,
-                "conflicts_detected": 0,
-                "status": "success",
-                "details": {"authors": author_count},
-                "timestamp": datetime.now().isoformat(),
-            }
-        except Exception as e:
-            return {
-                "sumber": "sinta",
-                "records_pulled": 0,
-                "conflicts_detected": 0,
-                "status": "error",
-                "message": str(e),
-                "timestamp": datetime.now().isoformat(),
-            }
-
-    elif sumber == "sister":
-        await _ctx(ctx).report_progress(2, 3, "SISTER integration not available")
+    view = view_map.get(sumber)
+    if not view:
         return {
-            "sumber": "sister",
+            "sumber": sumber,
+            "status": "error",
+            "message": f"Sumber '{sumber}' tidak dikenal. Gunakan: pddikti, sinta, sister",
+        }
+
+    # Step 1: Try external API first
+    await _ctx(ctx).report_progress(2, 5, f"Mencoba koneksi API {sumber}...")
+    api_success = False
+    api_result = None
+    try:
+        import httpx
+        from agents_mcp.config import SINTA_API_URL, SINTA_API_KEY, PDDIKTI_API_URL, PDDIKTI_API_KEY
+
+        if sumber == "pddikti":
+            async with httpx.AsyncClient(timeout=15) as client:
+                headers = {"Authorization": f"Bearer {PDDIKTI_API_KEY}"} if PDDIKTI_API_KEY else {}
+                resp = await client.get(f"{PDDIKTI_API_URL}/dosen", params={"limit": 1}, headers=headers)
+                api_success = resp.status_code == 200
+        elif sumber == "sinta":
+            async with httpx.AsyncClient(timeout=15) as client:
+                headers = {"Authorization": f"Bearer {SINTA_API_KEY}"} if SINTA_API_KEY else {}
+                resp = await client.get(f"{SINTA_API_URL}/authors", params={"q": "", "limit": 1}, headers=headers)
+                api_success = resp.status_code == 200
+        if api_success:
+            api_result = {"sumber": sumber, "status": "api_available"}
+    except Exception:
+        api_success = False
+
+    if api_success:
+        await _ctx(ctx).report_progress(3, 5, f"API {sumber} tersedia, melanjutkan...")
+        return {
+            "sumber": sumber,
+            "status": "api_available",
             "records_pulled": 0,
             "conflicts_detected": 0,
-            "status": "not_implemented",
-            "message": "SISTER API integration requires custom implementation",
-            "timestamp": datetime.now().isoformat(),
+            "message": f"API {sumber} tersedia. Gunakan endpoint integrasi terpisah untuk sinkronasi penuh.",
+            "fallback_data_available": False,
         }
 
-    else:
+    # Step 2: API unavailable → check SQL views (Excel import data)
+    await _ctx(ctx).report_progress(3, 5, f"API tidak tersedia, memeriksa data dari Excel import...")
+    rows = await execute_query(f"SELECT COUNT(*) as cnt FROM {view}")
+    total = rows[0]["cnt"] if rows else 0
+
+    # Step 3: Check reconciliation pending
+    await _ctx(ctx).report_progress(4, 5, "Memeriksa data rekonsiliasi...")
+    pending_rows = await execute_query("""
+        SELECT COUNT(*) as cnt FROM reconciliation_suggestions
+        WHERE status = 'pending' AND source_type LIKE $1
+    """, [f"%{sumber}%"])
+    pending_count = pending_rows[0]["cnt"] if pending_rows else 0
+
+    await _ctx(ctx).report_progress(5, 5, "Selesai")
+
+    if total > 0:
         return {
-            "error": f"Unknown source: {sumber}. Must be one of: pddikti, sinta, sister",
-            "timestamp": datetime.now().isoformat(),
+            "sumber": sumber,
+            "status": "completed",
+            "records_in_system": total,
+            "reconciliation_pending": pending_count,
+            "api_available": False,
+            "message": f"Data tersedia dari Excel import ({total} record). {pending_count} perlu rekonsiliasi." if pending_count else f"Semua data {sumber} tersinkron via Excel import ({total} record).",
         }
+
+    return {
+        "sumber": sumber,
+        "status": "excel_required",
+        "records_in_system": 0,
+        "reconciliation_pending": 0,
+        "api_available": False,
+        "message": f"Tidak ada data {sumber}. Upload file Excel melalui menu Import Data untuk mengisi data.",
+    }
 
 
 @mcp.tool()

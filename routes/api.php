@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\AgentController;
+use App\Http\Controllers\Api\CascadingIkuController;
+use App\Http\Controllers\Api\IkuController;
 use App\Http\Controllers\Api\KnowledgeBaseController;
 use App\Http\Controllers\Api\RkatController;
 use Illuminate\Http\Request;
@@ -20,6 +22,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/proposals', [RkatController::class, 'store']);
         Route::post('/proposals/{id}/approve', [RkatController::class, 'approve']);
         Route::get('/pagu-check', [RkatController::class, 'checkPagu']);
+    });
+
+    // IKU for agents
+    Route::prefix('iku')->group(function () {
+        Route::get('/', [IkuController::class, 'index']);
+        Route::get('/cascading', [CascadingIkuController::class, 'index']);
     });
 });
 

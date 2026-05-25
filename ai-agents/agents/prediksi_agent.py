@@ -148,6 +148,30 @@ class PrediksiAgent(BaseAgent):
                 mc_mean = skor_prediksi
                 mc_std = 0
 
+            # 3.5 IKU Achievement Prediction
+            iku_rows = db.execute(
+                text("""
+                    SELECT ci.target, ci.capaian, i.kode_iku, i.satuan, i.bobot as iku_bobot
+                    FROM trx_cascading_iku ci
+                    JOIN m_indikator_iku i ON i.id = ci.iku_id
+                    WHERE ci.unit_type = 'Prodi' AND ci.unit_id = :prodi_id
+                      AND ci.periode_id = :periode_id AND ci.target > 0
+                """),
+                {"prodi_id": prodi_id, "periode_id": periode_id},
+            ).fetchall()
+
+            iku_predictions = []
+            for ir in iku_rows:
+                pct = (float(ir.capaian) / float(ir.target)) * 100
+                iku_predictions.append({
+                    "kode_iku": ir.kode_iku,
+                    "target": float(ir.target),
+                    "capaian": float(ir.capaian),
+                    "capaian_persen": round(pct, 2),
+                    "satuan": ir.satuan,
+                    "status": "tercapai" if pct >= 100 else ("on_track" if pct >= 75 else "perlu_perhatian"),
+                })
+
             # 4. Analyze Budget Correlation
             budget_impact = "netral"
             if periode_id in budgets:
@@ -192,7 +216,8 @@ class PrediksiAgent(BaseAgent):
                 "method": "monte_carlo",
                 "mc_samples": 1000,
                 "mc_mean": round(mc_mean, 2),
-                "mc_std": round(mc_std, 2)
+                "mc_std": round(mc_std, 2),
+                "iku_predictions": iku_predictions
             }
 
             db.execute(

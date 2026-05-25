@@ -162,7 +162,7 @@ return [
 
             'gemini' => [
                 'api_key' => env('GEMINI_API_KEY', ''),
-                'model' => env('BRAIN_GEMINI_MODEL', 'gemini-1.5-pro'),
+                'model' => env('BRAIN_GEMINI_MODEL', 'gemini-1.5-flash'),
                 'max_tokens' => (int) env('BRAIN_GEMINI_MAX_TOKENS', 2048),
                 'timeout' => (int) env('BRAIN_GEMINI_TIMEOUT', 30),
                 'base_url' => env('BRAIN_GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com'),

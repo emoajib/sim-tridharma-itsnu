@@ -30,6 +30,8 @@ class PeringatanAgent(BaseAgent):
             # Add smart anomaly detection checks
             warnings.extend(self._check_smart_rkat_anomaly(db, prodi_id))
             warnings.extend(self._check_smart_bkd_anomaly(db, prodi_id))
+            # IKU cascade achievement check
+            warnings.extend(self._check_iku_cascading(db, prodi_id))
 
             for w in warnings:
                 db.execute(
@@ -333,6 +335,41 @@ class PeringatanAgent(BaseAgent):
                 "deskripsi": f"{r.nama_sarana} {'kadaluarsa' if days_left <=0 else f'tersisa {days_left} hari'} (jatuh tempo: {r.tanggal_kalibrasi_berikut})",
                 "dosen_id": None,
             })
+        return warnings
+
+    def _check_iku_cascading(self, db, prodi_id: int | None) -> list:
+        """Check IKU cascade target achievement for a prodi."""
+        if not prodi_id:
+            return []
+
+        sql = """
+            SELECT ci.id, ci.target, ci.capaian, ci.unit_id, i.kode_iku, i.nama_iku, i.satuan, p.nama_periode
+            FROM trx_cascading_iku ci
+            JOIN m_indikator_iku i ON i.id = ci.iku_id
+            LEFT JOIN m_periode_akademik p ON p.id = ci.periode_id
+            WHERE ci.unit_type = 'Prodi' AND ci.unit_id = :prodi_id
+              AND ci.target > 0
+            ORDER BY p.created_at DESC, i.kode_iku
+        """
+        rows = db.execute(text(sql), {"prodi_id": prodi_id}).fetchall()
+
+        warnings = []
+        for r in rows:
+            pct = (float(r.capaian) / float(r.target)) * 100
+            level = "info"
+            if pct < 50:
+                level = "critical"
+            elif pct < 75:
+                level = "warning"
+
+            if level != "info":
+                warnings.append({
+                    "level": level,
+                    "kategori": "iku_cascading",
+                    "judul": f"IKU {r.kode_iku} Tidak On Track",
+                    "deskripsi": f"{r.kode_iku} ({r.nama_iku}) baru tercapai {pct:.1f}% dari target {r.target} {r.satuan}. Segera lakukan aksi korektif.",
+                    "dosen_id": None,
+                })
         return warnings
 
     def _check_akreditasi(self, db, prodi_id: int | None) -> list:

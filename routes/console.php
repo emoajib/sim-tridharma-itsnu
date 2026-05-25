@@ -12,3 +12,8 @@ Schedule::command('agents:run-all')
     ->hourly()
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/agents.log'));
+
+Schedule::command('reconcile:auto --hours=24')
+    ->dailyAt('02:00')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/reconcile.log'));

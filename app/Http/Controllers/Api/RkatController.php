@@ -7,35 +7,60 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Rkat\ApprovalRequest;
 use App\Http\Requests\Rkat\StoreUsulanRequest;
+use App\Models\RkatPagu;
+use App\Models\UsulanRkat;
 use App\Services\Rkat\RkatService;
+use App\Traits\HasRoleScope;
 use Exception;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class RkatController extends Controller
 {
+    use HasRoleScope;
+
     public function __construct(
         protected RkatService $rkatService
     ) {}
 
     /**
-     * Display a listing of proposals for a prodi.
+     * Display listing (Inertia web or JSON API)
      */
     public function index(Request $request)
     {
-        $request->validate([
-            'prodi_id' => 'required|exists:m_prodi,id',
-            'periode_id' => 'nullable|exists:m_periode_akademik,id',
-        ]);
+        $query = UsulanRkat::with(['prodi', 'periode', 'iku', 'pengusul', 'logs']);
 
-        $proposals = $this->rkatService->getProposalsByUnit(
-            $request->prodi_id,
-            $request->periode_id
-        );
+        $this->applyScope($query, $request->user(), 'prodi_id');
 
-        return response()->json([
-            'success' => true,
-            'data' => $proposals,
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->has('prodi_id')) {
+            $query->where('prodi_id', $request->prodi_id);
+        }
+        if ($request->has('periode_id')) {
+            $query->where('periode_id', $request->periode_id);
+        }
+
+        if ($request->wantsJson() || $request->expectsJson()) {
+            $proposals = $query->orderBy('created_at', 'desc')->paginate($request->per_page ?? 20);
+            return response()->json(['success' => true, 'data' => $proposals]);
+        }
+
+        $proposals = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
+
+        return Inertia::render('Keuangan/Rkat/Index', [
+            'proposals' => $proposals,
+            'filters' => $request->only(['status', 'periode_id', 'prodi_id']),
         ]);
+    }
+
+    /**
+     * Inertia page: create form
+     */
+    public function create()
+    {
+        return Inertia::render('Keuangan/Rkat/Create');
     }
 
     /**
@@ -48,11 +73,23 @@ class RkatController extends Controller
             $request->user()->id
         );
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Usulan RKAT berhasil diajukan.',
-            'data' => $usulan,
-        ], 201);
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Usulan RKAT berhasil diajukan.', 'data' => $usulan], 201);
+        }
+
+        return redirect()->route('rkat.index')->with('success', 'Usulan RKAT berhasil diajukan.');
+    }
+
+    /**
+     * Inertia page: show detail
+     */
+    public function show(int $id)
+    {
+        $proposal = UsulanRkat::with(['prodi', 'periode', 'iku', 'indikatorAkreditasi', 'pengusul', 'logs.user'])->findOrFail($id);
+
+        return Inertia::render('Keuangan/Rkat/Detail', [
+            'proposal' => $proposal,
+        ]);
     }
 
     /**
@@ -68,21 +105,25 @@ class RkatController extends Controller
                 $request->keterangan
             );
 
-            return response()->json([
-                'success' => true,
-                'message' => "Usulan RKAT berhasil di-{$request->action}.",
-                'data' => $usulan,
-            ]);
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Usulan RKAT berhasil di-{$request->action}.",
+                    'data' => $usulan,
+                ]);
+            }
+
+            return redirect()->back()->with('success', "Usulan RKAT berhasil di-{$request->action}.");
         } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 422);
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
+            return redirect()->back()->with('error', $e->getMessage());
         }
     }
 
     /**
-     * Check budget ceiling status.
+     * Check budget ceiling (JSON API)
      */
     public function checkPagu(Request $request)
     {
@@ -99,9 +140,36 @@ class RkatController extends Controller
             $request->amount
         );
 
-        return response()->json([
-            'success' => true,
-            'data' => $status,
+        return response()->json(['success' => true, 'data' => $status]);
+    }
+
+    /**
+     * Inertia page: manage pagu
+     */
+    public function paguIndex(Request $request)
+    {
+        $query = RkatPagu::with('periode');
+        $paginations = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
+
+        return Inertia::render('Keuangan/Rkat/Pagu', [
+            'paginations' => $paginations,
         ]);
+    }
+
+    public function paguStore(Request $request)
+    {
+        $validated = $request->validate([
+            'periode_id' => 'required|exists:m_periode_akademik,id',
+            'unit_type' => 'required|in:Rektorat,Fakultas,Prodi',
+            'unit_id' => 'required|integer',
+            'pagu_total' => 'required|numeric|min:0',
+        ]);
+
+        RkatPagu::updateOrCreate(
+            ['periode_id' => $validated['periode_id'], 'unit_type' => $validated['unit_type'], 'unit_id' => $validated['unit_id']],
+            ['pagu_total' => $validated['pagu_total']]
+        );
+
+        return redirect()->back()->with('success', 'Pagu anggaran berhasil disimpan.');
     }
 }

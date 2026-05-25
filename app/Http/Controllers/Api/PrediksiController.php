@@ -21,7 +21,7 @@ class PrediksiController extends Controller
             ->paginate(20);
 
         $prodi_list = Prodi::select('id', 'nama_prodi')->get();
-        $periode_list = PeriodeAkademik::orderByDesc('tahun')->orderByDesc('semester')->get();
+        $periode_list = PeriodeAkademik::orderByDesc('kode_periode')->get();
 
         $stats = [
             'total' => AgentPredictionHistory::count(),
