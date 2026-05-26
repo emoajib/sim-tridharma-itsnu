@@ -15,7 +15,7 @@ class AuditMutu extends Model
     protected $table = 'trx_audit_mutu';
 
     protected $fillable = [
-        'prodi_id', 'periode_id', 'standar_mutu_id',
+        'prodi_id', 'periode_id', 'spmi_cycle_id', 'standar_mutu_id',
         'judul_audit', 'tanggal_audit', 'auditor',
         'temuan', 'rekomendasi', 'status', 'tindak_lanjut',
         'severity', 'pic_user_id', 'auditor_user_id',
@@ -67,6 +67,12 @@ class AuditMutu extends Model
         return $this->belongsTo(User::class, 'verified_by');
     }
 
+    // NEW: SpmiCycle Relationship
+    public function spmiCycle(): BelongsTo
+    {
+        return $this->belongsTo(SpmiCycle::class, 'spmi_cycle_id');
+    }
+
     public function capas(): HasMany
     {
         return $this->hasMany(Capa::class, 'audit_mutu_id');
@@ -75,5 +81,49 @@ class AuditMutu extends Model
     public function histories(): HasMany
     {
         return $this->hasMany(AuditHistory::class, 'audit_mutu_id');
+    }
+
+    // NEW: Helper Methods
+
+    /**
+     * Determine severity level from temuan content
+     */
+    public function calculateSeverity(): string
+    {
+        $temuanLength = strlen($this->temuan ?? '');
+        if ($temuanLength > 500) return 'critical';
+        if ($temuanLength > 200) return 'high';
+        if ($temuanLength > 50) return 'medium';
+        return 'low';
+    }
+
+    /**
+     * Check if audit is overdue
+     */
+    public function isOverdue(): bool
+    {
+        return $this->deadline_tindak_lanjut 
+            && $this->deadline_tindak_lanjut->isPast() 
+            && $this->status !== 'closed';
+    }
+
+    /**
+     * Get total CAPA count for this audit
+     */
+    public function getCapaCount(): int
+    {
+        return $this->capas()->count();
+    }
+
+    /**
+     * Get completed CAPA percentage
+     */
+    public function getCapaCompletionPercentage(): float
+    {
+        $total = $this->capas()->count();
+        if ($total === 0) return 0;
+        
+        $completed = $this->capas()->where('status', 'closed')->count();
+        return round(($completed / $total) * 100, 2);
     }
 }

@@ -13,7 +13,7 @@ class SurveySpmi extends Model
     protected $table = 'trx_survey_spmi';
 
     protected $fillable = [
-        'periode_id', 'responden_type', 'responses',
+        'periode_id', 'spmi_cycle_id', 'responden_type', 'responses',
         'skor_rata_rata', 'token', 'diisi_at',
     ];
 
@@ -29,5 +29,32 @@ class SurveySpmi extends Model
     public function periode(): BelongsTo
     {
         return $this->belongsTo(PeriodeAkademik::class, 'periode_id');
+    }
+
+    // NEW: SpmiCycle Relationship
+    public function spmiCycle(): BelongsTo
+    {
+        return $this->belongsTo(SpmiCycle::class, 'spmi_cycle_id');
+    }
+
+    // NEW: Helper Methods
+
+    /**
+     * Get average NPS score from responses
+     */
+    public function getNpsScore(): ?float
+    {
+        $responses = $this->responses;
+        if (!isset($responses['nps'])) return null;
+        
+        return collect($responses['nps'])->avg();
+    }
+
+    /**
+     * Check if response is complete
+     */
+    public function isComplete(): bool
+    {
+        return !empty($this->responses) && $this->diisi_at !== null;
     }
 }

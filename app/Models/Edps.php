@@ -13,7 +13,7 @@ class Edps extends Model
     protected $table = 'trx_edps';
 
     protected $fillable = [
-        'prodi_id', 'periode_id', 'standar_mutu_id',
+        'prodi_id', 'periode_id', 'spmi_cycle_id', 'standar_mutu_id',
         'target', 'capaian', 'analisis', 'bukti_file', 'status',
     ];
 
@@ -38,5 +38,42 @@ class Edps extends Model
     public function standarMutu(): BelongsTo
     {
         return $this->belongsTo(StandarMutu::class);
+    }
+
+    // NEW: SpmiCycle Relationship
+    public function spmiCycle(): BelongsTo
+    {
+        return $this->belongsTo(SpmiCycle::class, 'spmi_cycle_id');
+    }
+
+    // NEW: Helper Methods
+
+    /**
+     * Calculate achievement percentage
+     */
+    public function getAchievementPercentage(): float
+    {
+        if (!$this->target || $this->target == 0) return 0;
+        return round(($this->capaian / $this->target) * 100, 2);
+    }
+
+    /**
+     * Check if target is achieved (80% threshold)
+     */
+    public function isTargetAchieved(): bool
+    {
+        return $this->getAchievementPercentage() >= 80;
+    }
+
+    /**
+     * Get performance indicator
+     */
+    public function getPerformanceIndicator(): string
+    {
+        $percentage = $this->getAchievementPercentage();
+        if ($percentage >= 100) return 'excellent';
+        if ($percentage >= 80) return 'good';
+        if ($percentage >= 60) return 'satisfactory';
+        return 'needs_improvement';
     }
 }
