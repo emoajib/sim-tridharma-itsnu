@@ -30,7 +30,7 @@ RUN composer install \
     --no-progress
 
 # ── Stage 3: Production Runtime ─────────────────────────────────────
-FROM php:8.4-fpm-alpine
+FROM php:8.5-fpm-alpine
 
 # ── System Dependencies ──────────────────────────────────────────────
 RUN apk add --no-cache \
