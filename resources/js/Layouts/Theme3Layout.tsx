@@ -158,6 +158,7 @@ export default function Theme3Layout({
         { name: 'Manajemen Pengguna', route: 'admin.users.index', icon: '👥', perm: 'users.view' },
         { name: 'Manajemen Role', route: 'admin.roles.index', icon: '🔐', perm: 'admin.view' },
         { name: 'Daftar Permission', route: 'admin.permissions.index', icon: '📋', perm: 'admin.view' },
+        { name: 'Import Data', route: 'data-import.templates', icon: '📮', perm: 'data-import.view' },
     ];
 
     // Sidebar component

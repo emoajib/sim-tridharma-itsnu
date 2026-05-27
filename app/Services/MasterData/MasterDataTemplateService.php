@@ -16,6 +16,16 @@ class MasterDataTemplateService
 {
     private array $lookupCache = [];
 
+    private function getPddiktiColumns(): array
+    {
+        return [
+            'No', 'Nomor Registrasi', 'NUPTK', 'Nama', 'NIP',
+            'Jabatan Fungsional', 'Kepangkatan', 'Pendidikan Terakhir',
+            'Rumpun Ilmu', 'Status Serdos', 'Status Pegawai',
+            'Ikatan Kerja', 'Status Aktivitas', 'Penempatan',
+        ];
+    }
+
     public function getTypes(): array
     {
         return [
@@ -145,6 +155,20 @@ class MasterDataTemplateService
                 'defaults' => [],
                 'has_password' => true,
             ],
+            'dosen_pddikti' => [
+                'label' => 'Dosen (PDDikti/SISTER)',
+                'table' => 'm_dosen',
+                'columns' => $this->getPddiktiColumns(),
+                'field_map' => [
+                    'Nomor Registrasi' => 'nidn',
+                    'NIP' => 'nip',
+                    'Pendidikan Terakhir' => 'pendidikan_terakhir',
+                    'Status Aktivitas' => 'status_aktivitas',
+                ],
+                'lookups' => [],
+                'required' => ['Nama'],
+                'defaults' => ['status_aktivitas' => 'aktif'],
+            ],
         ];
     }
 
@@ -226,6 +250,136 @@ class MasterDataTemplateService
                 'mapped' => $mapped,
                 'valid' => $validation['valid'],
                 'errors' => $validation['errors'],
+            ];
+        }
+
+        return $result;
+    }
+
+    public function importPddikti(UploadedFile $file): ImportResult
+    {
+        $transformer = new PddiktiDosenTransformerService;
+
+        $rows = $this->readRows($file);
+        if (empty($rows)) {
+            return new ImportResult(0, 0, 0, [['row' => 0, 'errors' => ['File kosong atau tidak dapat dibaca.']]]);
+        }
+
+        $firstCell = is_string($rows[0][0] ?? null) ? $rows[0][0] : (string) ($rows[0][0] ?? '');
+
+        if (str_contains($firstCell, 'SISTER')) {
+            array_shift($rows);
+        }
+
+        if (empty($rows)) {
+            return new ImportResult(0, 0, 0, [['row' => 0, 'errors' => ['File kosong.']]]);
+        }
+
+        $headers = $rows[0];
+        $dataRows = array_slice($rows, 1);
+
+        $errors = [];
+        $successCount = 0;
+
+        DB::beginTransaction();
+
+        try {
+            foreach ($dataRows as $index => $row) {
+                $rowNumber = $index + 2;
+
+                $transformed = $transformer->transform($row, $headers);
+
+                if ($transformed === null) {
+                    $nama = $row[array_search('Nama', $headers) ?: 3] ?? '-';
+                    $errors[] = [
+                        'row' => $rowNumber,
+                        'errors' => ['Tidak dapat mengidentifikasi dosen (NIDN/NUPTK/Nama kosong).'],
+                        'data' => ['Nama' => $nama],
+                    ];
+                    continue;
+                }
+
+                try {
+                    if ($transformed['nidn']) {
+                        DB::table('m_dosen')->updateOrInsert(
+                            ['nidn' => $transformed['nidn']],
+                            array_merge($transformed, [
+                                'is_active' => true,
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ])
+                        );
+                    } elseif ($transformed['nuptk']) {
+                        DB::table('m_dosen')->updateOrInsert(
+                            ['nuptk' => $transformed['nuptk']],
+                            array_merge($transformed, [
+                                'is_active' => true,
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ])
+                        );
+                    } else {
+                        $errors[] = [
+                            'row' => $rowNumber,
+                            'errors' => ['Tidak memiliki NIDN maupun NUPTK.'],
+                            'data' => $transformed,
+                        ];
+                        continue;
+                    }
+                    $successCount++;
+                } catch (\Exception $e) {
+                    $errors[] = [
+                        'row' => $rowNumber,
+                        'errors' => [$e->getMessage()],
+                        'data' => $transformed,
+                    ];
+                }
+            }
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return new ImportResult(count($dataRows), 0, count($dataRows), [
+                ['row' => 0, 'errors' => ['Transaction rolled back: ' . $e->getMessage()]],
+            ]);
+        }
+
+        return new ImportResult(
+            totalRows: count($dataRows),
+            successRows: $successCount,
+            failedRows: count($dataRows) - $successCount,
+            errors: $errors,
+        );
+    }
+
+    public function previewPddikti(UploadedFile $file): array
+    {
+        $transformer = new PddiktiDosenTransformerService;
+
+        $rows = $this->readRows($file);
+        if (empty($rows)) {
+            return [];
+        }
+
+        $firstCell = is_string($rows[0][0] ?? null) ? $rows[0][0] : (string) ($rows[0][0] ?? '');
+        if (str_contains($firstCell, 'SISTER')) {
+            array_shift($rows);
+        }
+
+        $headers = $rows[0];
+        $dataRows = array_slice($rows, 1);
+
+        $result = [];
+        foreach ($dataRows as $index => $row) {
+            $rowNumber = $index + 2;
+            $transformed = $transformer->transform($row, $headers);
+
+            $result[] = [
+                'row_number' => $rowNumber,
+                'data' => $row,
+                'mapped' => $transformed,
+                'valid' => $transformed !== null,
+                'errors' => $transformed === null ? ['Tidak dapat mengidentifikasi dosen (NIDN/NUPTK/Nama kosong).'] : [],
             ];
         }
 

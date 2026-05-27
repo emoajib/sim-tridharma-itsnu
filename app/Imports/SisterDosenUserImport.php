@@ -6,9 +6,9 @@ use App\Models\Dosen;
 use App\Models\User;
 use App\Services\MasterData\PddiktiDosenTransformerService;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
@@ -18,18 +18,12 @@ use Spatie\Permission\Models\Role;
 /**
  * Dedicated Importer untuk file export SISTER (Data_dosen.xlsx / Data_dosen.csv).
  *
- * Aturan Mode Aman (sesuai keputusan proyek):
- * - Hanya meng-update field yang aman: name, is_active, dosen_id, prodi_id
+ * Aturan Mode Aman:
  * - TIDAK PERNAH menyentuh role user (baik saat create maupun update)
  * - TIDAK PERNAH menyentuh gelar_depan & gelar_belakang (sengaja dibiarkan untuk diisi manual)
  * - Saat user baru: otomatis diberi role "Dosen" saja
  * - Saat re-upload: data role yang sudah ada tidak boleh berubah
- * - Mendukung pencocokan dosen via NIDN (prioritas) atau NUPTK
- *
- * Status implementasi:
- * - Mode Aman penuh sudah aktif (role & gelar tidak pernah disentuh)
- * - Mode Dry-Run / Simulasi sudah berfungsi (gunakan constructor dengan true)
- * - Penyimpanan snapshot data asli SISTER: fondasi sudah ada, storage penuh menunggu kolom DB
+ * - Mendukung pencocokan dosen via NIDN (prioritas) → NIP → NUPTK
  */
 class SisterDosenUserImport implements ToCollection, WithHeadingRow, WithStartRow
 {
@@ -47,10 +41,6 @@ class SisterDosenUserImport implements ToCollection, WithHeadingRow, WithStartRo
         $this->transformer = new PddiktiDosenTransformerService;
     }
 
-    /**
-     * Header asli ada di baris ke-2.
-     * Data pertama ada di baris ke-3 (setelah judul + header).
-     */
     public function headingRow(): int
     {
         return 2;
@@ -63,201 +53,178 @@ class SisterDosenUserImport implements ToCollection, WithHeadingRow, WithStartRo
 
     public function collection(Collection $rows)
     {
-        $isFirstRow = true;
+        DB::beginTransaction();
 
-        foreach ($rows as $index => $rawRow) {
-            try {
-                // Normalisasi key Excel menjadi snake_case lowercase
-                $row = [];
-                foreach ($rawRow as $key => $value) {
-                    $cleanKey = Str::snake(strtolower(preg_replace('/[^a-zA-Z0-9]/', '_', trim((string)$key))));
-                    $row[$cleanKey] = $value;
-                }
+        try {
+            $isFirstRow = true;
 
-                // === DIAGNOSTIC LOGGING (header detection) ===
-                if ($isFirstRow) {
-                    Log::info('SisterDosenUserImport - Header row detected (after WithStartRow)', [
-                        'row_index' => $index + 1,
-                        'normalized_keys' => array_keys($row),
-                        'sample_values' => array_slice($row, 0, 6, true),
-                    ]);
-                    $isFirstRow = false;
-                }
+            foreach ($rows as $index => $rawRow) {
+                try {
+                    $row = $this->normalizeKeys($rawRow);
 
-                // Ekstraksi fleksibel untuk export SISTER
-                $nomorRegistrasi = $this->cleanValue(
-                    $row['nomor_registrasi'] ??
-                    $row['no_reg'] ??
-                    $row['nomor_registrasi'] ??
-                    $row['nomor registrasi'] ??
-                    $row['no'] ?? null
-                );
-                $nama = $this->cleanValue($row['nama'] ?? $row['nama_dosen'] ?? null);
-                $nip = $this->cleanValue($row['nip'] ?? null);
-                $statusAktivitas = $this->cleanValue($row['status_aktivitas'] ?? 'Aktif');
-                $jabatanFungsional = $this->cleanValue($row['jabatan_fungsional'] ?? null);
-                $statusSerdos = $this->cleanValue($row['status_serdos'] ?? null);
-                $pendidikanTerakhir = $this->cleanValue($row['pendidikan_terakhir'] ?? null);
-                $kepangkatan = $this->cleanValue($row['kepangkatan'] ?? null);
-                $rumpunIlmu = $this->cleanValue($row['rumpun_ilmu'] ?? null);
-                $statusPegawai = $this->cleanValue($row['status_pegawai'] ?? null);
-                $ikatanKerja = $this->cleanValue($row['ikatan_kerja'] ?? null);
-                $penempatan = $this->cleanValue($row['penempatan'] ?? null);
-
-                // Skip baris header / tidak valid
-                if (empty($nomorRegistrasi) || empty($nama) || !preg_match('/\d{8,}/', (string)$nomorRegistrasi)) {
-                    $this->skippedCount++;
-
-                    // Logging yang lebih baik untuk debugging
-                    if ($this->skippedCount <= 3) {   // hanya log 3 baris pertama yang di-skip
-                        Log::warning('SisterDosenUserImport - Row skipped', [
-                            'row' => $index + 1,
-                            'nomor_registrasi_raw' => $nomorRegistrasi,
-                            'nama_raw' => $nama,
-                            'has_digit_8plus' => preg_match('/\d{8,}/', (string)($nomorRegistrasi ?? '')),
-                            'available_keys' => array_keys($row),
+                    if ($isFirstRow) {
+                        Log::info('SisterDosenUserImport - Header row detected', [
+                            'row_index' => $index + 1,
+                            'normalized_keys' => array_keys($row),
                         ]);
+                        $isFirstRow = false;
                     }
-                    continue;
-                }
 
-                // 1. Normalisasi NIDN (perbaikan utama untuk leading zero)
-                $normalizedNidn = $this->normalizeNidn($nomorRegistrasi);
+                    $nuptk = $this->cleanValue($row['nuptk'] ?? null);
+                    $nomorRegistrasi = $this->cleanValue(
+                        $row['nomor_registrasi'] ?? $row['no_reg'] ?? $row['no'] ?? null
+                    );
+                    $nama = $this->cleanValue($row['nama'] ?? $row['nama_dosen'] ?? null);
 
-                Log::debug("SisterDosenUserImport - Mencari Dosen", [
-                    'row' => $index + 1,
-                    'nama' => $nama,
-                    'raw_nomor_registrasi' => $nomorRegistrasi,
-                    'normalized_nidn' => $normalizedNidn,
-                    'nip' => $nip,
-                ]);
+                    if (empty($nama)) {
+                        $this->skippedCount++;
+                        continue;
+                    }
 
-                // 2. Generate email unik
-                $email = $this->generateUniqueEmail($nama, $normalizedNidn);
+                    $hasNidn = !empty($nomorRegistrasi) && preg_match('/\d{8,}/', $nomorRegistrasi);
+                    $hasNuptk = !empty($nuptk) && preg_match('/\d{8,}/', $nuptk);
 
-                // 3. Base attributes (Mode Aman: hanya field aman)
-                $attributes = [
-                    'name' => $nama,
-                    'is_active' => $this->isActive($statusAktivitas),
-                ];
+                    if (!$hasNidn && !$hasNuptk) {
+                        $this->skippedCount++;
+                        if ($this->skippedCount <= 3) {
+                            Log::warning('SisterDosenUserImport - Row skipped (no identifier)', [
+                                'row' => $index + 1,
+                                'nama' => $nama,
+                                'nomor_registrasi' => $nomorRegistrasi,
+                                'nuptk' => $nuptk,
+                            ]);
+                        }
+                        continue;
+                    }
 
-                if (!User::where('email', $email)->exists()) {
-                    $attributes['password'] = Hash::make('password123');
-                }
+                    $headers = array_keys($row);
+                    $transformed = $this->transformer->transform(array_values($row), $headers);
 
-                // =============================================
-                // UNIFIED DOSEN MATCHING (Mode Aman)
-                // Prioritas: NIDN → NIP → NUPTK
-                // =============================================
-                $nuptk = $this->cleanValue($row['nuptk'] ?? null);
+                    if ($transformed === null) {
+                        $this->skippedCount++;
+                        continue;
+                    }
 
-                $dosen = Dosen::where('nidn', $normalizedNidn)->first();
-                if (!$dosen && !empty($nip)) {
-                    $dosen = Dosen::where('nip', $nip)->first();
-                }
+                    $normalizedNidn = $transformed['nidn'] ?? null;
+                    $email = $this->generateUniqueEmail($nama, $normalizedNidn);
 
-                // Guard: hanya query nuptk jika kolom benar-benar ada di m_dosen
-                if (!$dosen && !empty($nuptk) && Schema::hasColumn('m_dosen', 'nuptk')) {
-                    $dosen = Dosen::where('nuptk', $nuptk)->first();
-                }
-
-                $wouldCreate = !User::where('email', $email)->exists();
-
-                if ($this->dryRun) {
-                    // === MODE DRY-RUN / SIMULASI ===
-                    $this->dryRunResults[] = [
-                        'row' => $index + 1,
-                        'nama' => $nama,
-                        'email' => $email,
-                        'action' => $wouldCreate ? 'CREATE' : 'UPDATE',
-                        'normalized_nidn' => $normalizedNidn,
-                        'nuptk' => $nuptk,
-                        'jabatan_fungsional' => $jabatanFungsional,
-                        'status_serdos' => $statusSerdos,
-                        'pendidikan_terakhir' => $pendidikanTerakhir,
-                        'kepangkatan' => $kepangkatan,
-                        'rumpun_ilmu' => $rumpunIlmu,
-                        'status_pegawai' => $statusPegawai,
-                        'ikatan_kerja' => $ikatanKerja,
-                        'penempatan' => $penempatan,
-                        'would_assign_dosen_role' => $wouldCreate,
-                        'would_link_dosen' => $dosen?->nama,
-                        'would_update_prodi' => $dosen?->prodi_id,
-                        'note' => 'Role dan gelar TIDAK akan diubah (Mode Aman)',
+                    $attributes = [
+                        'name' => $nama,
+                        'is_active' => $this->isActive($row['status_aktivitas'] ?? 'Aktif'),
                     ];
-                    continue;
-                }
 
-                // === MODE NYATA (LIVE) - Mode Aman enforced ===
-                $userAttributes = $attributes;
+                    if (!User::where('email', $email)->exists()) {
+                        $attributes['password'] = Hash::make('password123');
+                    }
 
-                if ($dosen) {
+                    $dosen = Dosen::where('nidn', $normalizedNidn)->first();
+                    if (!$dosen && !empty($transformed['nip'])) {
+                        $dosen = Dosen::where('nip', $transformed['nip'])->first();
+                    }
+                    if (!$dosen && !empty($transformed['nuptk'])) {
+                        $dosen = Dosen::where('nuptk', $transformed['nuptk'])->first();
+                    }
+
+                    $wouldCreateUser = !User::where('email', $email)->exists();
+                    $wouldCreateDosen = $dosen === null;
+
+                    if ($this->dryRun) {
+                        $this->dryRunResults[] = [
+                            'row' => $index + 1,
+                            'nama' => $nama,
+                            'nama_depan' => $transformed['nama_depan'],
+                            'nama_belakang' => $transformed['nama_belakang'],
+                            'email' => $email,
+                            'action' => $wouldCreateUser ? 'CREATE_USER' : 'UPDATE_USER',
+                            'dosen_action' => $wouldCreateDosen ? 'CREATE_DOSEN' : 'UPDATE_DOSEN',
+                            'normalized_nidn' => $normalizedNidn,
+                            'nuptk' => $transformed['nuptk'],
+                            'jabatan_fungsional' => $transformed['jabatan_fungsional'],
+                            'status_serdos' => $transformed['status_serdos'],
+                            'pendidikan_terakhir' => $transformed['pendidikan_terakhir'],
+                            'kepangkatan' => $transformed['kepangkatan'],
+                            'rumpun_ilmu' => $transformed['rumpun_ilmu'],
+                            'status_pegawai' => $transformed['status_pegawai'],
+                            'ikatan_kerja' => $transformed['ikatan_kerja'],
+                            'penempatan' => $this->cleanValue($row['penempatan'] ?? null),
+                            'prodi_id' => $transformed['prodi_id'],
+                            'would_assign_dosen_role' => $wouldCreateUser,
+                            'would_link_dosen' => $dosen?->nama_depan . ' ' . $dosen?->nama_belakang,
+                            'note' => 'Role dan gelar TIDAK akan diubah (Mode Aman)',
+                        ];
+                        continue;
+                    }
+
+                    if ($wouldCreateDosen) {
+                        $dosen = Dosen::create($transformed);
+                    } else {
+                        $dosen->update($transformed);
+                    }
+
+                    $userAttributes = $attributes;
                     $userAttributes['dosen_id'] = $dosen->id;
                     $userAttributes['prodi_id'] = $dosen->prodi_id;
-                }
 
-                $user = User::updateOrCreate(['email' => $email], $userAttributes);
+                    $user = User::updateOrCreate(['email' => $email], $userAttributes);
 
-                // Beri role "Dosen" HANYA saat create pertama kali
-                // TIDAK PERNAH menyentuh role pada re-upload / update
-                if ($wouldCreate) {
-                    try {
-                        $user->assignRole('Dosen');
-                    } catch (\Throwable $roleEx) {
-                        Log::warning('SisterDosenUserImport: Role "Dosen" tidak tersedia untuk user baru', [
-                            'email' => $email,
-                            'error' => $roleEx->getMessage(),
-                        ]);
+                    if ($wouldCreateUser) {
+                        try {
+                            $user->assignRole('Dosen');
+                        } catch (\Throwable $roleEx) {
+                            Log::warning('SisterDosenUserImport: Role "Dosen" tidak tersedia', [
+                                'email' => $email,
+                                'error' => $roleEx->getMessage(),
+                            ]);
+                        }
+                    }
+
+                    $this->successCount++;
+
+                } catch (\Throwable $e) {
+                    $this->errors[] = ['row' => $index + 1, 'error' => $e->getMessage()];
+                    Log::error("SisterDosenUserImport error baris " . ($index + 1), [
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                    ]);
+
+                    if ($this->dryRun) {
+                        throw $e;
                     }
                 }
-
-                $this->successCount++;
-
-            } catch (\Throwable $e) {
-                $this->errors[] = ['row' => $index + 1, 'error' => $e->getMessage()];
-                Log::error("SisterDosenUserImport error baris " . ($index + 1), ['error' => $e->getMessage()]);
             }
-        }
 
-        Log::info('SisterDosenUserImport selesai', [
-            'success' => $this->successCount,
-            'skipped' => $this->skippedCount,
-            'errors' => count($this->errors),
-            'mode' => $this->dryRun ? 'DRY_RUN' : 'LIVE',
-        ]);
+            if (!$this->dryRun) {
+                DB::commit();
+            } else {
+                DB::rollBack();
+            }
 
-        // Log ringkasan yang lebih jelas untuk debugging import
-        if ($this->skippedCount > 0 && $this->successCount === 0) {
-            Log::error('SisterDosenUserImport - SEMUA BARIS DI-SKIP. Periksa struktur file Excel dan WithStartRow.', [
-                'total_skipped' => $this->skippedCount,
+            Log::info('SisterDosenUserImport selesai', [
+                'success' => $this->successCount,
+                'skipped' => $this->skippedCount,
+                'errors' => count($this->errors),
+                'mode' => $this->dryRun ? 'DRY_RUN' : 'LIVE',
             ]);
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('SisterDosenUserImport - Transaction rolled back', [
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
         }
     }
 
-    /**
-     * Normalisasi NIDN menjadi 10 digit dengan leading zero.
-     * Menangani kasus Excel menghapus leading zero.
-     */
-    protected function normalizeNidn(?string $value): ?string
+    protected function normalizeKeys(Collection $rawRow): array
     {
-        if (empty($value)) {
-            return null;
+        $row = [];
+        foreach ($rawRow as $key => $value) {
+            $cleanKey = Str::snake(strtolower(preg_replace('/[^a-zA-Z0-9]/', '_', trim((string) $key))));
+            $row[$cleanKey] = $value;
         }
-
-        $clean = preg_replace('/[^0-9]/', '', (string) $value);
-
-        // Target 10 digit (format NIDN umum di Indonesia)
-        if (strlen($clean) < 10) {
-            $clean = str_pad($clean, 10, '0', STR_PAD_LEFT);
-        }
-
-        return $clean;
+        return $row;
     }
 
-    /**
-     * Generate email unik berdasarkan nama + NIDN.
-     * Domain: @itsnupekalongan.ac.id (sesuai requirement proyek)
-     */
     protected function generateUniqueEmail(string $nama, ?string $nidn): string
     {
         $slug = Str::slug($nama, '.');
@@ -298,11 +265,18 @@ class SisterDosenUserImport implements ToCollection, WithHeadingRow, WithStartRo
         return count($this->errors);
     }
 
-    /**
-     * Mengembalikan hasil simulasi (hanya terisi jika $dryRun = true).
-     */
     public function getDryRunResults(): array
     {
         return $this->dryRunResults;
+    }
+
+    public function getErrors(): array
+    {
+        return $this->errors;
+    }
+
+    public function getSkippedCount(): int
+    {
+        return $this->skippedCount;
     }
 }

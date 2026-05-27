@@ -114,4 +114,60 @@ class DataImportController extends Controller
 
         return inertia('DataImport/History', ['imports' => $imports]);
     }
+
+    public function uploadPddikti(Request $request)
+    {
+        $validated = $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:5120',
+        ]);
+
+        $file = $request->file('file');
+
+        $result = $this->templateService->importPddikti($file);
+
+        ImportHistory::create([
+            'type' => 'dosen_pddikti',
+            'file_name' => $file->getClientOriginalName(),
+            'file_path' => $file->store('imports/dosen_pddikti'),
+            'total_rows' => $result->totalRows,
+            'success_rows' => $result->successRows,
+            'failed_rows' => $result->failedRows,
+            'errors' => $result->errors,
+            'user_id' => $request->user()?->id,
+            'status' => $result->failedRows > 0 ? 'completed_with_errors' : 'completed',
+        ]);
+
+        event(new ImportCompleted(
+            userId: $request->user()?->id ?? 0,
+            type: 'dosen_pddikti',
+            successRows: $result->successRows,
+            failedRows: $result->failedRows,
+        ));
+
+        if ($result->failedRows > 0) {
+            $message = "Import PDDikti selesai. {$result->successRows} baris berhasil, {$result->failedRows} baris gagal.";
+            return redirect()->route('data-import.history')
+                ->with('warning', $message)
+                ->with('import_errors', $result->errors);
+        }
+
+        return redirect()->route('data-import.history')
+            ->with('success', "Import PDDikti berhasil! {$result->successRows} data dosen telah ditambahkan/diperbarui.");
+    }
+
+    public function previewPddikti(Request $request)
+    {
+        $validated = $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:5120',
+        ]);
+
+        $previewData = $this->templateService->previewPddikti($request->file('file'));
+
+        return response()->json([
+            'rows' => $previewData,
+            'total' => count($previewData),
+            'valid_count' => count(array_filter($previewData, fn($r) => $r['valid'])),
+            'invalid_count' => count(array_filter($previewData, fn($r) => !$r['valid'])),
+        ]);
+    }
 }

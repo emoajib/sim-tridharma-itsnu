@@ -350,6 +350,16 @@ Route::middleware(['auth', PermissionMiddleware::class, 'throttle:crud'])->group
             ->name('data-import.history');
     });
 
+    // ===== PDDIKTI/SISTER DOSEN IMPORT ROUTES =====
+    Route::middleware('can:data-import.upload')->group(function () {
+        Route::post('/data-import/upload-pddikti', [DataImportController::class, 'uploadPddikti'])
+            ->name('data-import.upload-pddikti')
+            ->middleware('throttle:uploads');
+        Route::post('/data-import/preview-pddikti', [DataImportController::class, 'previewPddikti'])
+            ->name('data-import.preview-pddikti')
+            ->middleware('throttle:uploads');
+    });
+
     // ===== RECONCILIATION ROUTES =====
     Route::middleware('can:reconciliation.view')->group(function () {
         Route::get('/reconciliation', [ReconciliationController::class, 'index'])
