@@ -16,14 +16,17 @@ return new class extends Migration
         });
 
         // Backfill: Match by prodi_id and periode_id
-        DB::statement("
-            UPDATE trx_edps edps
-            SET spmi_cycle_id = sc.id
-            FROM spmi_cycles sc
-            WHERE edps.prodi_id = sc.prodi_id 
-                AND edps.periode_id = sc.periode_id
-                AND edps.spmi_cycle_id IS NULL
-        ");
+        // Only on PostgreSQL — SQLite doesn't support UPDATE...FROM
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement("
+                UPDATE trx_edps edps
+                SET spmi_cycle_id = sc.id
+                FROM spmi_cycles sc
+                WHERE edps.prodi_id = sc.prodi_id 
+                    AND edps.periode_id = sc.periode_id
+                    AND edps.spmi_cycle_id IS NULL
+            ");
+        }
 
         Schema::table('trx_edps', function (Blueprint $table) {
             $table->foreign('spmi_cycle_id')

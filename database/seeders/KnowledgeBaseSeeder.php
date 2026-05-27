@@ -1,5 +1,7 @@
 <?php
 
+// Idempotent: safe to re-run
+
 namespace Database\Seeders;
 
 use App\Models\KnowledgeBaseCategory;
@@ -26,6 +28,13 @@ class KnowledgeBaseSeeder extends Seeder
                 'deskripsi' => 'Kumpulan dokumen aturan, biaya, dan prosedur akreditasi dari BAN-PT dan LAM.'
             ]
         );
+
+        // Skip if documents already seeded for this category
+        if (KnowledgeBaseDocument::where('category_id', $category->id)->count() > 0) {
+            $this->command->info('KnowledgeBase documents already exist, skipping.');
+
+            return;
+        }
 
         $documents = [
             [

@@ -1,5 +1,7 @@
 <?php
 
+// Idempotent: safe to re-run
+
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
@@ -10,6 +12,13 @@ class TransaksiPortofolioSeeder extends Seeder
 {
     public function run(): void
     {
+        // Guard: skip if portofolio transactions already exist
+        if (DB::table('trx_kegiatan_pendidikan')->count() > 0) {
+            $this->command->info('Portofolio data already exists, skipping.');
+
+            return;
+        }
+
         $dosens = DB::table('m_dosen')->whereNotNull('prodi_id')->get();
         $prodis = DB::table('m_prodi')->get();
         $mk = DB::table('m_mata_kuliah')->get();
@@ -30,7 +39,7 @@ class TransaksiPortofolioSeeder extends Seeder
                     continue;
                 }
 
-                DB::table('trx_kegiatan_pendidikan')->insert([
+                DB::table('trx_kegiatan_pendidikan')->insertOrIgnore([
                     'dosen_id' => $dosen->id,
                     'prodi_id' => $dosen->prodi_id,
                     'periode_id' => $periode->id,
@@ -44,7 +53,7 @@ class TransaksiPortofolioSeeder extends Seeder
                     'updated_at' => now(),
                 ]);
 
-                DB::table('trx_penelitian')->insert([
+                DB::table('trx_penelitian')->insertOrIgnore([
                     'dosen_id' => $dosen->id,
                     'prodi_id' => $dosen->prodi_id,
                     'periode_id' => $periode->id,
@@ -57,7 +66,7 @@ class TransaksiPortofolioSeeder extends Seeder
                     'updated_at' => now(),
                 ]);
 
-                DB::table('trx_publikasi')->insert([
+                DB::table('trx_publikasi')->insertOrIgnore([
                     'dosen_id' => $dosen->id,
                     'prodi_id' => $dosen->prodi_id,
                     'periode_id' => $periode->id,
@@ -70,7 +79,7 @@ class TransaksiPortofolioSeeder extends Seeder
                 ]);
 
                 if (rand(0, 1)) {
-                    DB::table('trx_pkm')->insert([
+                    DB::table('trx_pkm')->insertOrIgnore([
                         'dosen_id' => $dosen->id,
                         'prodi_id' => $dosen->prodi_id,
                         'periode_id' => $periode->id,
@@ -84,7 +93,7 @@ class TransaksiPortofolioSeeder extends Seeder
                     ]);
                 }
 
-                DB::table('trx_penunjang')->insert([
+                DB::table('trx_penunjang')->insertOrIgnore([
                     'dosen_id' => $dosen->id,
                     'prodi_id' => $dosen->prodi_id,
                     'periode_id' => $periode->id,
@@ -96,7 +105,7 @@ class TransaksiPortofolioSeeder extends Seeder
                     'updated_at' => now(),
                 ]);
 
-                DB::table('trx_bkd')->insert([
+                DB::table('trx_bkd')->insertOrIgnore([
                     'dosen_id' => $dosen->id,
                     'prodi_id' => $dosen->prodi_id,
                     'periode_id' => $periode->id,
@@ -110,7 +119,7 @@ class TransaksiPortofolioSeeder extends Seeder
                     'updated_at' => now(),
                 ]);
 
-                DB::table('trx_keuangan')->insert([
+                DB::table('trx_keuangan')->insertOrIgnore([
                     'dosen_id' => $dosen->id,
                     'prodi_id' => $dosen->prodi_id,
                     'periode_id' => $periode->id,
@@ -129,7 +138,7 @@ class TransaksiPortofolioSeeder extends Seeder
                 for ($i = 0; $i < rand(2, 5); $i++) {
                     $periode = $periodes->random();
                     $mhs = $mhsProdi->random();
-                    DB::table('trx_mahasiswa_bimbingan')->insert([
+                    DB::table('trx_mahasiswa_bimbingan')->insertOrIgnore([
                         'dosen_id' => $dosen->id,
                         'mahasiswa_id' => $mhs->id,
                         'prodi_id' => $dosen->prodi_id,

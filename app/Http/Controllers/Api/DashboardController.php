@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\DashboardService;
 use App\Services\SPMI\SpmiDashboardService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
@@ -69,30 +70,53 @@ class DashboardController extends Controller
 
         $filterData = $this->dashboardService->getFilterData($instrumenId, $periodeId, $scopeParams);
 
-        $institutionAccreditation = null;
-        if (in_array($activeRole, ['Super Admin', 'LPM', 'Rektor'])) {
-            $institutionAccreditation = $this->dashboardService->getInstitutionAccreditation($instrumenId);
-        }
+        // ── Redis caching layer: cache heavy dashboard queries for 5 minutes ──
+        $cacheKey = 'dashboard:' . $user->id . ':' . md5(serialize($scopeParams))
+            . ':' . ($periodeId ?? '0') . ':' . $instrumenId;
 
-        $prodiId = $scopeParams['prodi_id'] ?? null;
+        [
+            $institutionAccreditation,
+            $dashboardData,
+            $spmiOverview,
+            $spmiCharts,
+            $spmiPpepp,
+        ] = Cache::remember($cacheKey, 300, function () use (
+            $scopeParams, $periodeId, $instrumenId, $activeRole, $filterData
+        ) {
+            $institutionAccreditation = null;
+            if (in_array($activeRole, ['Super Admin', 'LPM', 'Rektor'])) {
+                $institutionAccreditation = $this->dashboardService->getInstitutionAccreditation($instrumenId);
+            }
 
-        $spmiOverview = [];
-        $spmiCharts = [];
-        $spmiPpepp = [];
-        try {
-            $spmiOverview = $this->spmiDashboardService->getOverview($prodiId, $periodeId);
-            $spmiCharts = $this->spmiDashboardService->getChartData($prodiId, $periodeId);
-            $spmiPpepp = $this->spmiDashboardService->getPpeppProgress($prodiId);
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning('Failed to load SPMI dashboard data: ' . $e->getMessage());
-        }
+            $prodiId = $scopeParams['prodi_id'] ?? null;
 
-        return Inertia::render('Dashboard', [
-            'stats' => $this->dashboardService->getStats($scopeParams),
-            'portofolioStats' => $this->dashboardService->getPortofolioStats($periodeId, $scopeParams),
-            'bkdStats' => $this->dashboardService->getBkdStats($periodeId, $scopeParams),
-            'recentPendidikan' => $this->dashboardService->getRecentPendidikan($periodeId, $scopeParams),
-            'recentPenelitian' => $this->dashboardService->getRecentPenelitian($periodeId, $scopeParams),
+            $spmiOverview = [];
+            $spmiCharts = [];
+            $spmiPpepp = [];
+            try {
+                $spmiOverview = $this->spmiDashboardService->getOverview($prodiId, $periodeId);
+                $spmiCharts = $this->spmiDashboardService->getChartData($prodiId, $periodeId);
+                $spmiPpepp = $this->spmiDashboardService->getPpeppProgress($prodiId);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Failed to load SPMI dashboard data: ' . $e->getMessage());
+            }
+
+            $dashboardData = [
+                'stats' => $this->dashboardService->getStats($scopeParams),
+                'portofolioStats' => $this->dashboardService->getPortofolioStats($periodeId, $scopeParams),
+                'bkdStats' => $this->dashboardService->getBkdStats($periodeId, $scopeParams),
+                'recentPendidikan' => $this->dashboardService->getRecentPendidikan($periodeId, $scopeParams),
+                'recentPenelitian' => $this->dashboardService->getRecentPenelitian($periodeId, $scopeParams),
+                'peringatanStats' => $this->dashboardService->getPeringatanStats($scopeParams),
+                'latestPrediction' => $this->dashboardService->getLatestPrediction($scopeParams),
+                'kriteriaStats' => $this->dashboardService->getKriteriaStats($instrumenId, $periodeId, $scopeParams),
+                'prodiAccreditation' => $this->dashboardService->getProdiAccreditation($filterData['activeProdis'], $periodeId),
+            ];
+
+            return [$institutionAccreditation, $dashboardData, $spmiOverview, $spmiCharts, $spmiPpepp];
+        });
+
+        return Inertia::render('Dashboard', array_merge($dashboardData, [
             'periode_list' => $filterData['periode_list'],
             'selectedPeriode' => $filterData['selectedPeriode'],
             'lembaga_list' => $filterData['lembaga_list'],
@@ -102,17 +126,13 @@ class DashboardController extends Controller
                 'instrumen_id' => $instrumenId,
             ],
             'dashboardDefaultTab' => $defaultTab,
-            'peringatanStats' => $this->dashboardService->getPeringatanStats($scopeParams),
-            'latestPrediction' => $this->dashboardService->getLatestPrediction($scopeParams),
-            'kriteriaStats' => $this->dashboardService->getKriteriaStats($instrumenId, $periodeId, $scopeParams),
-            'prodiAccreditation' => $this->dashboardService->getProdiAccreditation($filterData['activeProdis'], $periodeId),
             'institutionAccreditation' => $institutionAccreditation,
             'spmi_overview' => $spmiOverview,
             'spmi_charts' => $spmiCharts,
             'spmi_ppepp' => $spmiPpepp,
             'activeRole' => $activeRole,
             'scopeName' => $this->getScopeName($user, $activeRole),
-        ]);
+        ]));
     }
 
     private function getScopeName($user, $activeRole): string

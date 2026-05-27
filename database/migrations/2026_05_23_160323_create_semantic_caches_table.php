@@ -24,12 +24,11 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // Add vector column for semantic search
-        // We use 384 dimensions because the local embedding model is intfloat/multilingual-e5-small
-        DB::statement('ALTER TABLE semantic_caches ADD COLUMN question_vector vector(384)');
-        
-        // Add index for faster similarity search
-        DB::statement('CREATE INDEX semantic_cache_vector_idx ON semantic_caches USING hnsw (question_vector vector_cosine_ops)');
+        // Only run on PostgreSQL (pgvector extension) — skip on SQLite/testing
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('ALTER TABLE semantic_caches ADD COLUMN question_vector vector(384)');
+            DB::statement('CREATE INDEX semantic_cache_vector_idx ON semantic_caches USING hnsw (question_vector vector_cosine_ops)');
+        }
     }
 
     /**

@@ -13,7 +13,6 @@
         "laravel/reverb": "^1.10",
         "laravel/sanctum": "^4.0",
         "maatwebsite/excel": "^3.1",
-        "php-amqplib/php-amqplib": "^3.7",
         "predis/predis": "^2.0",
         "smalot/pdfparser": "^2.12",
         "spatie/laravel-permission": "^7.4",

@@ -1,5 +1,7 @@
 <?php
 
+// Idempotent: safe to re-run
+
 namespace Database\Seeders;
 
 use App\Models\StandarMutu;
@@ -281,11 +283,14 @@ class StandarMutuSeeder extends Seeder
         ];
 
         foreach ($standars as $data) {
-            StandarMutu::create(array_merge($data, [
-                'deskripsi' => null,
-                'referensi_regulasi' => 'Permendikbudristek 53/2023',
-                'is_active' => true,
-            ]));
+            StandarMutu::firstOrCreate(
+                ['kode_standar' => $data['kode_standar']],
+                array_merge($data, [
+                    'deskripsi' => null,
+                    'referensi_regulasi' => 'Permendikbudristek 53/2023',
+                    'is_active' => true,
+                ])
+            );
         }
     }
 }

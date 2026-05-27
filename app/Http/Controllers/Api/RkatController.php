@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Rkat\ApprovalRequest;
 use App\Http\Requests\Rkat\StoreUsulanRequest;
+use App\Http\Requests\RkatRequest;
 use App\Models\RkatPagu;
 use App\Models\UsulanRkat;
 use App\Models\PeriodeAkademik;
@@ -135,19 +136,15 @@ class RkatController extends Controller
     /**
      * Check budget ceiling (JSON API)
      */
-    public function checkPagu(Request $request)
+    public function checkPagu(RkatRequest $request)
     {
-        $request->validate([
-            'prodi_id' => 'required|exists:m_prodi,id',
-            'periode_id' => 'required|exists:m_periode_akademik,id',
-            'amount' => 'required|numeric|min:0',
-        ]);
+        $validated = $request->validated();
 
         $status = $this->rkatService->checkPaguAvailability(
-            $request->prodi_id,
+            $validated['prodi_id'],
             'Prodi',
-            $request->periode_id,
-            $request->amount
+            $validated['periode_id'],
+            $validated['amount']
         );
 
         return response()->json(['success' => true, 'data' => $status]);
@@ -169,14 +166,9 @@ class RkatController extends Controller
         ]);
     }
 
-    public function paguStore(Request $request)
+    public function paguStore(RkatRequest $request)
     {
-        $validated = $request->validate([
-            'periode_id' => 'required|exists:m_periode_akademik,id',
-            'unit_type' => 'required|in:Rektorat,Fakultas,Prodi',
-            'unit_id' => 'required|integer',
-            'pagu_total' => 'required|numeric|min:0',
-        ]);
+        $validated = $request->validated();
 
         RkatPagu::updateOrCreate(
             ['periode_id' => $validated['periode_id'], 'unit_type' => $validated['unit_type'], 'unit_id' => $validated['unit_id']],

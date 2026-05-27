@@ -1,5 +1,7 @@
 <?php
 
+// Idempotent: safe to re-run
+
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
@@ -10,6 +12,13 @@ class AkreditasiSeeder extends Seeder
 {
     public function run(): void
     {
+        // Guard: skip if transactional akreditasi data already exists
+        if (DB::table('trx_pemenuhan_indikator')->count() > 0) {
+            $this->command->info('Akreditasi data already exists, skipping.');
+
+            return;
+        }
+
         $prodis = DB::table('m_prodi')->get();
         $periodes = DB::table('m_periode_akademik')->get();
         $indikators = DB::table('m_indikator_akreditasi')->get();
@@ -22,7 +31,7 @@ class AkreditasiSeeder extends Seeder
 
         foreach ($prodis as $prodi) {
             foreach ($periodes as $periode) {
-                DB::table('m_kuisioner_tracer')->insert([
+                DB::table('m_kuisioner_tracer')->insertOrIgnore([
                     'prodi_id' => $prodi->id,
                     'judul_kuisioner' => 'Tracer Study '.$prodi->nama_prodi.' '.$periode->nama_periode,
                     'tahun' => (string) now()->year,
@@ -46,7 +55,7 @@ class AkreditasiSeeder extends Seeder
                     $nilai = rand(10, 100);
                     $status = $nilai >= 75 ? 'hijau' : ($nilai >= 50 ? 'kuning' : 'merah');
 
-                    DB::table('trx_pemenuhan_indikator')->insert([
+                    DB::table('trx_pemenuhan_indikator')->insertOrIgnore([
                         'prodi_id' => $prodi->id,
                         'periode_id' => $periode->id,
                         'indikator_id' => $indikator->id,
@@ -64,7 +73,7 @@ class AkreditasiSeeder extends Seeder
 
                 $skorAkhir = $count > 0 ? round($totalSkor / ($count / 100), 2) : 0;
 
-                DB::table('trx_skor_akreditasi')->insert([
+                DB::table('trx_skor_akreditasi')->insertOrIgnore([
                     'prodi_id' => $prodi->id,
                     'periode_id' => $periode->id,
                     'skor_total' => $skorAkhir,
@@ -79,7 +88,7 @@ class AkreditasiSeeder extends Seeder
                 ]);
 
                 for ($i = 0; $i < rand(2, 4); $i++) {
-                    DB::table('trx_audit_mutu')->insert([
+                    DB::table('trx_audit_mutu')->insertOrIgnore([
                         'prodi_id' => $prodi->id,
                         'periode_id' => $periode->id,
                         'judul_audit' => 'Audit Mutu Internal Semester #'.($i + 1),
@@ -99,7 +108,7 @@ class AkreditasiSeeder extends Seeder
                     $probabilitas = (string) rand(1, 5);
                     $tingkatRisiko = (int) $dampak * (int) $probabilitas;
 
-                    DB::table('trx_risk_register')->insert([
+                    DB::table('trx_risk_register')->insertOrIgnore([
                         'prodi_id' => $prodi->id,
                         'periode_id' => $periode->id,
                         'nama_risiko' => 'Risiko #'.($i + 1).': '.Str::random(30),

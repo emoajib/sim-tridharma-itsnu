@@ -1,5 +1,7 @@
 <?php
 
+// Idempotent: safe to re-run
+
 namespace Database\Seeders;
 
 use Carbon\Carbon;
@@ -10,6 +12,13 @@ class AgentHistorySeeder extends Seeder
 {
     public function run(): void
     {
+        // Guard: skip if agent history already exists
+        if (DB::table('agent_execution_log')->count() > 0) {
+            $this->command->info('Agent history already exists, skipping.');
+
+            return;
+        }
+
         $prodis = DB::table('m_prodi')->get();
         $dosens = DB::table('m_dosen')->get();
         $periodes = DB::table('m_periode_akademik')->get();
@@ -30,7 +39,7 @@ class AgentHistorySeeder extends Seeder
                 $startTime = Carbon::now()->subMinutes(rand(1, 1000));
                 $duration = rand(500, 5000);
 
-                DB::table('agent_execution_log')->insert([
+                DB::table('agent_execution_log')->insertOrIgnore([
                     'agent_name' => $agent,
                     'status' => $agentStatuses[array_rand($agentStatuses)],
                     'started_at' => $startTime,
@@ -47,7 +56,7 @@ class AgentHistorySeeder extends Seeder
 
         foreach ($prodis as $prodi) {
             foreach ($periodes->take(2) as $periode) {
-                DB::table('agent_prediction_history')->insert([
+                DB::table('agent_prediction_history')->insertOrIgnore([
                     'prodi_id' => $prodi->id,
                     'periode_id' => $periode->id,
                     'skor_prediksi' => rand(60, 95),
@@ -62,7 +71,7 @@ class AgentHistorySeeder extends Seeder
             }
 
             foreach ($indikators->random(min(5, $indikators->count())) as $indikator) {
-                DB::table('agent_rekomendasi_log')->insert([
+                DB::table('agent_rekomendasi_log')->insertOrIgnore([
                     'prodi_id' => $prodi->id,
                     'indikator_id' => $indikator->id,
                     'judul_rekomendasi' => 'Rekomendasi Strategis '.$indikator->kode_indikator,
@@ -79,7 +88,7 @@ class AgentHistorySeeder extends Seeder
 
         foreach ($dosens->random(min(20, $dosens->count())) as $dosen) {
             for ($i = 0; $i < 3; $i++) {
-                DB::table('agent_peringatan_log')->insert([
+                DB::table('agent_peringatan_log')->insertOrIgnore([
                     'prodi_id' => $dosen->prodi_id,
                     'dosen_id' => $dosen->id,
                     'jenis_peringatan' => 'kinerja',
@@ -94,7 +103,7 @@ class AgentHistorySeeder extends Seeder
 
         if ($docs->isNotEmpty()) {
             foreach ($docs->random(min(20, $docs->count())) as $doc) {
-                DB::table('agent_verifikasi_hasil')->insert([
+                DB::table('agent_verifikasi_hasil')->insertOrIgnore([
                     'prodi_id' => $doc->prodi_id,
                     'dosen_id' => $doc->dosen_id,
                     'doc_bukti_id' => $doc->id,
@@ -108,7 +117,7 @@ class AgentHistorySeeder extends Seeder
         }
 
         foreach ($prodis as $prodi) {
-            DB::table('agent_generator_history')->insert([
+            DB::table('agent_generator_history')->insertOrIgnore([
                 'prodi_id' => $prodi->id,
                 'jenis_dokumen' => 'LED',
                 'judul' => 'Laporan Evaluasi Diri 2026',

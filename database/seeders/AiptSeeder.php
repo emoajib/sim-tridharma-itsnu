@@ -1,5 +1,7 @@
 <?php
 
+// Idempotent: safe to re-run
+
 namespace Database\Seeders;
 
 use App\Models\AiptMetric;
@@ -24,13 +26,15 @@ class AiptSeeder extends Seeder
         ];
 
         foreach ($data as $item) {
-            AiptMetric::create([
-                'aspek' => $item['aspek'],
-                'indikator' => $item['indikator'],
-                'skor_saat_ini' => $item['skor'],
-                'status' => $item['status'],
-                'periode_id' => $periode->id,
-            ]);
+            AiptMetric::firstOrCreate(
+                ['indikator' => $item['indikator'], 'periode_id' => $periode->id],
+                [
+                    'aspek' => $item['aspek'],
+                    'skor_saat_ini' => $item['skor'],
+                    'status' => $item['status'],
+                    'periode_id' => $periode->id,
+                ]
+            );
         }
 
         // SPMI Cycles
@@ -41,14 +45,16 @@ class AiptSeeder extends Seeder
         ];
 
         foreach ($cycles as $c) {
-            SpmiCycle::create([
-                'tahap' => $c['tahap'],
-                'nama_siklus' => $c['nama'],
-                'persentase_selesai' => $c['progress'],
-                'status' => $c['status'],
-                'tanggal_mulai' => now()->subMonths(3),
-                'kategori' => 'Akademik',
-            ]);
+            SpmiCycle::firstOrCreate(
+                ['nama_siklus' => $c['nama']],
+                [
+                    'tahap' => $c['tahap'],
+                    'persentase_selesai' => $c['progress'],
+                    'status' => $c['status'],
+                    'tanggal_mulai' => now()->subMonths(3),
+                    'kategori' => 'Akademik',
+                ]
+            );
         }
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+// Idempotent: safe to re-run
+
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
@@ -15,6 +17,13 @@ class MasterDataSeeder extends Seeder
 
         if ($prodis->isEmpty()) {
             $this->command->warn('Prodi kosong, lewati seeding master data.');
+
+            return;
+        }
+
+        // Guard: skip if mata kuliah already seeded
+        if (DB::table('m_mata_kuliah')->count() > 0) {
+            $this->command->info('Master data already exists, skipping.');
 
             return;
         }

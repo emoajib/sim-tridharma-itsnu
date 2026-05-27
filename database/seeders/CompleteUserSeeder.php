@@ -1,5 +1,6 @@
 <?php
 
+// Idempotent: safe to re-run
 // Vetted by AI - Manual Review Required by Senior Engineer/Manager
 
 namespace Database\Seeders;

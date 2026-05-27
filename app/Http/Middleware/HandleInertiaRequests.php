@@ -8,26 +8,13 @@ use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
-    /**
-     * The root template that is loaded on the first page visit.
-     *
-     * @var string
-     */
     protected $rootView = 'app';
 
-    /**
-     * Determine the current asset version.
-     */
     public function version(Request $request): ?string
     {
         return parent::version($request);
     }
 
-    /**
-     * Define the props that are shared by default.
-     *
-     * @return array<string, mixed>
-     */
     public function share(Request $request): array
     {
         $user = $request->user();
@@ -52,14 +39,16 @@ class HandleInertiaRequests extends Middleware
     private function getAppSettings(): array
     {
         try {
+            $settings = Setting::getAllCached();
+
             return [
-                'theme_mode' => Setting::get('theme_mode', 'theme3'),
-                'theme_color' => Setting::get('theme_color', 'indigo'),
-                'chat_enabled' => Setting::get('chat_enabled', true),
-                'layout_type' => Setting::get('layout_type', 'navbar'),
-                'dashboard_default_tab' => Setting::get('dashboard_default_tab', 'overview'),
-                'logo_path' => Setting::get('logo_path'),
-                'favicon_path' => Setting::get('favicon_path'),
+                'theme_mode' => $settings['theme_mode'] ?? 'theme3',
+                'theme_color' => $settings['theme_color'] ?? 'indigo',
+                'chat_enabled' => $settings['chat_enabled'] ?? true,
+                'layout_type' => $settings['layout_type'] ?? 'navbar',
+                'dashboard_default_tab' => $settings['dashboard_default_tab'] ?? 'overview',
+                'logo_path' => $settings['logo_path'] ?? null,
+                'favicon_path' => $settings['favicon_path'] ?? null,
             ];
         } catch (\Exception $e) {
             return [

@@ -17,15 +17,17 @@ return new class extends Migration
         });
 
         // Backfill: Associate existing AuditMutu with appropriate SpmiCycle
-        // Based on matching prodi_id and periode_id
-        DB::statement("
-            UPDATE trx_audit_mutu am
-            SET spmi_cycle_id = sc.id
-            FROM spmi_cycles sc
-            WHERE am.prodi_id = sc.prodi_id 
-                AND am.periode_id = sc.periode_id
-                AND am.spmi_cycle_id IS NULL
-        ");
+        // Only on PostgreSQL — SQLite doesn't support UPDATE...FROM
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement("
+                UPDATE trx_audit_mutu am
+                SET spmi_cycle_id = sc.id
+                FROM spmi_cycles sc
+                WHERE am.prodi_id = sc.prodi_id 
+                    AND am.periode_id = sc.periode_id
+                    AND am.spmi_cycle_id IS NULL
+            ");
+        }
 
         // Add foreign key constraint after backfill
         Schema::table('trx_audit_mutu', function (Blueprint $table) {

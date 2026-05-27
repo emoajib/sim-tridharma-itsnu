@@ -53,13 +53,14 @@ class DashboardServiceTest extends TestCase
 
     public function test_get_bkd_stats_aggregates_correctly(): void
     {
+        $periodeLain = PeriodeAkademik::create(['kode_periode' => '2025/2026', 'nama_periode' => 'TA 2025/2026']);
         Bkd::create([
             'dosen_id' => $this->dosen->id, 'prodi_id' => $this->prodi->id,
             'periode_id' => $this->periode->id, 'status' => 'disetujui', 'total_sks' => 12,
         ]);
         Bkd::create([
             'dosen_id' => $this->dosen->id, 'prodi_id' => $this->prodi->id,
-            'periode_id' => $this->periode->id, 'status' => 'draft', 'total_sks' => 8,
+            'periode_id' => $periodeLain->id, 'status' => 'draft', 'total_sks' => 8,
         ]);
 
         $stats = $this->service->getBkdStats(null);

@@ -10,10 +10,10 @@ class EnvTest extends TestCase
     {
         dump("APP_ENV: " . config('app.env'));
         dump("DB_CONNECTION: " . config('database.default'));
-        dump("DB_DATABASE: " . config('database.connections.pgsql.database'));
+        dump("DB_DATABASE: " . config('database.connections.' . config('database.default') . '.database'));
         dump("SESSION_DRIVER: " . config('session.driver'));
         
         $this->assertEquals('testing', config('app.env'));
-        $this->assertEquals('sim_tridharma_itsnu_test', config('database.connections.pgsql.database'));
+        $this->assertEquals(':memory:', config('database.connections.' . config('database.default') . '.database'));
     }
 }

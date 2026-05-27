@@ -4,6 +4,7 @@ namespace App\Imports;
 
 use App\Models\Dosen;
 use App\Models\User;
+use App\Services\MasterData\PddiktiDosenTransformerService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -36,12 +37,14 @@ class SisterDosenUserImport implements ToCollection, WithHeadingRow, WithStartRo
     protected int $skippedCount = 0;
     protected array $errors = [];
 
-    protected bool $dryRun = false;          // Mode simulasi
-    protected array $dryRunResults = [];     // Hasil simulasi
+    protected bool $dryRun = false;
+    protected array $dryRunResults = [];
+    protected PddiktiDosenTransformerService $transformer;
 
     public function __construct(bool $dryRun = false)
     {
         $this->dryRun = $dryRun;
+        $this->transformer = new PddiktiDosenTransformerService;
     }
 
     /**

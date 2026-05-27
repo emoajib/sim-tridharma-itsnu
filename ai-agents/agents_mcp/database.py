@@ -91,3 +91,85 @@ async def list_tables() -> list[str]:
     """
     rows = await execute_query(query)
     return [row["table_name"] for row in rows]
+
+
+import re
+_IDENTIFIER_RE = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
+
+
+def _validate_identifier(name: str, context: str = "identifier"):
+    """Validate a SQL identifier (table/column name) for safety.
+    Raises ValueError if invalid — prevents SQL injection via identifiers."""
+    if not _IDENTIFIER_RE.match(name):
+        raise ValueError(f"Invalid {context}: '{name}'. Must contain only letters, numbers, and underscores.")
+
+
+async def execute_query_safe(
+    table_name: str,
+    columns: list[str] | None = None,
+    where: dict | None = None,
+    limit: int = 100,
+    order_by: str | None = None,
+) -> list[dict]:
+    """
+    Execute a safe SELECT query using structured parameters — NO raw SQL accepted.
+    All identifiers are whitelist-validated, all values are parameterized.
+
+    Args:
+        table_name: Table to query (validated against information_schema whitelist)
+        columns: Column names to select (default: all). Each validated as safe identifier.
+        where: Dict of {column: value} for WHERE conditions. Values are parameterized.
+        limit: Max rows (1-1000). Default 100.
+        order_by: Column to order by, optionally with ASC/DESC (e.g. 'name' or 'id DESC').
+
+    Returns:
+        List of dicts (rows)
+
+    Raises:
+        ValueError: If table_name not in whitelist, or invalid column/identifier names.
+    """
+    # 1. Whitelist-validate table_name against information_schema
+    allowed_tables = await list_tables()
+    if table_name not in allowed_tables:
+        raise ValueError(
+            f"Table '{table_name}' is not in the allowed tables list. "
+            f"Must be one of the {len(allowed_tables)} tables in the public schema."
+        )
+
+    # 2. Build column list — validate each column name
+    if columns:
+        for col in columns:
+            _validate_identifier(col, f"column '{col}'")
+        cols = ", ".join(f'"{c}"' for c in columns)
+    else:
+        cols = "*"
+
+    # 3. Build WHERE clause — fully parameterized
+    params: list = []
+    where_parts: list[str] = []
+    if where:
+        for key, value in where.items():
+            _validate_identifier(key, f"WHERE column '{key}'")
+            where_parts.append(f'"{key}" = ${len(params) + 1}')
+            params.append(value)
+    where_clause = " AND ".join(where_parts) if where_parts else "TRUE"
+
+    # 4. Build ORDER BY — validate column, allow optional ASC/DESC
+    order_clause = ""
+    if order_by:
+        parts = order_by.strip().split(None, 1)
+        col = parts[0]
+        _validate_identifier(col, f"ORDER BY column '{col}'")
+        direction = ""
+        if len(parts) > 1:
+            direction = parts[1].upper()
+            if direction not in ("ASC", "DESC"):
+                raise ValueError(f"Invalid ORDER BY direction: '{direction}'. Must be ASC or DESC.")
+        order_clause = f' ORDER BY "{col}" {direction}' if direction else f' ORDER BY "{col}"'
+
+    # 5. Cap limit between 1 and 1000
+    safe_limit = max(1, min(limit, 1000))
+
+    # 6. Build and execute query
+    query = f'SELECT {cols} FROM "{table_name}" WHERE {where_clause}{order_clause} LIMIT {safe_limit}'
+    return await execute_query(query, params)

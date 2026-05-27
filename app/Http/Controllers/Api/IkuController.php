@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\IkuRequest;
 use App\Models\IndikatorIku;
 use App\Models\LembagaAkreditasi;
 use Illuminate\Http\Request;
@@ -25,36 +26,16 @@ class IkuController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(IkuRequest $request)
     {
-        $validated = $request->validate([
-            'kode_iku' => 'required|string|max:50|unique:m_indikator_iku,kode_iku',
-            'nama_indikator' => 'required|string|max:200',
-            'deskripsi' => 'nullable|string',
-            'lembaga_id' => 'nullable|exists:m_lembaga_akreditasi,id',
-            'bobot' => 'nullable|numeric|min:0|max:100',
-            'target' => 'nullable|numeric|min:0',
-            'is_active' => 'boolean',
-        ]);
-
-        $iku = IndikatorIku::create($validated);
+        $iku = IndikatorIku::create($request->validated());
 
         return redirect()->route('iku.index')->with('success', 'IKU berhasil dibuat.');
     }
 
-    public function update(Request $request, IndikatorIku $iku)
+    public function update(IkuRequest $request, IndikatorIku $iku)
     {
-        $validated = $request->validate([
-            'kode_iku' => 'required|string|max:50|unique:m_indikator_iku,kode_iku,' . $iku->id,
-            'nama_indikator' => 'required|string|max:200',
-            'deskripsi' => 'nullable|string',
-            'lembaga_id' => 'nullable|exists:m_lembaga_akreditasi,id',
-            'bobot' => 'nullable|numeric|min:0|max:100',
-            'target' => 'nullable|numeric|min:0',
-            'is_active' => 'boolean',
-        ]);
-
-        $iku->update($validated);
+        $iku->update($request->validated());
 
         return redirect()->route('iku.index')->with('success', 'IKU berhasil diperbarui.');
     }

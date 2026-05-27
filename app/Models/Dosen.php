@@ -19,10 +19,11 @@ class Dosen extends Model
     protected $table = 'm_dosen';
 
     protected $fillable = [
-        'nidn', 'nip', 'nama_depan', 'nama_belakang', 'gelar_depan', 'gelar_belakang',
+        'nidn', 'nip', 'nuptk', 'nama_depan', 'nama_belakang', 'gelar_depan', 'gelar_belakang',
         'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin', 'prodi_id',
-        'pendidikan_terakhir', 'jabatan_fungsional', 'status_aktivitas',
-        'email', 'telepon', 'is_active', 'sinta_id',
+        'pendidikan_terakhir', 'jabatan_fungsional', 'kepangkatan',
+        'rumpun_ilmu', 'status_aktivitas', 'status_serdos', 'status_pegawai',
+        'ikatan_kerja', 'email', 'telepon', 'is_active', 'sinta_id',
     ];
 
     protected $guarded = [

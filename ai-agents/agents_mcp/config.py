@@ -28,6 +28,13 @@ DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 # Redis Configuration (for MCP Tasks backend)
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
+# RabbitMQ — DEPRECATED: MCP replaces all queue functionality
+# Kept for reference during migration, will be removed in next release
+RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "localhost")
+RABBITMQ_PORT = os.getenv("RABBITMQ_PORT", "5672")
+RABBITMQ_USER = os.getenv("RABBITMQ_USER", "guest")
+RABBITMQ_PASSWORD = os.getenv("RABBITMQ_PASSWORD", "guest")
+
 # External API Configuration
 SINTA_API_URL = os.getenv("SINTA_API_URL", "https://sinta.kemdiktisaintek.go.id/api")
 SINTA_API_KEY = os.getenv("SINTA_API_KEY", "")

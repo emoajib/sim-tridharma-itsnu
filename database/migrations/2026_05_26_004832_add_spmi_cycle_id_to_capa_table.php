@@ -16,14 +16,17 @@ return new class extends Migration
         });
 
         // Backfill via AuditMutu relationship
-        DB::statement("
-            UPDATE trx_capa c
-            SET spmi_cycle_id = am.spmi_cycle_id
-            FROM trx_audit_mutu am
-            WHERE c.audit_mutu_id = am.id
-                AND am.spmi_cycle_id IS NOT NULL
-                AND c.spmi_cycle_id IS NULL
-        ");
+        // Only on PostgreSQL — SQLite doesn't support UPDATE...FROM
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement("
+                UPDATE trx_capa c
+                SET spmi_cycle_id = am.spmi_cycle_id
+                FROM trx_audit_mutu am
+                WHERE c.audit_mutu_id = am.id
+                    AND am.spmi_cycle_id IS NOT NULL
+                    AND c.spmi_cycle_id IS NULL
+            ");
+        }
 
         Schema::table('trx_capa', function (Blueprint $table) {
             $table->foreign('spmi_cycle_id')

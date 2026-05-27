@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -56,7 +55,7 @@ async def health():
     return {"status": "ok", "agent": "akreditasi-ai", "mcp": "available"}
 
 
-@app.get("/api/mcp/tools")
+@app.get("/api/mcp/tools", dependencies=[Depends(verify_api_key)])
 async def list_mcp_tools():
     """List all available MCP tools (for debugging)"""
     tools = await mcp.list_tools()
@@ -72,7 +71,7 @@ async def list_mcp_tools():
     }
 
 
-@app.post("/api/mcp/tools/call")
+@app.post("/api/mcp/tools/call", dependencies=[Depends(verify_api_key)])
 async def call_mcp_tool(data: dict):
     """Call an MCP tool via REST (proxy for PHP)"""
     tool_name = data.get("name")
@@ -87,19 +86,6 @@ async def call_mcp_tool(data: dict):
     except Exception as e:
         logger.error(f"MCP tool call failed: {tool_name}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/api/v1/agents/{agent_name}/run", dependencies=[Depends(verify_api_key)])
-async def run_agent(agent_name: str, data: dict):
-    import asyncio
-    from agents import get_agent
-    loop = asyncio.get_running_loop()
-    agent = get_agent(agent_name)
-    if agent is None:
-        raise HTTPException(status_code=404, detail=f"Agent '{agent_name}' not found")
-    
-    result = await loop.run_in_executor(None, agent.execute, data)
-    return {"agent": agent_name, "result": result}
 
 
 if __name__ == "__main__":

@@ -1,5 +1,7 @@
 <?php
 
+// Idempotent: safe to re-run
+
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
@@ -10,6 +12,13 @@ class AlumniSeeder extends Seeder
 {
     public function run(): void
     {
+        // Guard: skip if alumni already seeded
+        if (DB::table('m_alumni')->count() > 0) {
+            $this->command->info('Alumni data already exists, skipping.');
+
+            return;
+        }
+
         $prodis = DB::table('m_prodi')->get();
 
         if ($prodis->isEmpty()) {
@@ -51,7 +60,7 @@ class AlumniSeeder extends Seeder
 
                 if ($kuisioners->isNotEmpty()) {
                     foreach ($kuisioners as $kuisioner) {
-                        DB::table('trx_tracer_jawaban')->insert([
+                        DB::table('trx_tracer_jawaban')->insertOrIgnore([
                             'alumni_id' => $alumniId,
                             'kuisioner_id' => $kuisioner->id,
                             'jawaban' => json_encode([

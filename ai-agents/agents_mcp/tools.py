@@ -12,9 +12,6 @@ import os
 from agents_mcp.config import MCP_SERVER_NAME, MCP_SERVER_VERSION
 from agents_mcp.auth import verify_mcp_auth
 from agents_mcp.database import execute_query, list_tables, get_table_schema
-
-import sys
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from config import calculate_prediction
 
 
@@ -60,18 +57,37 @@ async def db_get_table_schema(
     return schema
 
 
+# Whitelist of allowed table prefixes for db_query_safe
+# All m_*, trx_*, and v_* tables in the public schema are permitted.
+# Actual table names are validated at runtime against information_schema.
+IDENTIFIER_RE = r'^[a-zA-Z_][a-zA-Z0-9_]*$'
+import re
+_identifier_validator = re.compile(IDENTIFIER_RE).match
+
+
 @mcp.tool()
 async def db_query(
-    query: str = Field(description="SQL SELECT query to execute"),
-    params: Optional[list] = None,
+    table_name: str = Field(description="Table name to query (must be m_*, trx_*, or v_* table)"),
+    columns: Optional[list[str]] = Field(default=None, description="List of column names to return (default: all)"),
+    where: Optional[dict] = Field(default=None, description="Filter conditions as key-value pairs (e.g. {\"prodi_id\": 1})"),
+    limit: int = Field(default=100, description="Maximum rows to return (max: 1000)", ge=1, le=1000),
+    order_by: Optional[str] = Field(default=None, description="Order by column name, optionally with ASC/DESC (e.g. 'nama' or 'id DESC')"),
 ) -> list[dict]:
-    """Execute a read-only SQL query against the database."""
-    # Security: Only allow SELECT queries
-    if not query.strip().upper().startswith("SELECT"):
-        raise ValueError("Only SELECT queries are allowed via this tool")
+    """
+    Execute a safe, parameterized SELECT query using structured parameters.
+    No raw SQL accepted — eliminates SQL injection risk entirely.
 
-    results = await execute_query(query, params)
-    return results
+    Example:
+      db_query(table_name="m_prodi", columns=["id", "nama_prodi"], where={"id": 1})
+    """
+    from agents_mcp.database import execute_query_safe
+    return await execute_query_safe(
+        table_name=table_name,
+        columns=columns,
+        where=where,
+        limit=limit,
+        order_by=order_by,
+    )
 
 
 @mcp.tool()
@@ -603,60 +619,3 @@ async def integrasi_sync(
     }
 
 
-@mcp.tool()
-async def orchestrator_list_plans(
-    ctx: Context = None,
-) -> dict:
-    """List all available orchestration plans."""
-    from agents_mcp.orchestrator import list_plans as plans
-    return {
-        "plans": [
-            {"name": k, "description": v["description"], "tools": v["tools"]}
-            for k, v in plans.items()
-        ]
-    }
-
-
-@mcp.tool()
-async def orchestrator_run_plan(
-    plan_name: str = Field(description="Orchestration plan name to execute"),
-    prodi_id: int = Field(description="Program Studi ID"),
-    ctx: Context = None,
-) -> dict:
-    """Execute an orchestration plan - runs multiple tools for a complete workflow."""
-    from agents_mcp.orchestrator import ORCHESTRATION_PLANS
-
-    plan = ORCHESTRATION_PLANS.get(plan_name)
-    if not plan:
-        return {"error": f"Unknown plan: {plan_name}", "available_plans": list(ORCHESTRATION_PLANS.keys())}
-
-    results = {}
-    await _ctx(ctx).info(f"Running plan '{plan_name}': {plan['description']}")
-
-    for i, tool_name in enumerate(plan["tools"]):
-        await _ctx(ctx).report_progress(i + 1, len(plan["tools"]), f"Running {tool_name}...")
-        try:
-            if tool_name == "peringatan_check":
-                from agents_mcp.tools import peringatan_check as tool_fn
-            elif tool_name == "prediksi_skor":
-                from agents_mcp.tools import prediksi_skor as tool_fn
-            elif tool_name == "verifikasi_dokumen":
-                from agents_mcp.tools import verifikasi_dokumen as tool_fn
-            elif tool_name == "rekomendasi_generate":
-                from agents_mcp.tools import rekomendasi_generate as tool_fn
-            else:
-                results[tool_name] = {"error": f"Unknown tool: {tool_name}"}
-                continue
-
-            result = await tool_fn(prodi_id=prodi_id, ctx=ctx)
-            results[tool_name] = result
-        except Exception as e:
-            logger.error(f"Plan {plan_name} tool {tool_name} failed: {e}")
-            results[tool_name] = {"error": str(e)}
-
-    return {
-        "plan": plan_name,
-        "prodi_id": prodi_id,
-        "results": results,
-        "status": "completed",
-    }

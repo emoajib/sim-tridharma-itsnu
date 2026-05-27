@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\EdpsRequest;
 use App\Models\Edps;
 use App\Models\PeriodeAkademik;
 use App\Models\Prodi;
@@ -57,18 +58,9 @@ class EdpsController extends Controller
     /**
      * Store a newly created (or update existing) EDPS entry.
      */
-    public function store(Request $request)
+    public function store(EdpsRequest $request)
     {
-        $validated = $request->validate([
-            'prodi_id' => 'required|exists:m_prodi,id',
-            'periode_id' => 'required|exists:m_periode_akademik,id',
-            'standar_mutu_id' => 'required|exists:m_standar_mutu,id',
-            'target' => 'nullable|numeric|min:0|max:100',
-            'capaian' => 'nullable|numeric|min:0|max:100',
-            'analisis' => 'nullable|string',
-            'bukti_file' => 'nullable|file|mimes:pdf,doc,docx,xlsx,jpg,png|max:10240',
-            'status' => 'nullable|string|in:draft,completed',
-        ]);
+        $validated = $request->validated();
 
         return DB::transaction(function () use ($request, $validated) {
             // Check if entry already exists for this prodi+periode+standar
@@ -108,15 +100,9 @@ class EdpsController extends Controller
     /**
      * Update the specified EDPS entry.
      */
-    public function update(Request $request, Edps $edps)
+    public function update(EdpsRequest $request, Edps $edps)
     {
-        $validated = $request->validate([
-            'target' => 'nullable|numeric|min:0|max:100',
-            'capaian' => 'nullable|numeric|min:0|max:100',
-            'analisis' => 'nullable|string',
-            'bukti_file' => 'nullable|file|mimes:pdf,doc,docx,xlsx,jpg,png|max:10240',
-            'status' => 'nullable|string|in:draft,completed',
-        ]);
+        $validated = $request->validated();
 
         DB::transaction(function () use ($request, $edps, $validated) {
             if ($request->hasFile('bukti_file')) {

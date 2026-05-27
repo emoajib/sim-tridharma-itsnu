@@ -75,10 +75,25 @@ class DashboardService
             $fakultasQuery->where('id', $scopeParams['fakultas_id']);
         }
 
+        // Single query with 3 subqueries → 1 round trip instead of 3
+        $dosenSql = $dosenQuery->select(DB::raw('COUNT(*)'))->toSql();
+        $dosenBindings = $dosenQuery->getBindings();
+        $prodiSql = $prodiQuery->select(DB::raw('COUNT(*)'))->toSql();
+        $prodiBindings = $prodiQuery->getBindings();
+        $fakultasSql = $fakultasQuery->select(DB::raw('COUNT(*)'))->toSql();
+        $fakultasBindings = $fakultasQuery->getBindings();
+
+        $row = DB::selectOne("
+            SELECT ({$dosenSql}) as dosen_count,
+                   ({$prodiSql}) as prodi_count,
+                   ({$fakultasSql}) as fakultas_count
+        ", array_merge($dosenBindings, $prodiBindings, $fakultasBindings))
+            ?? (object) ['dosen_count' => 0, 'prodi_count' => 0, 'fakultas_count' => 0];
+
         return [
-            'dosen_count' => $dosenQuery->count(),
-            'prodi_count' => $prodiQuery->count(),
-            'fakultas_count' => $fakultasQuery->count(),
+            'dosen_count' => (int) $row->dosen_count,
+            'prodi_count' => (int) $row->prodi_count,
+            'fakultas_count' => (int) $row->fakultas_count,
         ];
     }
 
@@ -165,30 +180,58 @@ class DashboardService
     {
         $prodiIds = $activeProdis->pluck('id');
 
-        $predictions = AgentPredictionHistory::whereIn('prodi_id', $prodiIds)
-            ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
-            ->selectRaw('prodi_id, MAX(created_at) as latest')
-            ->groupBy('prodi_id')
-            ->get()
-            ->keyBy('prodi_id');
+        if ($prodiIds->isEmpty()) {
+            return [];
+        }
 
-        return $activeProdis->map(function ($p) use ($predictions) {
-            $latestSim = null;
-            if (isset($predictions[$p->id])) {
-                $latestSim = AgentPredictionHistory::where('prodi_id', $p->id)
-                    ->where('created_at', $predictions[$p->id]->getAttribute('latest'))
-                    ->first();
-            }
+        $ids = $prodiIds->toArray();
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+
+        // Build optional periode filter
+        $periodeCondition = $periodeId ? ' AND aph.periode_id = ?' : '';
+        $bindings = $periodeId ? array_merge($ids, [$periodeId]) : $ids;
+
+        // === Batch 1: Latest prediction per prodi (DISTINCT ON — 1 query, not N) ===
+        $latestPredictions = DB::select("
+            SELECT DISTINCT ON (aph.prodi_id)
+                   aph.prodi_id, aph.id, aph.skor_prediksi,
+                   aph.probabilitas_unggul, aph.probabilitas_baik_sekali
+            FROM agent_prediction_history aph
+            WHERE aph.prodi_id IN ({$placeholders})
+              AND aph.deleted_at IS NULL
+              {$periodeCondition}
+            ORDER BY aph.prodi_id, aph.created_at DESC
+        ", $bindings);
+
+        // === Batch 2: Previous predictions for trend (window function — 1 query, not N) ===
+        $trends = DB::select("
+            SELECT prodi_id, skor_prediksi,
+                   LAG(skor_prediksi) OVER (PARTITION BY prodi_id ORDER BY created_at) AS previous_score
+            FROM (
+                SELECT aph.prodi_id, aph.skor_prediksi, aph.created_at,
+                       ROW_NUMBER() OVER (PARTITION BY aph.prodi_id ORDER BY aph.created_at DESC) AS rn
+                FROM agent_prediction_history aph
+                WHERE aph.prodi_id IN ({$placeholders})
+                  AND aph.deleted_at IS NULL
+                  {$periodeCondition}
+            ) ranked WHERE rn <= 2
+        ", $bindings);
+
+        $predMap = collect($latestPredictions)->keyBy('prodi_id');
+        $trendMap = collect($trends)->groupBy('prodi_id');
+
+        return $activeProdis->map(function ($p) use ($predMap, $trendMap) {
+            $latest = $predMap->get($p->id);
 
             $trend = 0;
-            if ($latestSim) {
-                $older = AgentPredictionHistory::where('prodi_id', $p->id)
-                    ->where('id', '!=', $latestSim->id)
-                    ->latest()
-                    ->skip(1)
-                    ->first();
-                if ($older && $older->skor_prediksi > 0) {
-                    $trend = ($latestSim->skor_prediksi - $older->skor_prediksi) / $older->skor_prediksi;
+            if ($latest && $trendMap->has($p->id)) {
+                $rows = $trendMap->get($p->id);
+                // The row with a non-null previous_score is the newest (rn=1),
+                // where LAG retrieved the immediately older score
+                $rowWithPrev = $rows->first(fn ($row) => $row->previous_score !== null);
+                if ($rowWithPrev && (float) $rowWithPrev->previous_score > 0) {
+                    $diff = (float) $rowWithPrev->skor_prediksi - (float) $rowWithPrev->previous_score;
+                    $trend = $diff / (float) $rowWithPrev->previous_score;
                     $trend = max(-0.1, min(0.1, $trend));
                 }
             }
@@ -198,7 +241,7 @@ class DashboardService
                 'nama' => $p->nama_prodi,
                 'fakultas' => $p->fakultas->nama_fakultas ?? '-',
                 'status_saat_ini' => $p->akreditasi ?? 'Belum Terakreditasi',
-                'skor_simulasi' => $latestSim ? $latestSim->skor_prediksi : 0,
+                'skor_simulasi' => $latest ? (float) $latest->skor_prediksi : 0,
                 'trend' => round($trend, 4),
             ];
         })->toArray();

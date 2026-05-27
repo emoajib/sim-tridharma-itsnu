@@ -5,8 +5,8 @@
 namespace App\Services\AI;
 
 use App\Models\ChatHistory;
-use App\Models\KnowledgeBaseChunk;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -31,8 +31,7 @@ class RAGService
     public function ask(string $question, ?int $categoryId = null, int $topK = 5): array
     {
         try {
-            $questionVector = $this->embedding->embedText($question);
-            $chunks = $this->searchSimilar($questionVector, $categoryId, $topK);
+            $chunks = $this->searchSimilar($question, $categoryId, $topK);
 
             $maxSimilarity = ! empty($chunks) ? $chunks[0]['similarity'] : 0;
             $mode = 'sentence-only';
@@ -89,58 +88,38 @@ class RAGService
         }
     }
 
-    public function searchSimilar(array $vector, ?int $categoryId = null, int $topK = 5): array
+    public function searchSimilar(string $query, int $topK = 5, ?int $categoryId = null): array
     {
-        $query = KnowledgeBaseChunk::query()
-            ->select('knowledge_base_chunks.*')
+        $embedding = $this->embedding->embedText($query);
+        $embeddingStr = '[' . implode(',', $embedding) . ']';
+
+        $query = DB::table('knowledge_base_chunks')
+            ->select(
+                'knowledge_base_chunks.id',
+                'knowledge_base_chunks.content',
+                'knowledge_base_documents.judul as document_judul',
+                'knowledge_base_documents.sumber as document_sumber'
+            )
+            ->selectRaw('knowledge_base_chunks.embedding <=> ?::vector as distance', [$embeddingStr])
             ->join('knowledge_base_documents', 'knowledge_base_chunks.document_id', '=', 'knowledge_base_documents.id')
             ->whereNotNull('knowledge_base_chunks.embedding')
-            ->where('knowledge_base_documents.status', 'active');
+            ->where('knowledge_base_documents.status', 'active')
+            ->orderBy('distance')
+            ->limit($topK);
 
         if ($categoryId) {
             $query->where('knowledge_base_documents.category_id', $categoryId);
         }
 
-        $chunks = $query->get();
-
-        $scored = [];
-        foreach ($chunks as $chunk) {
-            $chunkVector = $chunk->embedding;
-            if (! $chunkVector) {
-                continue;
-            }
-
-            $similarity = $this->cosineSimilarity($vector, $chunkVector);
-            $scored[] = [
-                'id' => $chunk->id,
-                'content' => $chunk->content,
-                'similarity' => $similarity,
-                'document_judul' => $chunk->document->judul ?? 'Unknown',
-                'document_sumber' => $chunk->document->sumber ?? '',
+        return $query->get()->map(function ($row) {
+            return [
+                'id' => $row->id,
+                'content' => $row->content,
+                'similarity' => 1 - (float) $row->distance,
+                'document_judul' => $row->document_judul ?? 'Unknown',
+                'document_sumber' => $row->document_sumber ?? '',
             ];
-        }
-
-        usort($scored, fn ($a, $b) => $b['similarity'] <=> $a['similarity']);
-
-        return array_slice($scored, 0, $topK);
-    }
-
-    protected function cosineSimilarity(array $a, array $b): float
-    {
-        $dot = 0;
-        $normA = 0;
-        $normB = 0;
-        $len = min(count($a), count($b));
-
-        for ($i = 0; $i < $len; $i++) {
-            $dot += (float) $a[$i] * (float) $b[$i];
-            $normA += (float) $a[$i] * (float) $a[$i];
-            $normB += (float) $b[$i] * (float) $b[$i];
-        }
-
-        $denom = sqrt($normA) * sqrt($normB);
-
-        return $denom > 0 ? $dot / $denom : 0;
+        })->toArray();
     }
 
     protected function askPythonAnswer(string $question, array $chunks): ?array

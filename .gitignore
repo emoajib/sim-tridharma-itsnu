@@ -28,3 +28,5 @@ storage/pail/
 .idea/
 .fleet/
 .vscode/
+.backup/
+storage/framework/cache/phpstan/
