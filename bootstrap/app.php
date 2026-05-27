@@ -12,6 +12,7 @@ use Illuminate\Http\Middleware\HandleCors;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
@@ -27,7 +28,19 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         channels: __DIR__.'/../routes/channels.php',
         health: '/up',
+
+        // ── Routes outside any middleware group (no auth/csrf) ──────────
+        then: function () {
+            Route::get('/health', \App\Http\Controllers\HealthController::class);
+        },
     )
+
+    // ── Event Discovery ───────────────────────────────────────────────
+    // Laravel auto-discovers events by scanning listener directories.
+    // For PRODUCTION performance, run:
+    //   php artisan event:cache
+    // This bakes all event/listener mappings into a single cached file.
+    // Remember to re-run after adding/removing events or listeners.
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
             HandleInertiaRequests::class,

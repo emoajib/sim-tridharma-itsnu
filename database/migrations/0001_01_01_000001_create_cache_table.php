@@ -8,6 +8,11 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
+     *
+     * NOTE: Primary cache driver is Redis (CACHE_STORE=redis in .env).
+     * This database table ('cache' + 'cache_locks') serves as a fallback
+     * when using the 'failover' cache store or if CACHE_STORE is switched
+     * to 'database' manually.
      */
     public function up(): void
     {
