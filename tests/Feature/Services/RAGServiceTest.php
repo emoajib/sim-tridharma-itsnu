@@ -11,6 +11,7 @@ use App\Services\AI\EmbeddingService;
 use App\Services\AI\RAGService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -23,6 +24,10 @@ class RAGServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        if (DB::getDriverName() !== 'pgsql') {
+            $this->markTestSkipped('pgvector operator requires PostgreSQL');
+        }
 
         $user = User::factory()->create(['id' => 1]);
         Auth::login($user);
@@ -122,8 +127,7 @@ class RAGServiceTest extends TestCase
 
     public function test_search_similar_returns_empty_when_no_chunks(): void
     {
-        $matchingVector = array_fill(0, 384, 0.1);
-        $result = $this->service->searchSimilar($matchingVector);
+        $result = $this->service->searchSimilar('test query');
 
         $this->assertEmpty($result);
     }
@@ -143,7 +147,7 @@ class RAGServiceTest extends TestCase
             'embedding' => $matchingVector,
         ]);
 
-        $result = $this->service->searchSimilar($matchingVector);
+        $result = $this->service->searchSimilar('standar akreditasi');
 
         $this->assertCount(1, $result);
         $this->assertEquals('Dokumen Akreditasi', $result[0]['document_judul']);

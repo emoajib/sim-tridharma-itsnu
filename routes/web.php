@@ -70,7 +70,7 @@ Route::get('/', function () {
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::middleware(['auth', PermissionMiddleware::class])->group(function () {
+Route::middleware(['auth', PermissionMiddleware::class, 'throttle:crud'])->group(function () {
 
     Route::post('/role/switch', [RoleSwitchController::class, 'switch'])->name('role.switch');
 
@@ -289,34 +289,44 @@ Route::middleware(['auth', PermissionMiddleware::class])->group(function () {
     Route::get('/peringatan', [PeringatanController::class, 'index'])->name('peringatan');
     Route::post('/peringatan/{id}/read', [PeringatanController::class, 'markAsRead'])->name('peringatan.markRead');
     Route::post('/peringatan/mark-all-read', [PeringatanController::class, 'markAllAsRead'])->name('peringatan.markAllRead');
-    Route::post('/peringatan/run', [PeringatanController::class, 'runAgent'])->name('peringatan.run');
+    Route::post('/peringatan/run', [PeringatanController::class, 'runAgent'])->name('peringatan.run')
+        ->middleware('throttle:10,1');
 
     Route::get('/verifikasi', [VerifikasiController::class, 'index'])->name('verifikasi');
-    Route::post('/verifikasi/run', [VerifikasiController::class, 'runAgent'])->name('verifikasi.run');
+    Route::post('/verifikasi/run', [VerifikasiController::class, 'runAgent'])->name('verifikasi.run')
+        ->middleware('throttle:10,1');
 
     // Generator Dokumen
     Route::get('/generator', [GeneratorController::class, 'index'])->name('generator');
-    Route::post('/generator/generate', [GeneratorController::class, 'generate'])->name('generator.generate');
+    Route::post('/generator/generate', [GeneratorController::class, 'generate'])->name('generator.generate')
+        ->middleware('throttle:10,1');
     Route::get('/generator/download/{id}', [GeneratorController::class, 'download'])->name('generator.download');
 
     // Prediksi Akreditasi
     Route::get('/prediksi', [PrediksiController::class, 'index'])->name('prediksi');
-    Route::post('/prediksi/run', [PrediksiController::class, 'runAgent'])->name('prediksi.run');
+    Route::post('/prediksi/run', [PrediksiController::class, 'runAgent'])->name('prediksi.run')
+        ->middleware('throttle:10,1');
     Route::get('/prediksi/latest', [PrediksiController::class, 'latest'])->name('prediksi.latest');
 
     // Rekomendasi Agent
     Route::get('/rekomendasi', [RekomendasiController::class, 'index'])->name('rekomendasi');
-    Route::post('/rekomendasi/run', [RekomendasiController::class, 'run'])->name('rekomendasi.run');
+    Route::post('/rekomendasi/run', [RekomendasiController::class, 'run'])->name('rekomendasi.run')
+        ->middleware('throttle:10,1');
 
     // Integrasi Agent
     Route::get('/integrasi', [IntegrasiController::class, 'index'])->name('integrasi');
-    Route::post('/integrasi/run', [IntegrasiController::class, 'run'])->name('integrasi.run');
-    Route::post('/integrasi/sync', [IntegrasiController::class, 'sync'])->name('integrasi.sync');
+    Route::post('/integrasi/run', [IntegrasiController::class, 'run'])->name('integrasi.run')
+        ->middleware('throttle:10,1');
+    Route::post('/integrasi/sync', [IntegrasiController::class, 'sync'])->name('integrasi.sync')
+        ->middleware('throttle:10,1');
 
     // SINTA Import Routes
-    Route::post('/import/sinta/publikasi', [SintaImportController::class, 'importPublikasi'])->name('import.sinta.publikasi');
-    Route::post('/import/sinta/penelitian', [SintaImportController::class, 'importPenelitian'])->name('import.sinta.penelitian');
-    Route::post('/import/sinta/pkm', [SintaImportController::class, 'importPkm'])->name('import.sinta.pkm');
+    Route::post('/import/sinta/publikasi', [SintaImportController::class, 'importPublikasi'])->name('import.sinta.publikasi')
+        ->middleware('throttle:uploads');
+    Route::post('/import/sinta/penelitian', [SintaImportController::class, 'importPenelitian'])->name('import.sinta.penelitian')
+        ->middleware('throttle:uploads');
+    Route::post('/import/sinta/pkm', [SintaImportController::class, 'importPkm'])->name('import.sinta.pkm')
+        ->middleware('throttle:uploads');
 
     // ===== DATA IMPORT ROUTES =====
     Route::middleware('can:data-import.download-template')->group(function () {
@@ -328,7 +338,11 @@ Route::middleware(['auth', PermissionMiddleware::class])->group(function () {
 
     Route::middleware('can:data-import.upload')->group(function () {
         Route::post('/data-import/upload', [DataImportController::class, 'upload'])
-            ->name('data-import.upload');
+            ->name('data-import.upload')
+            ->middleware('throttle:uploads');
+        Route::post('/data-import/preview', [DataImportController::class, 'preview'])
+            ->name('data-import.preview')
+            ->middleware('throttle:uploads');
     });
 
     Route::middleware('can:data-import.view')->group(function () {
@@ -364,10 +378,14 @@ Route::middleware(['auth', PermissionMiddleware::class])->group(function () {
 
     // Admin Settings
     Route::get('/admin/settings', [AdminSettingController::class, 'index'])->name('admin.settings');
-    Route::post('/admin/settings', [AdminSettingController::class, 'updateMultiple'])->name('admin.settings.update');
-    Route::post('/admin/settings/favicon/upload', [AdminSettingController::class, 'uploadFavicon'])->name('admin.settings.favicon.upload');
-    Route::delete('/admin/settings/favicon/remove', [AdminSettingController::class, 'removeFavicon'])->name('admin.settings.favicon.remove');
-    Route::post('/admin/settings/logo/upload', [AdminSettingController::class, 'uploadLogo'])->name('admin.settings.logo.upload');
+    Route::post('/admin/settings', [AdminSettingController::class, 'updateMultiple'])->name('admin.settings.update')
+        ->middleware('throttle:crud');
+    Route::post('/admin/settings/favicon/upload', [AdminSettingController::class, 'uploadFavicon'])->name('admin.settings.favicon.upload')
+        ->middleware('throttle:uploads');
+    Route::delete('/admin/settings/favicon/remove', [AdminSettingController::class, 'removeFavicon'])->name('admin.settings.favicon.remove')
+        ->middleware('throttle:uploads');
+    Route::post('/admin/settings/logo/upload', [AdminSettingController::class, 'uploadLogo'])->name('admin.settings.logo.upload')
+        ->middleware('throttle:uploads');
     Route::delete('/admin/settings/logo/remove', [AdminSettingController::class, 'removeLogo'])->name('admin.settings.logo.remove');
     Route::delete('/admin/settings/api-key/remove', [AdminSettingController::class, 'removeApiKey'])->name('admin.settings.api-key.remove');
     Route::post('/admin/settings/api-key/test', [AdminSettingController::class, 'testApiKey'])->name('admin.settings.api-key.test');
@@ -381,8 +399,10 @@ Route::middleware(['auth', PermissionMiddleware::class])->group(function () {
         Route::delete('/admin/users/{user}', [\App\Http\Controllers\Api\Admin\UserController::class, 'destroy'])->name('admin.users.destroy');
         Route::post('/admin/users/{user}/sync-roles', [\App\Http\Controllers\Api\Admin\UserController::class, 'syncRoles'])->name('admin.users.sync-roles');
         Route::get('/admin/users/download-template', [\App\Http\Controllers\Api\Admin\UserController::class, 'downloadTemplate'])->name('admin.users.download-template');
-        Route::post('/admin/users/import', [\App\Http\Controllers\Api\Admin\UserController::class, 'import'])->name('admin.users.import');
-        Route::post('/admin/users/import-preview', [\App\Http\Controllers\Api\Admin\UserController::class, 'importPreview'])->name('admin.users.import-preview');
+    Route::post('/admin/users/import', [\App\Http\Controllers\Api\Admin\UserController::class, 'import'])->name('admin.users.import')
+        ->middleware('throttle:uploads');
+    Route::post('/admin/users/import-preview', [\App\Http\Controllers\Api\Admin\UserController::class, 'importPreview'])->name('admin.users.import-preview')
+        ->middleware('throttle:uploads');
 
         Route::get('/admin/roles', [\App\Http\Controllers\Api\Admin\RoleController::class, 'index'])->name('admin.roles.index');
         Route::post('/admin/roles', [\App\Http\Controllers\Api\Admin\RoleController::class, 'store'])->name('admin.roles.store');
@@ -414,7 +434,8 @@ Route::middleware(['auth', PermissionMiddleware::class])->group(function () {
 
     // Knowledge Base Routes
     Route::get('/admin/knowledge-base', [KnowledgeBaseController::class, 'index'])->name('admin.knowledge-base.index');
-    Route::post('/admin/knowledge-base/upload', [KnowledgeBaseController::class, 'upload'])->name('admin.knowledge-base.upload');
+    Route::post('/admin/knowledge-base/upload', [KnowledgeBaseController::class, 'upload'])->name('admin.knowledge-base.upload')
+        ->middleware('throttle:uploads');
     Route::put('/admin/knowledge-base/{knowledgeBaseDocument}', [KnowledgeBaseController::class, 'update'])->name('admin.knowledge-base.update');
     Route::delete('/admin/knowledge-base/{knowledgeBaseDocument}', [KnowledgeBaseController::class, 'destroy'])->name('admin.knowledge-base.destroy');
     Route::post('/admin/knowledge-base/{knowledgeBaseDocument}/reindex', [KnowledgeBaseController::class, 'reindex'])->name('admin.knowledge-base.reindex');

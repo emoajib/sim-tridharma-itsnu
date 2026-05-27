@@ -9,7 +9,10 @@ use App\Models\Setting;
 use App\Observers\AgentExecutionLogObserver;
 use App\Policies\DosenPolicy;
 use App\Policies\ProdiPolicy;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Inertia\Inertia;
 
@@ -22,11 +25,24 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        RateLimiter::for('api', function (Request $request) {
+            return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
+        });
+
+        RateLimiter::for('crud', function (Request $request) {
+            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+        });
+
+        RateLimiter::for('uploads', function (Request $request) {
+            return Limit::perMinute(10)->by($request->user()?->id ?: $request->ip());
+        });
+
+        RateLimiter::for('auth', function (Request $request) {
+            return Limit::perMinute(30)->by($request->ip());
+        });
+
         AgentExecutionLog::observe(AgentExecutionLogObserver::class);
 
-        // ------------------------------
-        // SPMI Event-Listener Registrations
-        // ------------------------------
         \Illuminate\Support\Facades\Event::listen(
             \App\Events\AuditSevereFindingCreated::class,
             \App\Listeners\CreateRiskRegisterFromSevereFinding::class,
@@ -42,7 +58,6 @@ class AppServiceProvider extends ServiceProvider
             \App\Listeners\SyncAuditToPythonAgent::class,
         );
 
-        // Register authorization gates (policies)
         Gate::policy(Prodi::class, ProdiPolicy::class);
         Gate::policy(Dosen::class, DosenPolicy::class);
 
@@ -51,48 +66,46 @@ class AppServiceProvider extends ServiceProvider
         });
 
         try {
+            $settings = Setting::getAllCached();
+
             $settings = [
-                'layout_type' => Setting::get('layout_type', 'navbar'),
-                'theme_color' => Setting::get('theme_color', 'indigo'),
-                'dashboard_default_tab' => Setting::get('dashboard_default_tab', 'overview'),
-                'chat_enabled' => Setting::get('chat_enabled', true),
-                'theme_mode' => Setting::get('theme_mode', 'theme3'),
-                'logo_path' => Setting::get('logo_path'),
-                'favicon_path' => Setting::get('favicon_path'),
+                'layout_type' => $settings['layout_type'] ?? 'navbar',
+                'theme_color' => $settings['theme_color'] ?? 'indigo',
+                'dashboard_default_tab' => $settings['dashboard_default_tab'] ?? 'overview',
+                'chat_enabled' => $settings['chat_enabled'] ?? true,
+                'theme_mode' => $settings['theme_mode'] ?? 'theme3',
+                'logo_path' => $settings['logo_path'] ?? null,
+                'favicon_path' => $settings['favicon_path'] ?? null,
             ];
 
-            // 1. Set Active Provider & Global Switch
-            $dbProvider = Setting::get('ai_provider', 'gemini');
-            $isGeminiEnabled = Setting::get('gemini_enabled', true);
-            $isOpenAIEnabled = Setting::get('openai_enabled', false);
+            $dbProvider = $settings['ai_provider'] ?? 'gemini';
+            $isGeminiEnabled = $settings['gemini_enabled'] ?? true;
+            $isOpenAIEnabled = $settings['openai_enabled'] ?? false;
 
             config(['app-brain.ai.default' => $dbProvider]);
 
-            // Logic: If the selected provider is disabled, disable the entire brain engine
             if (($dbProvider === 'gemini' && ! $isGeminiEnabled) ||
                 ($dbProvider === 'openai' && ! $isOpenAIEnabled)) {
                 config(['app-brain.enabled' => false]);
             }
 
-            // 2. Override Gemini Config
-            if ($dbGeminiKey = Setting::get('gemini_api_key')) {
+            if ($dbGeminiKey = $settings['gemini_api_key'] ?? null) {
                 config(['app-brain.ai.providers.gemini.api_key' => $dbGeminiKey]);
             }
-            $dbGeminiModel = Setting::get('gemini_model');
+            $dbGeminiModel = $settings['gemini_model'] ?? null;
             if ($dbGeminiModel) {
                 config(['app-brain.ai.providers.gemini.model' => $dbGeminiModel]);
             }
 
-            // 3. Override Custom (OpenAI) Config
-            $dbOpenAIKey = Setting::get('openai_api_key');
+            $dbOpenAIKey = $settings['openai_api_key'] ?? null;
             if ($dbOpenAIKey) {
                 config(['app-brain.ai.providers.openai.api_key' => $dbOpenAIKey]);
             }
-            $dbOpenAIBaseUrl = Setting::get('openai_base_url');
+            $dbOpenAIBaseUrl = $settings['openai_base_url'] ?? null;
             if ($dbOpenAIBaseUrl) {
                 config(['app-brain.ai.providers.openai.base_url' => $dbOpenAIBaseUrl]);
             }
-            $dbOpenAIModel = Setting::get('openai_model');
+            $dbOpenAIModel = $settings['openai_model'] ?? null;
             if ($dbOpenAIModel) {
                 config(['app-brain.ai.providers.openai.model' => $dbOpenAIModel]);
             }

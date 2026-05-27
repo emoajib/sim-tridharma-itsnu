@@ -8,11 +8,12 @@ use App\Http\Controllers\Api\RkatController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('/user', fn (Request $r) => $r->user());
 
-    // Agent AI
-    Route::post('/agents/{agent}/run', [AgentController::class, 'run'])->name('agents.run');
+    // Agent AI — throttled to prevent resource exhaustion
+    Route::post('/agents/{agent}/run', [AgentController::class, 'run'])->name('agents.run')
+        ->middleware('throttle:10,1');
     Route::get('/agents/status', [AgentController::class, 'status'])->name('agents.status');
     Route::get('/agents/latest', [AgentController::class, 'latestResults'])->name('agents.latest');
 

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services\MCP;
 
+use App\Jobs\CallMcpTool;
 use Exception;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -21,15 +23,16 @@ class MCPClientService
         $this->agentsUrl = config('mcp.agents_url', 'http://localhost:8001');
         $this->ragUrl = config('mcp.rag_url', 'http://localhost:5001');
         $this->apiKey = config('mcp.api_key');
+
+        if (empty($this->apiKey)) {
+            throw new \RuntimeException('MCP API key is not configured. Set MCP_API_KEY env variable.');
+        }
     }
 
-    /**
-     * List all available MCP tools from the agents server
-     */
     public function listTools(): array
     {
         try {
-            $response = Http::withHeaders([
+            $response = Http::timeout(5)->withHeaders([
                 'X-API-Key' => $this->apiKey,
                 'Accept' => 'application/json',
             ])->get("{$this->agentsUrl}/api/mcp/tools");
@@ -48,15 +51,12 @@ class MCPClientService
         }
     }
 
-    /**
-     * Call an MCP tool on the agents server
-     */
     public function callTool(string $toolName, array $arguments = [], string $server = 'agents'): array
     {
         $baseUrl = $server === 'rag' ? $this->ragUrl : $this->agentsUrl;
 
         try {
-            $response = Http::withHeaders([
+            $response = Http::timeout(30)->withHeaders([
                 'X-API-Key' => $this->apiKey,
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
@@ -86,15 +86,15 @@ class MCPClientService
     }
 
     /**
-     * Call a tool and wait for result (for task=True tools)
+     * Synchronous MCP call with polling — used by background jobs only.
+     * WARNING: Do NOT call from HTTP request handlers; use dispatchTool() instead.
      */
-    public function callToolAsync(string $toolName, array $arguments = [], string $server = 'agents', int $maxRetries = 30, int $retryDelay = 1000): array
+    public function callToolSync(string $toolName, array $arguments = [], string $server = 'agents', int $maxRetries = 20, int $retryDelay = 500): array
     {
         $baseUrl = $server === 'rag' ? $this->ragUrl : $this->agentsUrl;
 
         try {
-            // Start the task
-            $response = Http::withHeaders([
+            $response = Http::timeout(10)->withHeaders([
                 'X-API-Key' => $this->apiKey,
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
@@ -109,14 +109,13 @@ class MCPClientService
 
             $result = $response->json();
 
-            // If it's a task, poll for completion
             if (isset($result['task_id'])) {
                 $taskId = $result['task_id'];
 
                 for ($i = 0; $i < $maxRetries; $i++) {
                     usleep($retryDelay * 1000);
 
-                    $statusResponse = Http::withHeaders([
+                    $statusResponse = Http::timeout(5)->withHeaders([
                         'X-API-Key' => $this->apiKey,
                         'Accept' => 'application/json',
                     ])->get("{$baseUrl}/mcp/tasks/{$taskId}");
@@ -139,33 +138,67 @@ class MCPClientService
 
             return $result;
         } catch (Exception $e) {
-            Log::error("MCP async tool call exception: {$toolName}", ['error' => $e->getMessage()]);
+            Log::error("MCP sync tool call exception: {$toolName}", ['error' => $e->getMessage()]);
             throw $e;
         }
     }
 
     /**
-     * Run a warning check via MCP
+     * Dispatch an MCP tool call as a background job.
+     * Returns immediately with a task_id for status polling.
      */
-    public function runPeringatanCheck(int $prodiId): array
+    public function dispatchTool(string $toolName, array $arguments = [], string $server = 'agents'): array
     {
-        return $this->callToolAsync('peringatan_check', ['prodi_id' => $prodiId]);
+        $job = new CallMcpTool(toolName: $toolName, arguments: $arguments, server: $server);
+        dispatch($job);
+
+        $taskId = $job->getTaskId();
+
+        Cache::put("mcp_task_{$taskId}", ['status' => 'queued'], 600);
+
+        return [
+            'status' => 'queued',
+            'task_id' => $taskId,
+        ];
     }
 
-    /**
-     * Run recommendation generation via MCP
-     */
+    public function getTaskStatus(string $taskId): array
+    {
+        $cached = Cache::get("mcp_task_{$taskId}");
+        if (! $cached) {
+            return ['status' => 'not_found'];
+        }
+
+        return $cached;
+    }
+
+    public function getTaskResult(string $taskId): array
+    {
+        $cached = Cache::get("mcp_task_{$taskId}");
+        if (! $cached) {
+            return ['success' => false, 'error' => 'Task not found'];
+        }
+
+        if ($cached['status'] !== 'completed') {
+            return ['success' => false, 'error' => 'Task not completed', 'status' => $cached['status']];
+        }
+
+        return ['success' => true, 'result' => $cached['result']];
+    }
+
+    public function runPeringatanCheck(int $prodiId): array
+    {
+        return $this->callToolSync('peringatan_check', ['prodi_id' => $prodiId]);
+    }
+
     public function runRekomendasiGenerate(int $prodiId, int $topN = 10): array
     {
-        return $this->callToolAsync('rekomendasi_generate', [
+        return $this->callToolSync('rekomendasi_generate', [
             'prodi_id' => $prodiId,
             'top_n' => $topN,
         ]);
     }
 
-    /**
-     * Run document verification via MCP
-     */
     public function runVerifikasiDokumen(int $prodiId, ?int $docBuktiId = null): array
     {
         $arguments = ['prodi_id' => $prodiId];
@@ -173,12 +206,9 @@ class MCPClientService
             $arguments['doc_bukti_id'] = $docBuktiId;
         }
 
-        return $this->callToolAsync('verifikasi_dokumen', $arguments);
+        return $this->callToolSync('verifikasi_dokumen', $arguments);
     }
 
-    /**
-     * Run score prediction via MCP
-     */
     public function runPrediksiSkor(int $prodiId, ?int $periodeId = null): array
     {
         $arguments = ['prodi_id' => $prodiId];
@@ -186,12 +216,9 @@ class MCPClientService
             $arguments['periode_id'] = $periodeId;
         }
 
-        return $this->callToolAsync('prediksi_skor', $arguments);
+        return $this->callToolSync('prediksi_skor', $arguments);
     }
 
-    /**
-     * Run peringatan agent via MCP
-     */
     public function runPeringatanAgent(int $prodiId, ?int $periodeId = null): array
     {
         $arguments = ['prodi_id' => $prodiId];
@@ -199,12 +226,9 @@ class MCPClientService
             $arguments['periode_id'] = $periodeId;
         }
 
-        return $this->callToolAsync('peringatan_agent', $arguments);
+        return $this->callToolSync('peringatan_agent', $arguments);
     }
 
-    /**
-     * Run document generation via MCP
-     */
     public function runGeneratorDokumen(int $prodiId, ?int $periodeId = null, string $jenisDokumen = 'LED'): array
     {
         $arguments = [
@@ -215,40 +239,28 @@ class MCPClientService
             $arguments['periode_id'] = $periodeId;
         }
 
-        return $this->callToolAsync('generator_dokumen', $arguments);
+        return $this->callToolSync('generator_dokumen', $arguments);
     }
 
-    /**
-     * Run external data sync via MCP
-     */
     public function runIntegrasiSync(string $sumber): array
     {
-        return $this->callToolAsync('integrasi_sync', ['sumber' => $sumber]);
+        return $this->callToolSync('integrasi_sync', ['sumber' => $sumber]);
     }
 
-    /**
-     * Ask RAG a question
-     */
     public function askRAG(string $question, array $chunks = [], int $topK = 5): array
     {
-        return $this->callToolAsync('rag_answer', [
+        return $this->callToolSync('rag_answer', [
             'question' => $question,
             'chunks' => $chunks,
             'top_k' => $topK,
         ], 'rag');
     }
 
-    /**
-     * Embed text via RAG service
-     */
     public function embedText(string $text): array
     {
         return $this->callTool('rag_embed_text', ['text' => $text], 'rag');
     }
 
-    /**
-     * Search RAG for relevant sentences
-     */
     public function searchRAG(string $question, array $chunks, int $topK = 5): array
     {
         return $this->callTool('rag_search', [
@@ -258,9 +270,6 @@ class MCPClientService
         ], 'rag');
     }
 
-    /**
-     * Check if MCP servers are available
-     */
     public function healthCheck(): array
     {
         $result = [

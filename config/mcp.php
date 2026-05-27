@@ -14,7 +14,7 @@ return [
     | MCP API Key (for migration period - will be replaced by OAuth 2.1)
     |--------------------------------------------------------------------------
     */
-    'api_key' => env('MCP_API_KEY', env('AGENT_API_KEY', 'default-secret-key-change-in-production')),
+    'api_key' => env('MCP_API_KEY', env('AGENT_API_KEY')),
 
     /*
     |--------------------------------------------------------------------------

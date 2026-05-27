@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use Closure;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
@@ -44,13 +46,12 @@ class PermissionMiddleware
 
     public function handle(Request $request, Closure $next): Response
     {
-        Log::debug('=== PERMISSION MIDDLEWARE EXECUTING ===');
-        Log::debug('PermissionMiddleware: START - Handling request for '.($request->route()?->getName() ?? 'no route'));
+        Log::debug('PermissionMiddleware: START - '.($request->route()?->getName() ?? 'no route'));
 
         if (! $request->user()) {
-            Log::debug('PermissionMiddleware: No user, passing through');
+            Log::warning('PermissionMiddleware: No user for route ' . ($request->route()?->getName() ?? 'unknown'));
 
-            return $next($request);
+            throw new AuthenticationException('Unauthenticated');
         }
 
         $routeName = $request->route()?->getName();
@@ -69,14 +70,12 @@ class PermissionMiddleware
 
         if ($permission && ! $request->user()->can($permission)) {
             Log::debug('PermissionMiddleware: Permission denied for '.$permission);
+
             if ($request->expectsJson() || $request->is('api/*')) {
-                return response()->json([
-                    'message' => 'Unauthorized',
-                    'required_permission' => $permission,
-                ], 403);
+                return response()->json(['message' => 'Forbidden'], 403);
             }
 
-            abort(403, 'Anda tidak memiliki izin untuk mengakses halaman ini.');
+            return inertia('Errors/Forbidden')->toResponse($request)->setStatusCode(403);
         }
 
         Log::debug('PermissionMiddleware: Permission granted, passing through');

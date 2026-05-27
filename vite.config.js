@@ -10,4 +10,15 @@ export default defineConfig({
         }),
         react(),
     ],
+    build: {
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    vendor: ['react', 'react-dom'],
+                    recharts: ['recharts'],
+                    lucide: ['lucide-react'],
+                },
+            },
+        },
+    },
 });

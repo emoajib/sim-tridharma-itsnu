@@ -10,6 +10,7 @@ use App\Services\KnowledgeBase\KnowledgeBaseService;
 use App\Services\MCP\MCPClientService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -108,6 +109,10 @@ class KnowledgeBaseServiceTest extends TestCase
 
     public function test_ask_question_returns_error_on_exception(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            $this->markTestSkipped('pgvector operator requires PostgreSQL');
+        }
+
         $processor = $this->createMock(DocumentProcessingService::class);
         $mcpClient = $this->createMock(MCPClientService::class);
         $mcpClient->method('askRAG')->willThrowException(new \Exception('Server down'));
