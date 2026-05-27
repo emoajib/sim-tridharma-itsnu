@@ -300,23 +300,20 @@ class MasterDataTemplateService
                 }
 
                 try {
+                    $rowData = array_merge($transformed, [
+                        'is_active' => true,
+                        'updated_at' => now(),
+                    ]);
+
                     if ($transformed['nidn']) {
                         DB::table('m_dosen')->updateOrInsert(
                             ['nidn' => $transformed['nidn']],
-                            array_merge($transformed, [
-                                'is_active' => true,
-                                'created_at' => now(),
-                                'updated_at' => now(),
-                            ])
+                            $rowData
                         );
                     } elseif ($transformed['nuptk']) {
                         DB::table('m_dosen')->updateOrInsert(
                             ['nuptk' => $transformed['nuptk']],
-                            array_merge($transformed, [
-                                'is_active' => true,
-                                'created_at' => now(),
-                                'updated_at' => now(),
-                            ])
+                            $rowData
                         );
                     } else {
                         $errors[] = [

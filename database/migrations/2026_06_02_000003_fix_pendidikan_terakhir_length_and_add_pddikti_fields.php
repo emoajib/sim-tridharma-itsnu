@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -9,23 +8,23 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (DB::connection()->getDriverName() !== 'pgsql') {
-            return;
-        }
+        $driver = DB::connection()->getDriverName();
 
-        Schema::table('m_dosen', function (Blueprint $table) {
-            $table->string('pendidikan_terakhir', 150)->nullable()->change();
-        });
+        if ($driver === 'pgsql') {
+            DB::statement('ALTER TABLE m_dosen ALTER COLUMN pendidikan_terakhir TYPE VARCHAR(150)');
+        } elseif ($driver === 'mysql') {
+            DB::statement('ALTER TABLE m_dosen MODIFY pendidikan_terakhir VARCHAR(150) NULL');
+        }
     }
 
     public function down(): void
     {
-        if (DB::connection()->getDriverName() !== 'pgsql') {
-            return;
-        }
+        $driver = DB::connection()->getDriverName();
 
-        Schema::table('m_dosen', function (Blueprint $table) {
-            $table->string('pendidikan_terakhir', 50)->nullable()->change();
-        });
+        if ($driver === 'pgsql') {
+            DB::statement('ALTER TABLE m_dosen ALTER COLUMN pendidikan_terakhir TYPE VARCHAR(50)');
+        } elseif ($driver === 'mysql') {
+            DB::statement('ALTER TABLE m_dosen MODIFY pendidikan_terakhir VARCHAR(50) NULL');
+        }
     }
 };

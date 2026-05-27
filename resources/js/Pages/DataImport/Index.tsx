@@ -64,14 +64,16 @@ export default function Index({ templates, success, warning }: Props) {
         formData.append('file', selectedFile);
 
         try {
+            const csrfToken = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '';
+
             const res = await fetch(route('data-import.preview-pddikti'), {
                 method: 'POST',
-                headers: { 'X-CSRF-TOKEN': (window as any).csrf_token },
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
                 body: formData,
             });
 
             if (!res.ok) {
-                const err = await res.json();
+                const err = await res.json().catch(() => ({ message: `HTTP ${res.status}` }));
                 setError(err.message || 'Gagal memproses preview');
                 return;
             }
@@ -96,14 +98,23 @@ export default function Index({ templates, success, warning }: Props) {
         formData.append('file', selectedFile);
 
         try {
+            const csrfToken = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '';
+
             const res = await fetch(route('data-import.upload-pddikti'), {
                 method: 'POST',
-                headers: { 'X-CSRF-TOKEN': (window as any).csrf_token },
+                headers: { 'X-CSRF-TOKEN': csrfToken },
                 body: formData,
+                redirect: 'manual',
             });
 
+            if (res.type === 'opaqueredirect' || res.redirected || res.status === 302 || res.status === 301) {
+                const location = res.headers.get('Location');
+                window.location.href = location || route('data-import.history');
+                return;
+            }
+
             if (!res.ok) {
-                const err = await res.json();
+                const err = await res.json().catch(() => ({ message: `HTTP ${res.status}` }));
                 setError(err.message || 'Gagal mengupload file');
                 return;
             }
