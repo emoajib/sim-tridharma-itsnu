@@ -378,36 +378,36 @@ Route::middleware(['auth', PermissionMiddleware::class, 'throttle:crud'])->group
 
     // Admin Settings
     Route::get('/admin/settings', [AdminSettingController::class, 'index'])->name('admin.settings');
-    Route::post('/admin/settings', [AdminSettingController::class, 'updateMultiple'])->name('admin.settings.update');
+    Route::post('/admin/settings', [AdminSettingController::class, 'updateMultiple'])->name('admin.settings.update')->middleware('audit');
     Route::post('/admin/settings/favicon/upload', [AdminSettingController::class, 'uploadFavicon'])->name('admin.settings.favicon.upload')
-        ->middleware('throttle:uploads');
+        ->middleware(['audit', 'throttle:uploads']);
     Route::delete('/admin/settings/favicon/remove', [AdminSettingController::class, 'removeFavicon'])->name('admin.settings.favicon.remove')
-        ->middleware('throttle:uploads');
+        ->middleware(['audit', 'throttle:uploads']);
     Route::post('/admin/settings/logo/upload', [AdminSettingController::class, 'uploadLogo'])->name('admin.settings.logo.upload')
-        ->middleware('throttle:uploads');
-    Route::delete('/admin/settings/logo/remove', [AdminSettingController::class, 'removeLogo'])->name('admin.settings.logo.remove');
-    Route::delete('/admin/settings/api-key/remove', [AdminSettingController::class, 'removeApiKey'])->name('admin.settings.api-key.remove');
-    Route::post('/admin/settings/api-key/test', [AdminSettingController::class, 'testApiKey'])->name('admin.settings.api-key.test');
+        ->middleware(['audit', 'throttle:uploads']);
+    Route::delete('/admin/settings/logo/remove', [AdminSettingController::class, 'removeLogo'])->name('admin.settings.logo.remove')->middleware('audit');
+    Route::delete('/admin/settings/api-key/remove', [AdminSettingController::class, 'removeApiKey'])->name('admin.settings.api-key.remove')->middleware('audit');
+    Route::post('/admin/settings/api-key/test', [AdminSettingController::class, 'testApiKey'])->name('admin.settings.api-key.test')->middleware('audit');
 
     // RBAC Management (Super Admin only)
     Route::middleware(['can:admin.view'])->group(function () {
         Route::get('/admin/users/audit', [\App\Http\Controllers\Api\Admin\UserController::class, 'audit'])->name('admin.users.audit');
         Route::get('/admin/users', [\App\Http\Controllers\Api\Admin\UserController::class, 'index'])->name('admin.users.index');
-        Route::post('/admin/users', [\App\Http\Controllers\Api\Admin\UserController::class, 'store'])->name('admin.users.store');
-        Route::put('/admin/users/{user}', [\App\Http\Controllers\Api\Admin\UserController::class, 'update'])->name('admin.users.update');
-        Route::delete('/admin/users/{user}', [\App\Http\Controllers\Api\Admin\UserController::class, 'destroy'])->name('admin.users.destroy');
-        Route::post('/admin/users/{user}/sync-roles', [\App\Http\Controllers\Api\Admin\UserController::class, 'syncRoles'])->name('admin.users.sync-roles');
+        Route::post('/admin/users', [\App\Http\Controllers\Api\Admin\UserController::class, 'store'])->name('admin.users.store')->middleware('audit');
+        Route::put('/admin/users/{user}', [\App\Http\Controllers\Api\Admin\UserController::class, 'update'])->name('admin.users.update')->middleware('audit');
+        Route::delete('/admin/users/{user}', [\App\Http\Controllers\Api\Admin\UserController::class, 'destroy'])->name('admin.users.destroy')->middleware('audit');
+        Route::post('/admin/users/{user}/sync-roles', [\App\Http\Controllers\Api\Admin\UserController::class, 'syncRoles'])->name('admin.users.sync-roles')->middleware('audit');
         Route::get('/admin/users/download-template', [\App\Http\Controllers\Api\Admin\UserController::class, 'downloadTemplate'])->name('admin.users.download-template');
     Route::post('/admin/users/import', [\App\Http\Controllers\Api\Admin\UserController::class, 'import'])->name('admin.users.import')
-        ->middleware('throttle:uploads');
+        ->middleware(['audit', 'throttle:uploads']);
     Route::post('/admin/users/import-preview', [\App\Http\Controllers\Api\Admin\UserController::class, 'importPreview'])->name('admin.users.import-preview')
-        ->middleware('throttle:uploads');
+        ->middleware(['audit', 'throttle:uploads']);
 
         Route::get('/admin/roles', [\App\Http\Controllers\Api\Admin\RoleController::class, 'index'])->name('admin.roles.index');
-        Route::post('/admin/roles', [\App\Http\Controllers\Api\Admin\RoleController::class, 'store'])->name('admin.roles.store');
-        Route::put('/admin/roles/{role}', [\App\Http\Controllers\Api\Admin\RoleController::class, 'update'])->name('admin.roles.update');
-        Route::delete('/admin/roles/{role}', [\App\Http\Controllers\Api\Admin\RoleController::class, 'destroy'])->name('admin.roles.destroy');
-        Route::post('/admin/roles/{role}/sync-permissions', [\App\Http\Controllers\Api\Admin\RoleController::class, 'syncPermissions'])->name('admin.roles.sync-permissions');
+        Route::post('/admin/roles', [\App\Http\Controllers\Api\Admin\RoleController::class, 'store'])->name('admin.roles.store')->middleware('audit');
+        Route::put('/admin/roles/{role}', [\App\Http\Controllers\Api\Admin\RoleController::class, 'update'])->name('admin.roles.update')->middleware('audit');
+        Route::delete('/admin/roles/{role}', [\App\Http\Controllers\Api\Admin\RoleController::class, 'destroy'])->name('admin.roles.destroy')->middleware('audit');
+        Route::post('/admin/roles/{role}/sync-permissions', [\App\Http\Controllers\Api\Admin\RoleController::class, 'syncPermissions'])->name('admin.roles.sync-permissions')->middleware('audit');
 
         Route::get('/admin/permissions', [\App\Http\Controllers\Api\Admin\PermissionController::class, 'index'])->name('admin.permissions.index');
     });
@@ -416,30 +416,30 @@ Route::middleware(['auth', PermissionMiddleware::class, 'throttle:crud'])->group
 
     // Accreditation Management (Lembaga & Instrumen)
     Route::get('/admin/lembaga', [LembagaAkreditasiController::class, 'index'])->name('admin.lembaga.index');
-    Route::post('/admin/lembaga', [LembagaAkreditasiController::class, 'store'])->name('admin.lembaga.store');
-    Route::put('/admin/lembaga/{lembagaAkreditasi}', [LembagaAkreditasiController::class, 'update'])->name('admin.lembaga.update');
-    Route::delete('/admin/lembaga/{lembagaAkreditasi}', [LembagaAkreditasiController::class, 'destroy'])->name('admin.lembaga.destroy');
+    Route::post('/admin/lembaga', [LembagaAkreditasiController::class, 'store'])->name('admin.lembaga.store')->middleware('audit');
+    Route::put('/admin/lembaga/{lembagaAkreditasi}', [LembagaAkreditasiController::class, 'update'])->name('admin.lembaga.update')->middleware('audit');
+    Route::delete('/admin/lembaga/{lembagaAkreditasi}', [LembagaAkreditasiController::class, 'destroy'])->name('admin.lembaga.destroy')->middleware('audit');
 
     Route::get('/admin/instrumen', [InstrumenAkreditasiController::class, 'index'])->name('admin.instrumen.index');
-    Route::post('/admin/instrumen', [InstrumenAkreditasiController::class, 'store'])->name('admin.instrumen.store');
-    Route::put('/admin/instrumen/{instrumenAkreditasi}', [InstrumenAkreditasiController::class, 'update'])->name('admin.instrumen.update');
-    Route::delete('/admin/instrumen/{instrumenAkreditasi}', [InstrumenAkreditasiController::class, 'destroy'])->name('admin.instrumen.destroy');
-    Route::post('/admin/instrumen/import-preview', [InstrumenAkreditasiController::class, 'importPreview'])->name('admin.instrumen.import-preview');
+    Route::post('/admin/instrumen', [InstrumenAkreditasiController::class, 'store'])->name('admin.instrumen.store')->middleware('audit');
+    Route::put('/admin/instrumen/{instrumenAkreditasi}', [InstrumenAkreditasiController::class, 'update'])->name('admin.instrumen.update')->middleware('audit');
+    Route::delete('/admin/instrumen/{instrumenAkreditasi}', [InstrumenAkreditasiController::class, 'destroy'])->name('admin.instrumen.destroy')->middleware('audit');
+    Route::post('/admin/instrumen/import-preview', [InstrumenAkreditasiController::class, 'importPreview'])->name('admin.instrumen.import-preview')->middleware('audit');
 
     Route::get('/admin/indikator', [IndikatorAkreditasiController::class, 'index'])->name('admin.indikator.index');
-    Route::post('/admin/indikator', [IndikatorAkreditasiController::class, 'store'])->name('admin.indikator.store');
-    Route::put('/admin/indikator/{indikatorAkreditasi}', [IndikatorAkreditasiController::class, 'update'])->name('admin.indikator.update');
-    Route::delete('/admin/indikator/{indikatorAkreditasi}', [IndikatorAkreditasiController::class, 'destroy'])->name('admin.indikator.destroy');
+    Route::post('/admin/indikator', [IndikatorAkreditasiController::class, 'store'])->name('admin.indikator.store')->middleware('audit');
+    Route::put('/admin/indikator/{indikatorAkreditasi}', [IndikatorAkreditasiController::class, 'update'])->name('admin.indikator.update')->middleware('audit');
+    Route::delete('/admin/indikator/{indikatorAkreditasi}', [IndikatorAkreditasiController::class, 'destroy'])->name('admin.indikator.destroy')->middleware('audit');
 
     // Knowledge Base Routes
     Route::get('/admin/knowledge-base', [KnowledgeBaseController::class, 'index'])->name('admin.knowledge-base.index');
     Route::post('/admin/knowledge-base/upload', [KnowledgeBaseController::class, 'upload'])->name('admin.knowledge-base.upload')
-        ->middleware('throttle:uploads');
-    Route::put('/admin/knowledge-base/{knowledgeBaseDocument}', [KnowledgeBaseController::class, 'update'])->name('admin.knowledge-base.update');
-    Route::delete('/admin/knowledge-base/{knowledgeBaseDocument}', [KnowledgeBaseController::class, 'destroy'])->name('admin.knowledge-base.destroy');
-    Route::post('/admin/knowledge-base/{knowledgeBaseDocument}/reindex', [KnowledgeBaseController::class, 'reindex'])->name('admin.knowledge-base.reindex');
+        ->middleware(['audit', 'throttle:uploads']);
+    Route::put('/admin/knowledge-base/{knowledgeBaseDocument}', [KnowledgeBaseController::class, 'update'])->name('admin.knowledge-base.update')->middleware('audit');
+    Route::delete('/admin/knowledge-base/{knowledgeBaseDocument}', [KnowledgeBaseController::class, 'destroy'])->name('admin.knowledge-base.destroy')->middleware('audit');
+    Route::post('/admin/knowledge-base/{knowledgeBaseDocument}/reindex', [KnowledgeBaseController::class, 'reindex'])->name('admin.knowledge-base.reindex')->middleware('audit');
     Route::get('/admin/knowledge-base/{knowledgeBaseDocument}/chunks', [KnowledgeBaseController::class, 'getChunks'])->name('admin.knowledge-base.chunks');
-    Route::put('/admin/knowledge-base/chunks/{knowledgeBaseChunk}', [KnowledgeBaseController::class, 'updateChunk'])->name('admin.knowledge-base.chunks.update');
+    Route::put('/admin/knowledge-base/chunks/{knowledgeBaseChunk}', [KnowledgeBaseController::class, 'updateChunk'])->name('admin.knowledge-base.chunks.update')->middleware('audit');
 
     // RKAT
     Route::prefix('rkat')->name('rkat.')->group(function () {

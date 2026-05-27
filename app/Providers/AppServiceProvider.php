@@ -62,6 +62,11 @@ class AppServiceProvider extends ServiceProvider
             \App\Listeners\SyncAuditToPythonAgent::class,
         );
 
+        \Illuminate\Support\Facades\Event::listen(
+            \App\Events\ImportCompleted::class,
+            \App\Listeners\SendImportNotification::class,
+        );
+
         Gate::policy(Prodi::class, ProdiPolicy::class);
         Gate::policy(Dosen::class, DosenPolicy::class);
 
