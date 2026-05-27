@@ -16,13 +16,13 @@ class MCPClientService
 
     protected string $ragUrl;
 
-    protected string $apiKey;
+    protected string $apiKey = '';
 
     public function __construct()
     {
         $this->agentsUrl = config('mcp.agents_url', 'http://localhost:8001');
         $this->ragUrl = config('mcp.rag_url', 'http://localhost:5001');
-        $this->apiKey = config('mcp.api_key');
+        $this->apiKey = (string) config('mcp.api_key', '');
 
         if (empty($this->apiKey)) {
             throw new \RuntimeException('MCP API key is not configured. Set MCP_API_KEY env variable.');

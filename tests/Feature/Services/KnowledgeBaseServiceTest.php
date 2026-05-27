@@ -126,6 +126,10 @@ class KnowledgeBaseServiceTest extends TestCase
 
     public function test_get_status_returns_counts(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            $this->markTestSkipped('pgvector operator requires PostgreSQL');
+        }
+
         $doc = KnowledgeBaseDocument::create([
             'judul' => 'D1', 'file_path' => 'd1.pdf',
             'file_size' => 100, 'status' => 'active',

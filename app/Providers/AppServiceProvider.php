@@ -25,6 +25,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        if (config('database.default') === 'pgsql') {
+            \Illuminate\Support\Facades\DB::statement('SET statement_timeout = ' . (int) env('DB_STATEMENT_TIMEOUT', 30000));
+        }
+
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
         });

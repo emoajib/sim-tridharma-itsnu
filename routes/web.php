@@ -378,8 +378,7 @@ Route::middleware(['auth', PermissionMiddleware::class, 'throttle:crud'])->group
 
     // Admin Settings
     Route::get('/admin/settings', [AdminSettingController::class, 'index'])->name('admin.settings');
-    Route::post('/admin/settings', [AdminSettingController::class, 'updateMultiple'])->name('admin.settings.update')
-        ->middleware('throttle:crud');
+    Route::post('/admin/settings', [AdminSettingController::class, 'updateMultiple'])->name('admin.settings.update');
     Route::post('/admin/settings/favicon/upload', [AdminSettingController::class, 'uploadFavicon'])->name('admin.settings.favicon.upload')
         ->middleware('throttle:uploads');
     Route::delete('/admin/settings/favicon/remove', [AdminSettingController::class, 'removeFavicon'])->name('admin.settings.favicon.remove')

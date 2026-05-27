@@ -37,7 +37,7 @@ class CallMcpTool implements ShouldQueue
         Cache::put($cacheKey, ['status' => 'processing'], 600);
 
         try {
-            $result = $mcp->callToolSync($this->toolName, $this->arguments, $this->server);
+            $result = $mcp->callToolSync($this->toolName, $this->arguments, $this->server, $this->maxRetries, $this->retryDelay);
 
             Cache::put($cacheKey, [
                 'status' => 'completed',
