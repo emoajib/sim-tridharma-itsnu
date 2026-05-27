@@ -29,6 +29,8 @@
         <env name="DB_PORT" value=""/>
         <env name="DB_USERNAME" value=""/>
         <env name="DB_PASSWORD" value=""/>
+        <env name="DB_JOURNAL_MODE" value="WAL"/>
+        <env name="DB_SYNCHRONOUS" value="OFF"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>

@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Controllers;
 
+use App\Models\AgentPeringatanLog;
+use App\Models\Bkd;
 use App\Models\Dosen;
 use App\Models\Fakultas;
 use App\Models\PeriodeAkademik;
@@ -159,5 +161,47 @@ class DashboardServiceTest extends TestCase
         $id = $this->service->getDefaultInstrumentId();
 
         $this->assertEquals(0, $id);
+    }
+
+    // ─── BKD ──────────────────────────────────────────────────
+
+    public function test_get_bkd_stats_aggregates_correctly(): void
+    {
+        $periodeLain = PeriodeAkademik::create(['kode_periode' => '2025/2026', 'nama_periode' => 'TA 2025/2026']);
+        Bkd::create([
+            'dosen_id' => $this->dosen->id, 'prodi_id' => $this->prodi->id,
+            'periode_id' => $this->periode->id, 'status' => 'disetujui', 'total_sks' => 12,
+        ]);
+        Bkd::create([
+            'dosen_id' => $this->dosen->id, 'prodi_id' => $this->prodi->id,
+            'periode_id' => $periodeLain->id, 'status' => 'draft', 'total_sks' => 8,
+        ]);
+
+        $stats = $this->service->getBkdStats(null);
+
+        $this->assertEquals(2, $stats['total']);
+        $this->assertEquals(1, $stats['disetujui']);
+        $this->assertEquals(1, $stats['draft']);
+    }
+
+    // ─── PERINGATAN ───────────────────────────────────────────
+
+    public function test_get_peringatan_stats_aggregates_correctly(): void
+    {
+        AgentPeringatanLog::create([
+            'agent' => 'test', 'prodi_id' => $this->prodi->id, 'tingkat' => 'warning',
+            'jenis_peringatan' => 'test', 'pesan' => 'test', 'is_read' => false,
+        ]);
+        AgentPeringatanLog::create([
+            'agent' => 'test', 'prodi_id' => $this->prodi->id, 'tingkat' => 'critical',
+            'jenis_peringatan' => 'test', 'pesan' => 'test', 'is_read' => true,
+        ]);
+
+        $stats = $this->service->getPeringatanStats();
+
+        $this->assertEquals(2, $stats['total']);
+        $this->assertEquals(1, $stats['critical']);
+        $this->assertEquals(1, $stats['warning']);
+        $this->assertEquals(1, $stats['unread']);
     }
 }
