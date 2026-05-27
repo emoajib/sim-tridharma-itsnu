@@ -2,6 +2,11 @@
 # ============================================================
 # Satu Baris: Sistem Multi-Agent AI Akreditasi — Full Stack
 # ============================================================
+#
+# ⚠️ WARNING: This script uses development servers (php artisan serve + npm run dev).
+# For production, use Docker/Supervisor stack with PHP-FPM + Nginx.
+# Run: vendor/bin/phpunit && npx vitest run  # test before deploy
+#
 set -e
 
 echo "=== 1/6 Install PHP dependencies ==="

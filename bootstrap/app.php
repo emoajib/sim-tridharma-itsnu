@@ -32,6 +32,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // ── Routes outside any middleware group (no auth/csrf) ──────────
         then: function () {
             Route::get('/health', \App\Http\Controllers\HealthController::class);
+
+            // ── Override _laravel-brain routes with auth + throttle middleware ──
+            // Package laramint/laravel-brain registers routes WITHOUT middleware.
+            // Reload them here wrapped with auth and throttle to secure AI endpoints.
+            Route::middleware(['auth', 'throttle:crud'])
+                ->group(base_path('vendor/laramint/laravel-brain/routes/brain.php'));
         },
     )
 

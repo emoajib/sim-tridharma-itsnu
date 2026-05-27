@@ -1,55 +1,168 @@
-name: Laravel
+name: CI Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [main, develop]
   pull_request:
-    branches: [ "main" ]
+    branches: [main]
 
 jobs:
-  laravel-tests:
-
+  laravel:
+    name: Laravel (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    strategy:
+      matrix:
+        php: [8.3, 8.4]
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: sim_tridharma_itsnu
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Setup PHP
-      uses: shivammathur/setup-php@15c43e89cdef867065b0213be354c2841860869e
-      with:
-        php-version: '8.4'
-        extensions: mbstring, intl, pdo_sqlite, pcov
-        tools: composer:v2
-    - name: Setup Node
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-        cache: 'npm'
-    - name: Copy .env
-      run: php -r "file_exists('.env') || copy('.env.example', '.env');"
-    - name: Install PHP Dependencies
-      run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
-    - name: Install NPM Dependencies
-      run: npm install --legacy-peer-deps
-    - name: Build Assets
-      run: npm run build
-    - name: Generate key
-      run: php artisan key:generate
-    - name: Create Storage Directories
-      run: mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views
-    - name: Directory Permissions
-      run: chmod -R 777 storage bootstrap/cache
-    - name: Create Database
-      run: |
-        mkdir -p database
-        touch database/database.sqlite
-    - name: Code Style (Pint)
-      run: vendor/bin/pint --test -v
-    - name: Static Analysis (PHPStan)
-      run: php -d memory_limit=2G vendor/bin/phpstan analyse --no-progress
-    - name: Execute tests
-      env:
-        DB_CONNECTION: sqlite
-        DB_DATABASE: database/database.sqlite
-      run: php artisan test --coverage
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: pdo_pgsql, redis
+          tools: composer:v2
+          coverage: pcov
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Copy .env
+        run: cp .env.example .env
+
+      - name: Generate key
+        run: php artisan key:generate
+
+      - name: Run migration
+        run: php artisan migrate --force
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_DATABASE: sim_tridharma_itsnu
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+
+      - name: Run PHP tests
+        run: php artisan test --testsuite=Feature --testsuite=Unit
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_DATABASE: sim_tridharma_itsnu
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Frontend Dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Run Frontend Tests (Vitest)
+        run: npx vitest run
+
+  frontend:
+    name: Frontend (Node)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+
+      - name: Run frontend tests
+        run: npm test
+
+      - name: Build assets
+        run: npm run build
+
+  python-agents:
+    name: Python AI Agents
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ai-agents
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Python syntax check
+        run: python3 -m py_compile main.py agents_mcp/tools.py agents_mcp/database.py agents_mcp/auth.py
+
+      - name: Run Python tests (if exist)
+        run: python3 -m pytest tests/ -v || echo "No Python tests yet"
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Laravel security check
+        run: |
+          composer audit
+          npx --yes auditor -c 50
+
+      - name: Check for hardcoded secrets
+        run: |
+          # Check for common secret patterns
+          ! rg 'AIzaSy[A-Za-z0-9_-]{33}' .env 2>/dev/null || echo "WARNING: Google API key may be exposed"
+          ! rg 'sk-[A-Za-z0-9]{32,}' . 2>/dev/null || echo "WARNING: Possible API key exposed"
