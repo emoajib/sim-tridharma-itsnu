@@ -4,17 +4,17 @@ namespace Tests\Feature\Http;
 
 use App\Models\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\Feature\SeedRolePermission;
+use Tests\Feature\SeedOnce;
 use Tests\TestCase;
 
 class DashboardControllerTest extends TestCase
 {
-    use RefreshDatabase, SeedRolePermission;
+    use RefreshDatabase, SeedOnce;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seedPermissions();
+        $this->seedOnce();
     }
 
     public function test_unauthenticated_user_redirected(): void

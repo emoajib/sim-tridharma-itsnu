@@ -7,17 +7,17 @@ use App\Models\Capa;
 use App\Models\PeriodeAkademik;
 use App\Models\Prodi;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\Feature\SeedRolePermission;
+use Tests\Feature\SeedOnce;
 use Tests\TestCase;
 
 class CapaControllerTest extends TestCase
 {
-    use RefreshDatabase, SeedRolePermission;
+    use RefreshDatabase, SeedOnce;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seedPermissions();
+        $this->seedOnce();
     }
 
     protected function createCapa(): Capa

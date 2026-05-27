@@ -6,17 +6,17 @@ use App\Models\KnowledgeBaseCategory;
 use App\Models\KnowledgeBaseDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
-use Tests\Feature\SeedRolePermission;
+use Tests\Feature\SeedOnce;
 use Tests\TestCase;
 
 class KnowledgeBaseControllerTest extends TestCase
 {
-    use RefreshDatabase, SeedRolePermission;
+    use RefreshDatabase, SeedOnce;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seedPermissions();
+        $this->seedOnce();
     }
 
     public function test_index_returns_documents(): void

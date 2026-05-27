@@ -6,17 +6,17 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
-use Tests\Feature\SeedRolePermission;
+use Tests\Feature\SeedOnce;
 use Tests\TestCase;
 
 class SpmiDashboardControllerTest extends TestCase
 {
-    use RefreshDatabase, SeedRolePermission;
+    use RefreshDatabase, SeedOnce;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seedPermissions();
+        $this->seedOnce();
     }
 
     #[Test]

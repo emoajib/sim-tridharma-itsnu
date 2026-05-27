@@ -8,13 +8,9 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class MataKuliahControllerTest extends BaseCrudTestCase
 {
-    use RefreshDatabase, \Tests\Feature\SeedRolePermission;
+    use RefreshDatabase;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->seedPermissions();
-    }
+    
 
     protected function routePrefix(): string
     {

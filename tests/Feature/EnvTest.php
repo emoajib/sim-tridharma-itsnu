@@ -14,6 +14,6 @@ class EnvTest extends TestCase
         dump("SESSION_DRIVER: " . config('session.driver'));
         
         $this->assertEquals('testing', config('app.env'));
-        $this->assertEquals(':memory:', config('database.connections.' . config('database.default') . '.database'));
+        $this->assertEquals('database/database-test.sqlite', config('database.connections.' . config('database.default') . '.database'));
     }
 }

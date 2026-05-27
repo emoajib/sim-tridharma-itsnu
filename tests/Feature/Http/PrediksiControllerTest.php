@@ -8,17 +8,17 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Tests\Feature\SeedRolePermission;
+use Tests\Feature\SeedOnce;
 use Tests\TestCase;
 
 class PrediksiControllerTest extends TestCase
 {
-    use RefreshDatabase, SeedRolePermission;
+    use RefreshDatabase, SeedOnce;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seedPermissions();
+        $this->seedOnce();
     }
 
     public function test_unauthenticated_user_redirected_from_index(): void

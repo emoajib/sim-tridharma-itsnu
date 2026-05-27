@@ -5,17 +5,18 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
+use Tests\Feature\SeedOnce;
 use Tests\TestCase;
 
 class PermissionMiddlewareTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, SeedOnce;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->artisan('db:seed', ['--class' => 'RolePermissionSeeder']);
+        $this->seedOnce();
     }
 
     public function test_super_admin_can_access_all_routes(): void

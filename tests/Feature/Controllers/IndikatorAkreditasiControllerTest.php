@@ -6,17 +6,17 @@ use App\Models\IndikatorAkreditasi;
 use App\Models\InstrumenAkreditasi;
 use App\Models\LembagaAkreditasi;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\Feature\SeedRolePermission;
+use Tests\Feature\SeedOnce;
 use Tests\TestCase;
 
 class IndikatorAkreditasiControllerTest extends TestCase
 {
-    use RefreshDatabase, SeedRolePermission;
+    use RefreshDatabase, SeedOnce;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seedPermissions();
+        $this->seedOnce();
     }
 
     protected function createInstrumen(): InstrumenAkreditasi
