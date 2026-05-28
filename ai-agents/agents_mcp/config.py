@@ -38,5 +38,8 @@ RABBITMQ_PASSWORD = os.getenv("RABBITMQ_PASSWORD", "guest")
 # External API Configuration
 SINTA_API_URL = os.getenv("SINTA_API_URL", "https://sinta.kemdiktisaintek.go.id/api")
 SINTA_API_KEY = os.getenv("SINTA_API_KEY", "")
+SINTA_API_KEY_HEADER = os.getenv("SINTA_API_KEY_HEADER", "X-API-KEY")
 PDDIKTI_API_URL = os.getenv("PDDIKTI_API_URL", "https://api-pddikti.rone.dev")
 PDDIKTI_API_KEY = os.getenv("PDDIKTI_API_KEY", "")
+SISTER_API_URL = os.getenv("SISTER_API_URL", "https://api-sister.kemdikbud.go.id/v1")
+SISTER_API_KEY = os.getenv("SISTER_API_KEY", "")

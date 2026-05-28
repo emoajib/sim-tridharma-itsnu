@@ -14,6 +14,27 @@ from agents_mcp.auth import verify_mcp_auth
 from agents_mcp.database import execute_query, list_tables, get_table_schema
 from config import calculate_prediction
 
+# Import external API tools for registration on main MCP server
+from tools.pddikti_mcp import (
+    fetch_dosen as _fetch_dosen,
+    fetch_prodi as _fetch_prodi,
+    pddikti_get_universitas as _pddikti_get_universitas,
+    pddikti_get_prodi as _pddikti_get_prodi,
+    pddikti_get_dosen as _pddikti_get_dosen,
+    pddikti_get_akreditasi_prodi as _pddikti_get_akreditasi_prodi,
+    pddikti_get_mahasiswa as _pddikti_get_mahasiswa,
+)
+from tools.sinta_mcp import (
+    fetch_authors as _fetch_authors,
+    fetch_publications as _fetch_publications,
+    fetch_researches as _fetch_researches,
+    fetch_community_services as _fetch_community_services,
+    sinta_search_author as _sinta_search_author,
+    sinta_get_author_profile as _sinta_get_author_profile,
+    sinta_get_publications as _sinta_get_publications,
+    sinta_get_affiliation as _sinta_get_affiliation,
+)
+
 
 class _NoOpContext:
     """Fallback context when tools are called directly (not via MCP protocol)."""
@@ -617,5 +638,189 @@ async def integrasi_sync(
         "api_available": False,
         "message": f"Tidak ada data {sumber}. Upload file Excel melalui menu Import Data untuk mengisi data.",
     }
+
+
+# ========================================================================
+# PDDIKTI Tools (registered on main MCP server)
+# ========================================================================
+
+
+@mcp.tool()
+async def fetch_dosen(
+    prodi_id: Optional[str] = None,
+    nidn: Optional[str] = None,
+    nama: Optional[str] = None,
+    page: int = 1,
+    limit: int = 50,
+    fetch_all: bool = False,
+    ctx: Context = None,
+) -> dict:
+    """Fetch dosen (lecturer) data from PDDIKTI/SISTER with pagination. Returns structured data matching m_dosen schema."""
+    return await _fetch_dosen(prodi_id=prodi_id, nidn=nidn, nama=nama, page=page, limit=limit, fetch_all=fetch_all, ctx=_ctx(ctx))
+
+
+@mcp.tool()
+async def fetch_prodi(
+    kode_prodi: Optional[str] = None,
+    nama: Optional[str] = None,
+    jenjang: Optional[str] = None,
+    page: int = 1,
+    limit: int = 50,
+    fetch_all: bool = False,
+    ctx: Context = None,
+) -> dict:
+    """Fetch prodi (study program) data from PDDIKTI/SISTER with pagination. Returns structured data matching m_prodi schema."""
+    return await _fetch_prodi(kode_prodi=kode_prodi, nama=nama, jenjang=jenjang, page=page, limit=limit, fetch_all=fetch_all, ctx=_ctx(ctx))
+
+
+@mcp.tool()
+async def pddikti_get_universitas(
+    nama: Optional[str] = None,
+    kode: Optional[str] = None,
+    ctx: Context = None,
+) -> dict:
+    """Get university data from PDDIKTI."""
+    return await _pddikti_get_universitas(nama=nama, kode=kode, ctx=_ctx(ctx))
+
+
+@mcp.tool()
+async def pddikti_get_prodi(
+    universitas_id: Optional[str] = None,
+    nama: Optional[str] = None,
+    jenjang: Optional[str] = None,
+    ctx: Context = None,
+) -> dict:
+    """Get study program (prodi) data from PDDIKTI."""
+    return await _pddikti_get_prodi(universitas_id=universitas_id, nama=nama, jenjang=jenjang, ctx=_ctx(ctx))
+
+
+@mcp.tool()
+async def pddikti_get_dosen(
+    prodi_id: Optional[str] = None,
+    nidn: Optional[str] = None,
+    nama: Optional[str] = None,
+    ctx: Context = None,
+) -> dict:
+    """Get lecturer (dosen) data from PDDIKTI."""
+    return await _pddikti_get_dosen(prodi_id=prodi_id, nidn=nidn, nama=nama, ctx=_ctx(ctx))
+
+
+@mcp.tool()
+async def pddikti_get_akreditasi_prodi(
+    prodi_id: str = "",
+    ctx: Context = None,
+) -> dict:
+    """Get accreditation status for a study program from PDDIKTI."""
+    return await _pddikti_get_akreditasi_prodi(prodi_id=prodi_id, ctx=_ctx(ctx))
+
+
+@mcp.tool()
+async def pddikti_get_mahasiswa(
+    prodi_id: Optional[str] = None,
+    angkatan: Optional[int] = None,
+    status: Optional[str] = None,
+    ctx: Context = None,
+) -> dict:
+    """Get student (mahasiswa) data from PDDIKTI."""
+    return await _pddikti_get_mahasiswa(prodi_id=prodi_id, angkatan=angkatan, status=status, ctx=_ctx(ctx))
+
+
+# ========================================================================
+# SINTA Tools (registered on main MCP server)
+# ========================================================================
+
+
+@mcp.tool()
+async def fetch_authors(
+    nama: str = "",
+    afiliasi: Optional[str] = None,
+    page: int = 1,
+    limit: int = 50,
+    fetch_all: bool = False,
+    ctx: Context = None,
+) -> dict:
+    """Fetch authors/dosen data from SINTA API. Returns structured data with SINTA profile, h-index, citations."""
+    return await _fetch_authors(nama=nama, afiliasi=afiliasi, page=page, limit=limit, fetch_all=fetch_all, ctx=_ctx(ctx))
+
+
+@mcp.tool()
+async def fetch_publications(
+    author_id: str = "",
+    year_from: Optional[int] = None,
+    year_to: Optional[int] = None,
+    page: int = 1,
+    limit: int = 50,
+    fetch_all: bool = False,
+    ctx: Context = None,
+) -> dict:
+    """Fetch publications for a SINTA author. Returns structured data matching trx_publikasi schema."""
+    return await _fetch_publications(author_id=author_id, year_from=year_from, year_to=year_to, page=page, limit=limit, fetch_all=fetch_all, ctx=_ctx(ctx))
+
+
+@mcp.tool()
+async def fetch_researches(
+    author_id: str = "",
+    year_from: Optional[int] = None,
+    year_to: Optional[int] = None,
+    page: int = 1,
+    limit: int = 50,
+    fetch_all: bool = False,
+    ctx: Context = None,
+) -> dict:
+    """Fetch research/penelitian data for a SINTA author. Returns structured data matching trx_penelitian schema."""
+    return await _fetch_researches(author_id=author_id, year_from=year_from, year_to=year_to, page=page, limit=limit, fetch_all=fetch_all, ctx=_ctx(ctx))
+
+
+@mcp.tool()
+async def fetch_community_services(
+    author_id: str = "",
+    year_from: Optional[int] = None,
+    year_to: Optional[int] = None,
+    page: int = 1,
+    limit: int = 50,
+    fetch_all: bool = False,
+    ctx: Context = None,
+) -> dict:
+    """Fetch community service (PKM) data for a SINTA author. Returns structured data matching trx_pkm schema."""
+    return await _fetch_community_services(author_id=author_id, year_from=year_from, year_to=year_to, page=page, limit=limit, fetch_all=fetch_all, ctx=_ctx(ctx))
+
+
+@mcp.tool()
+async def sinta_search_author(
+    nama: str = "",
+    afiliasi: Optional[str] = None,
+    ctx: Context = None,
+) -> dict:
+    """Search for authors/researchers in SINTA database."""
+    return await _sinta_search_author(nama=nama, afiliasi=afiliasi, ctx=_ctx(ctx))
+
+
+@mcp.tool()
+async def sinta_get_author_profile(
+    author_id: str = "",
+    ctx: Context = None,
+) -> dict:
+    """Get detailed profile information for a SINTA author."""
+    return await _sinta_get_author_profile(author_id=author_id, ctx=_ctx(ctx))
+
+
+@mcp.tool()
+async def sinta_get_publications(
+    author_id: str = "",
+    year_from: Optional[int] = None,
+    year_to: Optional[int] = None,
+    ctx: Context = None,
+) -> dict:
+    """Get publications for a SINTA author."""
+    return await _sinta_get_publications(author_id=author_id, year_from=year_from, year_to=year_to, ctx=_ctx(ctx))
+
+
+@mcp.tool()
+async def sinta_get_affiliation(
+    nama_institusi: str = "",
+    ctx: Context = None,
+) -> dict:
+    """Search for institution/affiliation in SINTA database."""
+    return await _sinta_get_affiliation(nama_institusi=nama_institusi, ctx=_ctx(ctx))
 
 

@@ -37,6 +37,13 @@ class SintaSyncService
                     $result['updated'] += $litResult['updated'];
                     $result['conflicts'] += $litResult['conflicts'];
                 }
+
+                if ($type === 'all' || $type === 'pkm') {
+                    $pkmResult = $this->syncPkm($dosen, $dryRun);
+                    $result['pulled'] += $pkmResult['pulled'];
+                    $result['updated'] += $pkmResult['updated'];
+                    $result['conflicts'] += $pkmResult['conflicts'];
+                }
             } catch (\Throwable $e) {
                 Log::error("SintaSync: Failed for dosen {$dosen->id} ({$dosen->nidn}): {$e->getMessage()}");
             }
@@ -45,13 +52,48 @@ class SintaSyncService
         return $result;
     }
 
+    public function syncSingleDosen(Dosen $dosen, string $type = 'all', bool $dryRun = false): array
+    {
+        $result = ['pulled' => 0, 'updated' => 0, 'conflicts' => 0];
+
+        if (!$dosen->sinta_id) {
+            return $result;
+        }
+
+        try {
+            if ($type === 'all' || $type === 'publikasi') {
+                $pubResult = $this->syncPublikasi($dosen, $dryRun);
+                $result['pulled'] += $pubResult['pulled'];
+                $result['updated'] += $pubResult['updated'];
+                $result['conflicts'] += $pubResult['conflicts'];
+            }
+
+            if ($type === 'all' || $type === 'penelitian') {
+                $litResult = $this->syncPenelitian($dosen, $dryRun);
+                $result['pulled'] += $litResult['pulled'];
+                $result['updated'] += $litResult['updated'];
+                $result['conflicts'] += $litResult['conflicts'];
+            }
+
+            if ($type === 'all' || $type === 'pkm') {
+                $pkmResult = $this->syncPkm($dosen, $dryRun);
+                $result['pulled'] += $pkmResult['pulled'];
+                $result['updated'] += $pkmResult['updated'];
+                $result['conflicts'] += $pkmResult['conflicts'];
+            }
+        } catch (\Throwable $e) {
+            Log::error("SintaSync single dosen failed for {$dosen->id}: {$e->getMessage()}");
+        }
+
+        return $result;
+    }
+
     private function syncPublikasi(Dosen $dosen, bool $dryRun): array
     {
         try {
-            $response = $this->mcp->callToolSync('integrasi_sync', [
-                'sumber' => 'sinta',
-                'author_id' => $dosen->sinta_id,
-                'type' => 'publikasi',
+            $response = $this->mcp->fetchSintaPublications($dosen->sinta_id, [
+                'year_from' => now()->subYears(5)->year,
+                'fetch_all' => true,
             ]);
         } catch (\Throwable $e) {
             Log::warning("SintaSync: MCP unavailable for publikasi {$dosen->sinta_id}: {$e->getMessage()}");
@@ -66,7 +108,7 @@ class SintaSyncService
         foreach ($publications as $pub) {
             if ($dryRun) continue;
 
-            $title = $pub['title'] ?? $pub['judul'] ?? '';
+            $title = $pub['judul_publikasi'] ?: ($pub['judul'] ?: ($pub['title'] ?: ''));
             if (empty($title)) continue;
 
             $existing = IntegrasiSintaPublikasi::where('dosen_id', $dosen->id)
@@ -93,6 +135,17 @@ class SintaSyncService
                 'status_sinkron' => $existingPub ? 'matched' : 'pending',
             ]);
 
+            if (!$existingPub) {
+                Publikasi::create([
+                    'dosen_id' => $dosen->id,
+                    'prodi_id' => $dosen->prodi_id,
+                    'judul_publikasi' => $title,
+                    'jenis_publikasi' => $pub['jenis_publikasi'] ?? null,
+                    'tahun' => $pub['tahun'] ?? null,
+                    'link' => $pub['link'] ?? null,
+                ]);
+            }
+
             $updated++;
         }
 
@@ -102,17 +155,16 @@ class SintaSyncService
     private function syncPenelitian(Dosen $dosen, bool $dryRun): array
     {
         try {
-            $response = $this->mcp->callToolSync('integrasi_sync', [
-                'sumber' => 'sinta',
-                'author_id' => $dosen->sinta_id,
-                'type' => 'penelitian',
+            $response = $this->mcp->fetchSintaResearches($dosen->sinta_id, [
+                'year_from' => now()->subYears(5)->year,
+                'fetch_all' => true,
             ]);
         } catch (\Throwable $e) {
             Log::warning("SintaSync: Research endpoint unavailable for {$dosen->sinta_id}: {$e->getMessage()}");
             return ['pulled' => 0, 'updated' => 0, 'conflicts' => 0];
         }
 
-        $research = $response['research'] ?? ($response['results'] ?? []);
+        $research = $response['researches'] ?? ($response['results'] ?? []);
         $pulled = count($research);
         $updated = 0;
         $conflicts = 0;
@@ -120,15 +172,22 @@ class SintaSyncService
         foreach ($research as $row) {
             if ($dryRun) continue;
 
-            $title = $row['title'] ?? $row['judul'] ?? '';
+            $title = $row['judul_penelitian'] ?: ($row['judul'] ?: ($row['title'] ?: ''));
             if (empty($title)) continue;
+
+            $tahun = $row['tahun'] ?? null;
+            $skema = $row['skema'] ?? null;
+            $dana = $row['jumlah_dana'] ?? $row['dana'] ?? null;
 
             $existing = IntegrasiSintaPenelitian::where('dosen_id', $dosen->id)
                 ->where('judul', $title)
                 ->first();
 
             if ($existing) {
-                $existing->update(['data_dari_sinta' => $row, 'status_sinkron' => 'pending']);
+                $existing->update([
+                    'data_dari_sinta' => $row,
+                    'status_sinkron' => 'pending',
+                ]);
                 continue;
             }
 
@@ -140,12 +199,97 @@ class SintaSyncService
                 'dosen_id' => $dosen->id,
                 'penelitian_id' => $existingLit?->id,
                 'judul' => $title,
-                'tahun' => $row['year'] ?? $row['tahun'] ?? null,
-                'skema' => $row['scheme'] ?? $row['skema'] ?? null,
-                'jumlah_dana' => $row['fund'] ?? $row['jumlah_dana'] ?? null,
+                'tahun' => $tahun,
+                'skema' => $skema,
+                'jumlah_dana' => $dana,
                 'data_dari_sinta' => $row,
                 'status_sinkron' => $existingLit ? 'matched' : 'pending',
             ]);
+
+            if (!$existingLit) {
+                Penelitian::create([
+                    'dosen_id' => $dosen->id,
+                    'prodi_id' => $dosen->prodi_id,
+                    'judul_penelitian' => $title,
+                    'jenis_penelitian' => $skema,
+                    'tahun_pelaksanaan' => $tahun,
+                    'sumber_dana' => $row['sumber_dana'] ?? null,
+                    'jumlah_dana' => $dana,
+                ]);
+            }
+
+            $updated++;
+        }
+
+        return compact('pulled', 'updated', 'conflicts');
+    }
+
+    private function syncPkm(Dosen $dosen, bool $dryRun): array
+    {
+        try {
+            $response = $this->mcp->fetchSintaCommunityServices($dosen->sinta_id, [
+                'year_from' => now()->subYears(5)->year,
+                'fetch_all' => true,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning("SintaSync: PKM endpoint unavailable for {$dosen->sinta_id}: {$e->getMessage()}");
+            return ['pulled' => 0, 'updated' => 0, 'conflicts' => 0];
+        }
+
+        $services = $response['community_services'] ?? ($response['results'] ?? []);
+        $pulled = count($services);
+        $updated = 0;
+        $conflicts = 0;
+
+        foreach ($services as $row) {
+            if ($dryRun) continue;
+
+            $title = $row['judul_pkm'] ?: ($row['judul'] ?: ($row['title'] ?: ''));
+            if (empty($title)) continue;
+
+            $tahun = $row['tahun'] ?? null;
+            $skema = $row['skema'] ?? $row['jenis_pkm'] ?? null;
+            $dana = $row['jumlah_dana'] ?? $row['dana'] ?? null;
+
+            $existing = IntegrasiSintaPkm::where('dosen_id', $dosen->id)
+                ->where('judul', $title)
+                ->first();
+
+            if ($existing) {
+                $existing->update([
+                    'data_dari_sinta' => $row,
+                    'status_sinkron' => 'pending',
+                ]);
+                continue;
+            }
+
+            $existingPkm = Pkm::where('dosen_id', $dosen->id)
+                ->where('judul_pkm', $title)
+                ->first();
+
+            IntegrasiSintaPkm::create([
+                'dosen_id' => $dosen->id,
+                'pkm_id' => $existingPkm?->id,
+                'judul' => $title,
+                'tahun' => $tahun,
+                'skema' => $skema,
+                'jumlah_dana' => $dana,
+                'data_dari_sinta' => $row,
+                'status_sinkron' => $existingPkm ? 'matched' : 'pending',
+            ]);
+
+            if (!$existingPkm) {
+                Pkm::create([
+                    'dosen_id' => $dosen->id,
+                    'prodi_id' => $dosen->prodi_id,
+                    'judul_pkm' => $title,
+                    'jenis_pkm' => $row['jenis_pkm'] ?? $skema,
+                    'lokasi' => $row['lokasi'] ?? null,
+                    'tahun_pelaksanaan' => $tahun,
+                    'sumber_dana' => $row['sumber_dana'] ?? null,
+                    'jumlah_dana' => $dana,
+                ]);
+            }
 
             $updated++;
         }
