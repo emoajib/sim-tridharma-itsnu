@@ -34,7 +34,10 @@ class TracerJawabanController extends Controller
             'alumni_id' => 'required|exists:m_alumni,id',
             'kuisioner_id' => 'required|exists:m_kuisioner_tracer,id',
             'jawaban' => 'required|json',
+            'diisi_pada' => 'nullable|date',
         ]);
+
+        $validated['diisi_pada'] ??= now();
 
         TracerJawaban::create($validated);
 

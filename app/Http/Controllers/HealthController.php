@@ -30,11 +30,16 @@ class HealthController extends Controller
         // ── Database Check ──────────────────────────────────────────────
         try {
             $pdo = DB::connection()->getPdo();
-            $dbName = $pdo->query('SELECT current_database()')->fetchColumn();
+            $driver = config('database.default');
+            $dbName = match ($driver) {
+                'pgsql' => $pdo->query('SELECT current_database()')->fetchColumn(),
+                'mysql' => $pdo->query('SELECT DATABASE()')->fetchColumn(),
+                default => $pdo->query('SELECT sqlite_version()')->fetchColumn(),
+            };
             $status['database'] = [
                 'status' => 'connected',
                 'name' => $dbName,
-                'driver' => config('database.default'),
+                'driver' => $driver,
             ];
         } catch (\Throwable $e) {
             $status['database'] = [
