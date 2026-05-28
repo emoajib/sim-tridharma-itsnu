@@ -6,10 +6,17 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
+use Tests\Feature\SeedOnce;
 
 class PasswordUpdateTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, SeedOnce;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seedOnce();
+    }
 
     public function test_password_can_be_updated(): void
     {
@@ -47,5 +54,17 @@ class PasswordUpdateTest extends TestCase
         $response
             ->assertSessionHasErrors('current_password')
             ->assertRedirect('/profile');
+    }
+
+    public function test_unauthenticated_user_cannot_update_password(): void
+    {
+        $response = $this->put('/password', [
+            'current_password' => 'password',
+            'password' => 'new-password',
+            'password_confirmation' => 'new-password',
+        ]);
+
+        // Guest user should be redirected to login
+        $response->assertRedirect(route('login'));
     }
 }

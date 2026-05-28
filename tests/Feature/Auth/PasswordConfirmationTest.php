@@ -5,10 +5,17 @@ namespace Tests\Feature\Auth;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Tests\Feature\SeedOnce;
 
 class PasswordConfirmationTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, SeedOnce;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seedOnce();
+    }
 
     public function test_confirm_password_screen_can_be_rendered(): void
     {
@@ -40,5 +47,13 @@ class PasswordConfirmationTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors();
+    }
+
+    public function test_unauthenticated_user_cannot_access_confirm_password(): void
+    {
+        $response = $this->get('/confirm-password');
+
+        // Guest user should be redirected to login
+        $response->assertRedirect(route('login'));
     }
 }

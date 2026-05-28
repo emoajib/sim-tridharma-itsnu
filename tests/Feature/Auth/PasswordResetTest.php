@@ -7,10 +7,17 @@ use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
+use Tests\Feature\SeedOnce;
 
 class PasswordResetTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, SeedOnce;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seedOnce();
+    }
 
     public function test_reset_password_link_screen_can_be_rendered(): void
     {
@@ -69,5 +76,37 @@ class PasswordResetTest extends TestCase
 
             return true;
         });
+    }
+
+    public function test_reset_fails_with_invalid_token(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create();
+
+        // Request a valid reset link so a token exists in the DB
+        $this->post('/forgot-password', ['email' => $user->email]);
+
+        Notification::assertSentTo($user, ResetPassword::class);
+
+        // Now attempt reset with a fake token
+        $response = $this->post('/reset-password', [
+            'token' => 'invalid-fake-token-that-does-not-exist',
+            'email' => $user->email,
+            'password' => 'new-password',
+            'password_confirmation' => 'new-password',
+        ]);
+
+        $response->assertSessionHasErrors('email');
+    }
+
+    public function test_reset_fails_with_unregistered_email(): void
+    {
+        $response = $this->post('/forgot-password', [
+            'email' => 'nonexistent@example.com',
+        ]);
+
+        // Should get a validation error since the email is not registered
+        $response->assertSessionHasErrors('email');
     }
 }

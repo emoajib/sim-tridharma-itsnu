@@ -4,14 +4,23 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
+use Tests\Feature\SeedOnce;
 
 class EmailVerificationTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, SeedOnce;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seedOnce();
+    }
 
     public function test_email_verification_screen_can_be_rendered(): void
     {
@@ -54,5 +63,32 @@ class EmailVerificationTest extends TestCase
         $this->actingAs($user)->get($verificationUrl);
 
         $this->assertFalse($user->fresh()->hasVerifiedEmail());
+    }
+
+    public function test_email_verification_notification_can_be_resent(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->unverified()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->from('/verify-email')
+            ->post('/email/verification-notification');
+
+        $response->assertRedirect('/verify-email');
+        $response->assertSessionHas('status', 'verification-link-sent');
+
+        Notification::assertSentTo($user, VerifyEmail::class);
+    }
+
+    public function test_verified_user_redirected_from_verify_notice(): void
+    {
+        $user = User::factory()->create(); // Default factory creates verified email
+
+        $response = $this->actingAs($user)->get('/verify-email');
+
+        // EmailVerificationPromptController redirects verified users to dashboard
+        $response->assertRedirect(route('dashboard', absolute: false));
     }
 }
