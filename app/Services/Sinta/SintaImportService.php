@@ -2,10 +2,10 @@
 
 namespace App\Services\Sinta;
 
-use App\Imports\SintaDosenImport;
 use App\Imports\SintaPenelitianImport;
 use App\Imports\SintaPkmImport;
 use App\Imports\SintaPublikasiImport;
+use App\Models\Dosen;
 use App\Models\Penelitian;
 use App\Models\Pkm;
 use App\Models\Publikasi;
@@ -41,37 +41,37 @@ class SintaImportService
 
     public function importPenelitian($file): array
     {
-        return $this->importDual($file, 'penelitian', SintaPenelitianImport::class);
+        $before = Penelitian::count();
+        $this->universalImport(new SintaPenelitianImport, $file);
+        $imported = Penelitian::count() - $before;
+
+        return ['imported' => $imported, 'type' => 'penelitian'];
     }
 
     public function importPublikasi($file): array
     {
-        return $this->importDual($file, 'publikasi', SintaPublikasiImport::class);
+        $before = Publikasi::count();
+        $this->universalImport(new SintaPublikasiImport, $file);
+        $imported = Publikasi::count() - $before;
+
+        return ['imported' => $imported, 'type' => 'publikasi'];
     }
 
     public function importPkm($file): array
     {
-        return $this->importDual($file, 'pkm', SintaPkmImport::class);
+        $before = Pkm::count();
+        $this->universalImport(new SintaPkmImport, $file);
+        $imported = Pkm::count() - $before;
+
+        return ['imported' => $imported, 'type' => 'pkm'];
     }
 
-    protected function importDual($file, string $type, string $importClass): array
+    public function importDosen($file): array
     {
-        $this->universalImport(new SintaDosenImport, $file);
+        $before = Dosen::count();
+        $this->universalImport(new \App\Imports\SintaDosenImport, $file);
+        $imported = Dosen::count() - $before;
 
-        $modelClass = match ($type) {
-            'penelitian' => Penelitian::class,
-            'publikasi' => Publikasi::class,
-            'pkm' => Pkm::class,
-            default => throw new \InvalidArgumentException("Unknown import type: {$type}"),
-        };
-
-        $before = $modelClass::count();
-        $this->universalImport(new $importClass, $file);
-        $imported = $modelClass::count() - $before;
-
-        return [
-            'imported' => $imported,
-            'type' => $type,
-        ];
+        return ['imported' => $imported, 'type' => 'dosen'];
     }
 }

@@ -23,6 +23,7 @@ class IntegrasiLogSinkron extends Model
             'jumlah_ditarik' => 'integer',
             'jumlah_konflik' => 'integer',
             'jumlah_diperbarui' => 'integer',
+            'detail' => 'array',
         ];
     }
 }

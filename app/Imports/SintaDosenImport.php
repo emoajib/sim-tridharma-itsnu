@@ -7,6 +7,7 @@ use App\Models\Prodi;
 use App\Models\ReconciliationSuggestion;
 use App\Services\Reconciliation\FuzzyMatchService;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithStartRow;
@@ -41,8 +42,18 @@ class SintaDosenImport implements SkipsEmptyRows, ToModel, WithStartRow
             return null;
         }
 
-        $prodi = Prodi::where('nama_prodi', 'like', "%{$prodiName}%")->first();
-        $prodiId = $prodi ? $prodi->id : (Prodi::first()->id ?? 1);
+        $prodi = null;
+        if (!empty($prodiName)) {
+            $prodi = Prodi::where('nama_prodi', $prodiName)
+                ->orWhere('nama_prodi', 'like', '%' . $prodiName . '%')
+                ->first();
+        }
+
+        if (!$prodi) {
+            Log::warning("SINTA Import: Prodi '{$prodiName}' not found for '{$name}' (SINTA ID: {$sintaId}) — skipping");
+            return null;
+        }
+        $prodiId = $prodi->id;
 
         if ($nidn && is_numeric($nidn)) {
             $existing = Dosen::where('nidn', $nidn)->first();
@@ -68,7 +79,7 @@ class SintaDosenImport implements SkipsEmptyRows, ToModel, WithStartRow
 
         $match = $this->fuzzyMatch->findBestMatch($name, $nidn, $prodiId);
 
-        if ($match['score'] >= 95 && $match['target_id']) {
+        if ($match['score'] >= 75 && $match['target_id']) {
             $dosen = Dosen::find($match['target_id']);
             if ($dosen) {
                 Log::info("SINTA Sync: Fuzzy auto-approved {$name} -> {$dosen->nama_depan} (score: {$match['score']})");
