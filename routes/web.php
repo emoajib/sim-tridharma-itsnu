@@ -364,10 +364,10 @@ Route::middleware(['auth', PermissionMiddleware::class, 'throttle:crud'])->group
     Route::middleware('can:reconciliation.view')->group(function () {
         Route::get('/reconciliation', [ReconciliationController::class, 'index'])
             ->name('reconciliation.index');
-        Route::get('/reconciliation/{id}', [ReconciliationController::class, 'show'])
-            ->name('reconciliation.show');
         Route::get('/reconciliation/stats', [ReconciliationController::class, 'stats'])
             ->name('reconciliation.stats');
+        Route::get('/reconciliation/{id}', [ReconciliationController::class, 'show'])
+            ->name('reconciliation.show');
     });
 
     Route::middleware('can:reconciliation.approve')->group(function () {

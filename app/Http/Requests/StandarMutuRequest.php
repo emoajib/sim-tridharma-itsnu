@@ -25,7 +25,8 @@ class StandarMutuRequest extends FormRequest
         ];
 
         if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
-            $id = $this->route('standarMutu');
+            $standarMutu = $this->route('standarMutu');
+            $id = $standarMutu instanceof \App\Models\StandarMutu ? $standarMutu->id : $standarMutu;
             $rules['kode_standar'] = 'required|string|max:50|unique:m_standar_mutu,kode_standar,' . $id;
         } else {
             $rules['kode_standar'] = 'required|string|max:50|unique:m_standar_mutu,kode_standar';

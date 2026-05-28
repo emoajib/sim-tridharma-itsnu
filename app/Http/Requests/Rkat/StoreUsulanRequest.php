@@ -12,6 +12,16 @@ class StoreUsulanRequest extends FormRequest
     public function authorize(): bool
     {
         $user = $this->user();
+
+        if (! $user) {
+            return false;
+        }
+
+        // Super Admin and Admin bypass role-specific checks
+        if ($user->hasRole('Super Admin') || $user->hasRole('Admin')) {
+            return true;
+        }
+
         $role = $user->activeRole();
         $prodiId = $this->input('prodi_id');
 

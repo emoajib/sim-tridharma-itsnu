@@ -26,6 +26,7 @@ class EdpsRequest extends FormRequest
             $rules['prodi_id'] = 'required|exists:m_prodi,id';
             $rules['periode_id'] = 'required|exists:m_periode_akademik,id';
             $rules['standar_mutu_id'] = 'required|exists:m_standar_mutu,id';
+            $rules['target'] = 'required|numeric|min:0|max:100';
         }
 
         return $rules;

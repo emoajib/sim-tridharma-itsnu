@@ -61,7 +61,7 @@ class SpmiCycleController extends Controller
             'periode_id' => 'required|exists:m_periode_akademik,id',
             'instrumen_id' => 'nullable|exists:m_instrumen_akreditasi,id',
             'tahap' => 'required|string|in:penetapan,pelaksanaan,evaluasi,pengendalian,peningkatan',
-            'kategori' => 'nullable|string|max:100',
+            'kategori' => 'required|string|max:100',
             'nama_siklus' => 'required|string|max:255',
             'tanggal_mulai' => 'required|date',
             'tanggal_selesai' => 'nullable|date|after_or_equal:tanggal_mulai',

@@ -60,6 +60,7 @@ class SurveySpmiController extends Controller
         ]);
 
         return DB::transaction(function () use ($validated) {
+            $validated['responses'] = $validated['responses'] ?? [];
             $validated['token'] = Str::random(32);
 
             $survey = SurveySpmi::create($validated);
