@@ -174,4 +174,34 @@ class RtmController extends Controller
         $rtmActionItem->delete();
         return redirect()->route('spmi.rtm.show', $rtm)->with('success', 'Action item berhasil dihapus.');
     }
+
+    /**
+     * Automatically generate an RTM draft from audits and EDPS.
+     */
+    public function autoGenerate(\Illuminate\Http\Request $request, \App\Services\SPMI\RtmGeneratorService $generatorService): \Illuminate\Http\JsonResponse
+    {
+        $request->validate([
+            'prodi_id' => 'required|exists:m_prodi,id',
+            'periode_id' => 'required|exists:m_periode_akademik,id',
+        ]);
+
+        $result = $generatorService->generateDraft(
+            $request->prodi_id, 
+            $request->periode_id, 
+            auth()->id()
+        );
+
+        if (!$result['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message']
+            ], 400);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $result['message'],
+            'data' => $result['data']
+        ]);
+    }
 }

@@ -221,6 +221,7 @@ Route::middleware(['auth', PermissionMiddleware::class, 'throttle:crud'])->group
     Route::get('/spmi/rtm/{rtm}', [RtmController::class, 'show'])->name('spmi.rtm.show');
     Route::put('/spmi/rtm/{rtm}', [RtmController::class, 'update'])->name('spmi.rtm.update');
     Route::delete('/spmi/rtm/{rtm}', [RtmController::class, 'destroy'])->name('spmi.rtm.destroy');
+    Route::post('/spmi/rtm/auto-generate', [\App\Http\Controllers\Api\RtmController::class, 'autoGenerate'])->name('spmi.rtm.auto-generate');
     // RTM Action Items
     Route::post('/spmi/rtm/{rtm}/action-items', [RtmController::class, 'storeActionItem'])->name('spmi.rtm.action-item.store');
     Route::put('/spmi/rtm/{rtm}/action-items/{rtmActionItem}', [RtmController::class, 'updateActionItem'])->name('spmi.rtm.action-item.update');
