@@ -13,11 +13,13 @@ class SyncOrchestrator
     public function __construct(
         private PddiktiSyncService $pddikti,
         private SintaSyncService $sinta,
+        private ScholarSyncService $scholar,
         private MCPClientService $mcp,
     ) {
         $this->services = [
             'pddikti' => $this->pddikti,
             'sinta' => $this->sinta,
+            'scholar' => $this->scholar,
         ];
     }
 

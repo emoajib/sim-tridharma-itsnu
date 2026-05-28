@@ -42,6 +42,7 @@ use App\Http\Controllers\Api\PortofolioController;
 use App\Http\Controllers\Api\PrediksiController;
 use App\Http\Controllers\Api\ProdiController;
 use App\Http\Controllers\Api\PublikasiController;
+use App\Http\Controllers\Api\LppmImportController;
 use App\Http\Controllers\Api\RekomendasiController;
 use App\Http\Controllers\Api\RiskRegisterController;
 use App\Http\Controllers\Api\RoleSwitchController;
@@ -319,6 +320,8 @@ Route::middleware(['auth', PermissionMiddleware::class, 'throttle:crud'])->group
         ->middleware('throttle:10,1');
     Route::post('/integrasi/sync', [IntegrasiController::class, 'sync'])->name('integrasi.sync')
         ->middleware('throttle:10,1');
+    Route::post('/integrasi/sync-all', [IntegrasiController::class, 'syncAll'])->name('integrasi.sync-all')
+        ->middleware('throttle:5,1');
 
     // SINTA Import Routes
     Route::post('/import/sinta/publikasi', [SintaImportController::class, 'importPublikasi'])->name('import.sinta.publikasi')
@@ -327,6 +330,17 @@ Route::middleware(['auth', PermissionMiddleware::class, 'throttle:crud'])->group
         ->middleware('throttle:uploads');
     Route::post('/import/sinta/pkm', [SintaImportController::class, 'importPkm'])->name('import.sinta.pkm')
         ->middleware('throttle:uploads');
+
+    // ===== LPPM IMPORT ROUTES =====
+    Route::middleware('can:data-import.upload')->group(function () {
+        Route::get('/lppm/import', [LppmImportController::class, 'index'])->name('lppm.import');
+        Route::post('/lppm/import/penelitian', [LppmImportController::class, 'importPenelitian'])->name('lppm.import.penelitian')
+            ->middleware('throttle:uploads');
+        Route::post('/lppm/import/pkm', [LppmImportController::class, 'importPkm'])->name('lppm.import.pkm')
+            ->middleware('throttle:uploads');
+        Route::get('/lppm/template/penelitian', [LppmImportController::class, 'downloadTemplatePenelitian'])->name('lppm.template.penelitian');
+        Route::get('/lppm/template/pkm', [LppmImportController::class, 'downloadTemplatePkm'])->name('lppm.template.pkm');
+    });
 
     // ===== DATA IMPORT ROUTES =====
     Route::middleware('can:data-import.download-template')->group(function () {

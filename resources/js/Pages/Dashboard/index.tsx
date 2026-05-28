@@ -302,6 +302,12 @@ export default function Dashboard(props: Props) {
                             <Link href={route('admin.templates.index')} className="px-4 py-2 rounded-lg bg-gray-900 text-white text-xs font-bold uppercase tracking-wider hover:bg-black transition-all shadow-sm">
                                 Template XL
                             </Link>
+                            <Link href={route('lppm.import')} className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-bold uppercase tracking-wider hover:bg-emerald-700 transition-all shadow-sm">
+                                Import LPPM
+                            </Link>
+                            <Link href={route('data-import.templates')} className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-xs font-bold uppercase tracking-wider hover:bg-indigo-700 transition-all shadow-sm">
+                                Import PDDikti
+                            </Link>
                             <Link href={route('portofolio.publikasi')} className="px-4 py-2 rounded-lg bg-rose-600 text-white text-xs font-bold uppercase tracking-wider hover:bg-rose-700 transition-all shadow-sm">
                                 Import SINTA
                             </Link>

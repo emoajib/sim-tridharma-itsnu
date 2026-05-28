@@ -55,4 +55,35 @@ class IntegrasiController extends Controller
     {
         return $this->run($request);
     }
+
+    public function syncAll(Request $request): RedirectResponse
+    {
+        $sources = $request->input('sources', ['pddikti', 'sinta']);
+        if (is_string($sources)) {
+            $sources = explode(',', $sources);
+        }
+
+        $totalPulled = 0;
+        $totalErrors = 0;
+        $errors = [];
+
+        foreach ($sources as $source) {
+            try {
+                $mcpClient = app(MCPClientService::class);
+                $result = $mcpClient->runIntegrasiSync($source);
+                $totalPulled += $result['records_pulled'] ?? 0;
+            } catch (\Exception $e) {
+                $totalErrors++;
+                $errors[] = "{$source}: {$e->getMessage()}";
+            }
+        }
+
+        $message = "Sinkronisasi selesai: {$totalPulled} records ditarik";
+        if ($totalErrors > 0) {
+            $message .= ", {$totalErrors} error: " . implode('; ', $errors);
+            return back()->with('error', $message);
+        }
+
+        return back()->with('success', $message);
+    }
 }
