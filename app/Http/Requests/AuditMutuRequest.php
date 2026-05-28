@@ -32,7 +32,7 @@ class AuditMutuRequest extends FormRequest
 
         if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
             $rules['tindak_lanjut'] = 'nullable|string';
-            $rules['status'] = 'nullable|string|in:draft,submitted,assigned,in_progress,awaiting_verification,verified,closed,archived,rejected';
+            $rules['status'] = 'required|string|in:draft,submitted,assigned,in_progress,awaiting_verification,verified,closed,archived,rejected';
         }
 
         return $rules;
