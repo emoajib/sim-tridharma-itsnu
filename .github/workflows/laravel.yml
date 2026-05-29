@@ -93,7 +93,7 @@ jobs:
           DB_PASSWORD: postgres
 
       - name: Run PHP tests
-        run: php artisan test --testsuite=Feature --testsuite=Unit
+        run: php artisan test --testsuite=Feature,Unit
         env:
           DB_CONNECTION: pgsql
           DB_HOST: localhost
