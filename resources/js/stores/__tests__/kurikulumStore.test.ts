@@ -7,8 +7,10 @@ const mockedAxios = vi.mocked(axios);
 
 interface Kurikulum {
     id: number;
-    nama: string;
-    tahun: number;
+    nama_kurikulum: string;
+    tahun_berlaku: string;
+    prodi_id: number;
+    is_active: boolean;
 }
 
 describe('useKurikulumStore', () => {
@@ -27,8 +29,8 @@ describe('useKurikulumStore', () => {
 
     it('should fetch kurikulum from API', async () => {
         const mockData: Kurikulum[] = [
-            { id: 1, nama: 'Kurikulum 2020', tahun: 2020 },
-            { id: 2, nama: 'Kurikulum 2024', tahun: 2024 },
+            { id: 1, nama_kurikulum: 'Kurikulum 2020', tahun_berlaku: '2020', prodi_id: 1, is_active: true },
+            { id: 2, nama_kurikulum: 'Kurikulum 2024', tahun_berlaku: '2024', prodi_id: 2, is_active: true },
         ];
 
         mockedAxios.get.mockResolvedValueOnce({
@@ -52,7 +54,7 @@ describe('useKurikulumStore', () => {
     });
 
     it('should create a new kurikulum', async () => {
-        const newItem = { id: 3, nama: 'Kurikulum 2025', tahun: 2025 };
+        const newItem = { id: 3, nama_kurikulum: 'Kurikulum 2025', tahun_berlaku: '2025', prodi_id: 1, is_active: true };
 
         mockedAxios.post.mockResolvedValueOnce({
             data: { data: newItem },
@@ -60,21 +62,23 @@ describe('useKurikulumStore', () => {
 
         const result = await useKurikulumStore
             .getState()
-            .create({ nama: 'Kurikulum 2025', tahun: 2025 });
+            .create({ nama_kurikulum: 'Kurikulum 2025', tahun_berlaku: '2025', prodi_id: 1, is_active: true });
 
         expect(result).toEqual(newItem);
         expect(mockedAxios.post).toHaveBeenCalledWith('/api/kurikulum', {
-            nama: 'Kurikulum 2025',
-            tahun: 2025,
+            nama_kurikulum: 'Kurikulum 2025',
+            tahun_berlaku: '2025',
+            prodi_id: 1,
+            is_active: true,
         });
     });
 
     it('should update an existing kurikulum', async () => {
         useKurikulumStore.setState({
-            items: [{ id: 1, nama: 'Kurikulum Lama', tahun: 2019 }],
+            items: [{ id: 1, nama_kurikulum: 'Kurikulum Lama', tahun_berlaku: '2019', prodi_id: 1, is_active: true }],
         });
 
-        const updatedItem = { id: 1, nama: 'Kurikulum Update', tahun: 2025 };
+        const updatedItem = { id: 1, nama_kurikulum: 'Kurikulum Update', tahun_berlaku: '2025', prodi_id: 1, is_active: true };
 
         mockedAxios.put.mockResolvedValueOnce({
             data: { data: updatedItem },
@@ -82,12 +86,14 @@ describe('useKurikulumStore', () => {
 
         const result = await useKurikulumStore
             .getState()
-            .update(1, { nama: 'Kurikulum Update', tahun: 2025 });
+            .update(1, { nama_kurikulum: 'Kurikulum Update', tahun_berlaku: '2025' });
 
         expect(result).toEqual(updatedItem);
         expect(mockedAxios.put).toHaveBeenCalledWith('/api/kurikulum/1', {
-            nama: 'Kurikulum Update',
-            tahun: 2025,
+            nama_kurikulum: 'Kurikulum Update',
+            tahun_berlaku: '2025',
+            prodi_id: 1,
+            is_active: true,
         });
 
         const state = useKurikulumStore.getState();
@@ -97,8 +103,8 @@ describe('useKurikulumStore', () => {
     it('should delete a kurikulum', async () => {
         useKurikulumStore.setState({
             items: [
-                { id: 1, nama: 'Kurikulum A', tahun: 2020 },
-                { id: 2, nama: 'Kurikulum B', tahun: 2024 },
+                { id: 1, nama_kurikulum: 'Kurikulum A', tahun_berlaku: '2020', prodi_id: 1, is_active: true },
+                { id: 2, nama_kurikulum: 'Kurikulum B', tahun_berlaku: '2024', prodi_id: 2, is_active: true },
             ],
         });
 

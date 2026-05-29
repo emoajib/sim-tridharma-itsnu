@@ -8,7 +8,14 @@ const mockedAxios = vi.mocked(axios);
 interface Mitra {
     id: number;
     nama_mitra: string;
-    jenis: string;
+    jenis_mitra: string;
+    alamat?: string;
+    kontak?: string;
+    telepon?: string;
+    email?: string;
+    is_active: boolean;
+    created_at?: string;
+    updated_at?: string;
 }
 
 describe('useMitraStore', () => {
@@ -33,8 +40,8 @@ describe('useMitraStore', () => {
 
     it('should fetch mitra from API', async () => {
         const mockData: Mitra[] = [
-            { id: 1, nama_mitra: 'PT Maju Jaya', jenis: 'industri' },
-            { id: 2, nama_mitra: 'Universitas Mitra', jenis: 'pendidikan' },
+            { id: 1, nama_mitra: 'PT Maju Jaya', jenis_mitra: 'industri', alamat: '', kontak: '', telepon: '', email: '', is_active: true, created_at: '', updated_at: '' },
+            { id: 2, nama_mitra: 'Universitas Mitra', jenis_mitra: 'pendidikan', alamat: '', kontak: '', telepon: '', email: '', is_active: true, created_at: '', updated_at: '' },
         ];
 
         mockedAxios.get.mockResolvedValueOnce({
@@ -62,7 +69,14 @@ describe('useMitraStore', () => {
         const newItem: Mitra = {
             id: 3,
             nama_mitra: 'PT Kerjasama',
-            jenis: 'industri',
+            jenis_mitra: 'industri',
+            alamat: '',
+            kontak: '',
+            telepon: '',
+            email: '',
+            is_active: true,
+            created_at: '',
+            updated_at: '',
         };
 
         mockedAxios.post.mockResolvedValueOnce({
@@ -71,12 +85,12 @@ describe('useMitraStore', () => {
 
         const result = await useMitraStore
             .getState()
-            .create({ nama_mitra: 'PT Kerjasama', jenis: 'industri' });
+            .create({ nama_mitra: 'PT Kerjasama', jenis_mitra: 'industri' });
 
         expect(result).toEqual(newItem);
         expect(mockedAxios.post).toHaveBeenCalledWith('/api/mitra', {
             nama_mitra: 'PT Kerjasama',
-            jenis: 'industri',
+            jenis_mitra: 'industri',
         });
 
         const state = useMitraStore.getState();
@@ -86,14 +100,21 @@ describe('useMitraStore', () => {
     it('should update an existing mitra', async () => {
         useMitraStore.setState({
             items: [
-                { id: 1, nama_mitra: 'Mitra Lama', jenis: 'pendidikan' },
+                { id: 1, nama_mitra: 'Mitra Lama', jenis_mitra: 'pendidikan', alamat: '', kontak: '', telepon: '', email: '', is_active: true, created_at: '', updated_at: '' },
             ],
         });
 
         const updatedItem: Mitra = {
             id: 1,
             nama_mitra: 'Mitra Update',
-            jenis: 'industri',
+            jenis_mitra: 'industri',
+            alamat: '',
+            kontak: '',
+            telepon: '',
+            email: '',
+            is_active: true,
+            created_at: '',
+            updated_at: '',
         };
 
         mockedAxios.put.mockResolvedValueOnce({
@@ -102,12 +123,19 @@ describe('useMitraStore', () => {
 
         const result = await useMitraStore
             .getState()
-            .update(1, { nama_mitra: 'Mitra Update', jenis: 'industri' });
+            .update(1, { nama_mitra: 'Mitra Update', jenis_mitra: 'industri' });
 
         expect(result).toEqual(updatedItem);
         expect(mockedAxios.put).toHaveBeenCalledWith('/api/mitra/1', {
             nama_mitra: 'Mitra Update',
-            jenis: 'industri',
+            jenis_mitra: 'industri',
+            alamat: '',
+            kontak: '',
+            telepon: '',
+            email: '',
+            is_active: true,
+            created_at: '',
+            updated_at: '',
         });
 
         const state = useMitraStore.getState();
@@ -117,8 +145,8 @@ describe('useMitraStore', () => {
     it('should delete a mitra', async () => {
         useMitraStore.setState({
             items: [
-                { id: 1, nama_mitra: 'Mitra A', jenis: 'industri' },
-                { id: 2, nama_mitra: 'Mitra B', jenis: 'pendidikan' },
+                { id: 1, nama_mitra: 'Mitra A', jenis_mitra: 'industri', alamat: '', kontak: '', telepon: '', email: '', is_active: true, created_at: '', updated_at: '' },
+                { id: 2, nama_mitra: 'Mitra B', jenis_mitra: 'pendidikan', alamat: '', kontak: '', telepon: '', email: '', is_active: true, created_at: '', updated_at: '' },
             ],
         });
 
@@ -137,7 +165,14 @@ describe('useMitraStore', () => {
         const item: Mitra = {
             id: 1,
             nama_mitra: 'PT Dipilih',
-            jenis: 'industri',
+            jenis_mitra: 'industri',
+            alamat: '',
+            kontak: '',
+            telepon: '',
+            email: '',
+            is_active: true,
+            created_at: '',
+            updated_at: '',
         };
 
         useMitraStore.getState().setSelected(item);

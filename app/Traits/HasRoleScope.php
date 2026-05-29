@@ -19,6 +19,7 @@ trait HasRoleScope
             'Rektor',
             'WR 1 Akademik',
             'WR 2 Keuangan & Sarpras',
+            'WR 3 Kemahasiswaan',
             'LPM',
             'Kepala LPPM',
             'Staf LPPM',
@@ -49,6 +50,22 @@ trait HasRoleScope
         }
 
         return $query->where('dosen_id', $user->dosen_id);
+    }
+
+    public function applyOrmawaScope(Builder $query, User $user): Builder
+    {
+        $role = $user->active_role;
+
+        return match ($role) {
+            'Super Admin',
+            'WR 3 Kemahasiswaan' => $query,
+
+            'Kaprodi' => $query->where('prodi_id', $user->prodi_id),
+
+            'Dosen' => $query->whereHas('pembinaOrmawa', fn ($q) => $q->where('dosen_id', $user->dosen_id)),
+
+            default => $query->whereRaw('1=0'),
+        };
     }
 
     public function canApprove(User $user, $prodiId): bool

@@ -68,7 +68,11 @@ export function createMasterDataStore<T extends { id: number }>(
     create: async (data) => {
       set({ loading: true, error: null });
       try {
-        const response = await axios.post<{ data: T }>(apiEndpoint, data);
+        // Filter out undefined properties to avoid sending null/undefined to the API
+        const filteredData = Object.fromEntries(
+          Object.entries(data).filter(([_, v]) => v !== undefined)
+        );
+        const response = await axios.post<{ data: T }>(apiEndpoint, filteredData);
         const newItem = response.data.data;
         set((state) => ({ items: [...state.items, newItem], loading: false }));
         return newItem;
@@ -82,7 +86,21 @@ export function createMasterDataStore<T extends { id: number }>(
     update: async (id, data) => {
       set({ loading: true, error: null });
       try {
-        const response = await axios.put<{ data: T }>(`${apiEndpoint}/${id}`, data);
+        // Get the existing item to merge with new data
+        const state = get();
+        const existingItem = state.items.find(item => item.id === id);
+        
+        // Merge existing item with new data (new data takes precedence)
+        const mergedData = { ...existingItem, ...data };
+        
+        // Remove id from data since it's in the URL path
+        const { id: _, ...dataWithoutId } = mergedData;
+        
+        // Filter out undefined properties to avoid sending null/undefined to the API
+        const filteredData = Object.fromEntries(
+          Object.entries(dataWithoutId).filter(([_, v]) => v !== undefined)
+        );
+        const response = await axios.put<{ data: T }>(`${apiEndpoint}/${id}`, filteredData);
         const updatedItem = response.data.data;
         set((state) => ({
           items: state.items.map((item) => (item.id === id ? updatedItem : item)),

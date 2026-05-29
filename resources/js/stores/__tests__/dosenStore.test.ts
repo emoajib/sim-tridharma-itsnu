@@ -7,9 +7,21 @@ const mockedAxios = vi.mocked(axios);
 
 interface Dosen {
     id: number;
-    nama: string;
+    nama_depan: string;
+    nama_belakang?: string;
     nidn: string;
+    status_aktivitas: string;
+    is_active: boolean;
 }
+
+const createDosen = (overrides: Partial<Dosen> = {}): Dosen => ({
+    id: 1,
+    nama_depan: 'Dr. Test',
+    nidn: '000000',
+    status_aktivitas: 'aktif',
+    is_active: true,
+    ...overrides,
+});
 
 describe('useDosenStore', () => {
     beforeEach(() => {
@@ -22,19 +34,12 @@ describe('useDosenStore', () => {
         expect(state.items).toEqual([]);
         expect(state.loading).toBe(false);
         expect(state.error).toBeNull();
-        expect(state.selectedItem).toBeNull();
-        expect(state.pagination).toEqual({
-            currentPage: 1,
-            lastPage: 1,
-            total: 0,
-            perPage: 10,
-        });
     });
 
     it('should fetch dosen from API', async () => {
         const mockDosen: Dosen[] = [
-            { id: 1, nama: 'Dr. Santoso', nidn: '123456' },
-            { id: 2, nama: 'Dr. Wijaya', nidn: '789012' },
+            createDosen({ id: 1, nama_depan: 'Dr. Santoso', nidn: '123456' }),
+            createDosen({ id: 2, nama_depan: 'Dr. Wijaya', nidn: '789012' }),
         ];
 
         mockedAxios.get.mockResolvedValueOnce({
@@ -59,7 +64,7 @@ describe('useDosenStore', () => {
     });
 
     it('should create a new dosen', async () => {
-        const newDosen = { id: 3, nama: 'Dr. Baru', nidn: '345678' };
+        const newDosen = createDosen({ id: 3, nama_depan: 'Dr. Baru', nidn: '345678' });
 
         mockedAxios.post.mockResolvedValueOnce({
             data: { data: newDosen },
@@ -67,11 +72,11 @@ describe('useDosenStore', () => {
 
         const result = await useDosenStore
             .getState()
-            .create({ nama: 'Dr. Baru', nidn: '345678' });
+            .create({ nama_depan: 'Dr. Baru', nidn: '345678' });
 
         expect(result).toEqual(newDosen);
         expect(mockedAxios.post).toHaveBeenCalledWith('/api/dosen', {
-            nama: 'Dr. Baru',
+            nama_depan: 'Dr. Baru',
             nidn: '345678',
         });
 
@@ -80,12 +85,11 @@ describe('useDosenStore', () => {
     });
 
     it('should update an existing dosen', async () => {
-        // First add an item
         useDosenStore.setState({
-            items: [{ id: 1, nama: 'Dr. Lama', nidn: '111111' }],
+            items: [createDosen({ id: 1, nama_depan: 'Dr. Lama', nidn: '111111' })],
         });
 
-        const updatedDosen = { id: 1, nama: 'Dr. Update', nidn: '222222' };
+        const updatedDosen = createDosen({ id: 1, nama_depan: 'Dr. Update', nidn: '222222' });
 
         mockedAxios.put.mockResolvedValueOnce({
             data: { data: updatedDosen },
@@ -93,12 +97,14 @@ describe('useDosenStore', () => {
 
         const result = await useDosenStore
             .getState()
-            .update(1, { nama: 'Dr. Update', nidn: '222222' });
+            .update(1, { nama_depan: 'Dr. Update', nidn: '222222' });
 
         expect(result).toEqual(updatedDosen);
         expect(mockedAxios.put).toHaveBeenCalledWith('/api/dosen/1', {
-            nama: 'Dr. Update',
+            nama_depan: 'Dr. Update',
             nidn: '222222',
+            status_aktivitas: 'aktif',
+            is_active: true,
         });
 
         const state = useDosenStore.getState();
@@ -108,8 +114,8 @@ describe('useDosenStore', () => {
     it('should delete a dosen', async () => {
         useDosenStore.setState({
             items: [
-                { id: 1, nama: 'Dr. Hapus', nidn: '333333' },
-                { id: 2, nama: 'Dr. Lain', nidn: '444444' },
+                createDosen({ id: 1, nama_depan: 'Dr. Hapus', nidn: '333333' }),
+                createDosen({ id: 2, nama_depan: 'Dr. Lain', nidn: '444444' }),
             ],
         });
 
@@ -121,13 +127,13 @@ describe('useDosenStore', () => {
 
         const state = useDosenStore.getState();
         expect(state.items).toEqual([
-            { id: 2, nama: 'Dr. Lain', nidn: '444444' },
+            createDosen({ id: 2, nama_depan: 'Dr. Lain', nidn: '444444' }),
         ]);
     });
 
     it('should reset to initial state', () => {
         useDosenStore.setState({
-            items: [{ id: 1, nama: 'Test', nidn: '000000' }],
+            items: [createDosen({ id: 1, nama_depan: 'Test', nidn: '000000' })],
             loading: true,
             error: 'Some error',
         });

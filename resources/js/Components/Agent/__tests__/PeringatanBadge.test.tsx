@@ -11,7 +11,7 @@ vi.mock('@inertiajs/react', () => ({
 }));
 
 // Mock global route function
-global.route = vi.fn((name: string) => `/mock/${name}`);
+global.route = vi.fn((name: string) => `/mock/${name}`) as any;
 
 describe('PeringatanBadge', () => {
     it('renders no warning state when all counts are zero', () => {

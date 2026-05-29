@@ -9,6 +9,9 @@ interface Prodi {
     id: number;
     nama_prodi: string;
     kode_prodi: string;
+    fakultas_id: number;
+    jenjang: string;
+    is_active: boolean;
 }
 
 describe('useProdiStore', () => {
@@ -26,8 +29,8 @@ describe('useProdiStore', () => {
 
     it('should fetch prodi from API', async () => {
         const mockData: Prodi[] = [
-            { id: 1, nama_prodi: 'Teknik Informatika', kode_prodi: 'TI' },
-            { id: 2, nama_prodi: 'Sistem Informasi', kode_prodi: 'SI' },
+            { id: 1, nama_prodi: 'Teknik Informatika', kode_prodi: 'TI', fakultas_id: 1, jenjang: 'S1', is_active: true },
+            { id: 2, nama_prodi: 'Sistem Informasi', kode_prodi: 'SI', fakultas_id: 1, jenjang: 'S1', is_active: true },
         ];
 
         mockedAxios.get.mockResolvedValueOnce({
@@ -56,6 +59,9 @@ describe('useProdiStore', () => {
             id: 3,
             nama_prodi: 'Ilmu Komputer',
             kode_prodi: 'IK',
+            fakultas_id: 1,
+            jenjang: 'S1',
+            is_active: true,
         };
 
         mockedAxios.post.mockResolvedValueOnce({
@@ -80,6 +86,9 @@ describe('useProdiStore', () => {
                     id: 1,
                     nama_prodi: 'Prodi Lama',
                     kode_prodi: 'PL',
+                    fakultas_id: 1,
+                    jenjang: 'S1',
+                    is_active: true,
                 },
             ],
         });
@@ -88,6 +97,9 @@ describe('useProdiStore', () => {
             id: 1,
             nama_prodi: 'Prodi Update',
             kode_prodi: 'PU',
+            fakultas_id: 1,
+            jenjang: 'S1',
+            is_active: true,
         };
 
         mockedAxios.put.mockResolvedValueOnce({
@@ -96,19 +108,23 @@ describe('useProdiStore', () => {
 
         const result = await useProdiStore
             .getState()
-            .update(1, { nama_prodi: 'Prodi Update' });
+            .update(1, { nama_prodi: 'Prodi Update', kode_prodi: 'PU' });
 
         expect(result).toEqual(updatedItem);
         expect(mockedAxios.put).toHaveBeenCalledWith('/api/prodi/1', {
             nama_prodi: 'Prodi Update',
+            kode_prodi: 'PU',
+            fakultas_id: 1,
+            jenjang: 'S1',
+            is_active: true,
         });
     });
 
     it('should delete a prodi', async () => {
         useProdiStore.setState({
             items: [
-                { id: 1, nama_prodi: 'Prodi A', kode_prodi: 'PA' },
-                { id: 2, nama_prodi: 'Prodi B', kode_prodi: 'PB' },
+                { id: 1, nama_prodi: 'Prodi A', kode_prodi: 'PA', fakultas_id: 1, jenjang: 'S1', is_active: true },
+                { id: 2, nama_prodi: 'Prodi B', kode_prodi: 'PB', fakultas_id: 1, jenjang: 'S1', is_active: true },
             ],
         });
 

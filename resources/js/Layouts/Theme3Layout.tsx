@@ -13,7 +13,7 @@ import {
     Handshake, Folder, FileSpreadsheet, FolderOpen, MessageSquare,
     Building, Users, Link as LinkIcon, Wallet, GitBranch, ShieldCheck,
     AlertTriangle, TrendingUp, Bell, CheckCircle, Bot, Lightbulb,
-    RefreshCw, Settings, ClipboardCheck, FileCheck, Award, X
+    RefreshCw, Settings, ClipboardCheck, FileCheck, Award, X, ScrollText
 } from 'lucide-react';
 
 // Icon mapping from emoji keys to lucide-react components
@@ -50,6 +50,9 @@ const sidebarIcons: Record<string, React.ComponentType<{ className?: string }>> 
     '🗂️': ClipboardCheck,
     '📮': FileCheck,
     '🏆': Award,
+    '🥇': GraduationCap,
+    '👥': Users,
+    '📜': ScrollText,
 };
 
 export default function Theme3Layout({
@@ -108,6 +111,21 @@ export default function Theme3Layout({
         { name: 'Pagu Anggaran', route: 'rkat.pagu', icon: '📊', perm: 'rkat.configure' },
         { name: 'IKU', route: 'iku.index', icon: '🎯', perm: 'iku.view' },
         { name: 'Cascading IKU', route: 'iku.cascading', icon: '🔀', perm: 'cascading.view' },
+    ];
+
+    const kemahasiswaanLinks = [
+        { name: 'Master Ormawa', route: 'kemahasiswaan.ormawa.index', icon: '🏛️', perm: 'kemahasiswaan.view' },
+        { name: 'Pembina Ormawa', route: 'kemahasiswaan.pembina-ormawa.index', icon: '👨‍🏫', perm: 'kemahasiswaan.view' },
+        { name: 'Kategori Prestasi', route: 'kemahasiswaan.kategori-prestasi.index', icon: '🏆', perm: 'kemahasiswaan.view' },
+        { name: 'Prestasi Mahasiswa', route: 'kemahasiswaan.prestasi.index', icon: '🥇', perm: 'kemahasiswaan.view' },
+        { name: 'Anggota Prestasi', route: 'kemahasiswaan.prestasi-member.index', icon: '👥', perm: 'kemahasiswaan.view' },
+        { name: 'Proposal Kegiatan', route: 'kemahasiswaan.proposal.index', icon: '📋', perm: 'kemahasiswaan.view' },
+        { name: 'Aset Ormawa', route: 'kemahasiswaan.aset-ormawa.index', icon: '📦', perm: 'kemahasiswaan.view' },
+        { name: 'Fasilitas Internet', route: 'kemahasiswaan.fasilitas-internet.index', icon: '🌐', perm: 'kemahasiswaan.view' },
+        { name: 'Layanan Mahasiswa', route: 'kemahasiswaan.layanan-mahasiswa.index', icon: '💬', perm: 'kemahasiswaan.view' },
+        { name: 'Seleksi PMB', route: 'kemahasiswaan.seleksi-pmb.index', icon: '📊', perm: 'kemahasiswaan.view' },
+        { name: 'SKPI', route: 'kemahasiswaan.skpi.index', icon: '📜', perm: 'kemahasiswaan.view' },
+        { name: 'Sertifikat OSTAMARU', route: 'kemahasiswaan.sertifikat-ostamaru.index', icon: '📮', perm: 'kemahasiswaan.view' },
     ];
 
     const spmiLinks = [
@@ -239,6 +257,25 @@ export default function Theme3Layout({
                     <div className="nav-group pt-4">
                         <p className="nav-group-title">Anggaran & Kinerja</p>
                         {budgetKinerjaLinks.filter(l => can(l.perm)).map((link) => (
+                            <Link
+                                key={link.route}
+                                href={route(link.route)}
+                                className={`nav-item ${isActive(link.route) ? 'active' : ''}`}
+                            >
+                                <div className="nav-item-left">
+                                    {(() => {
+                                        const Icon = sidebarIcons[link.icon];
+                                        return Icon ? <Icon className="h-5 w-5" /> : <span>{link.icon}</span>;
+                                    })()}
+                                    <span>{link.name}</span>
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+
+                    <div className="nav-group pt-4">
+                        <p className="nav-group-title">Kemahasiswaan (WR3)</p>
+                        {kemahasiswaanLinks.filter(l => can(l.perm)).map((link) => (
                             <Link
                                 key={link.route}
                                 href={route(link.route)}

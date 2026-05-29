@@ -44,6 +44,7 @@ class DatabaseSeeder extends Seeder
             TransaksiPortofolioSeeder::class,
             // \Database\Seeders\StressTestSeeder::class,   // Comment out - data already exists
             StandarMutuSeeder::class,
+            WR3KemahasiswaanSeeder::class,
         ]);
     }
 }

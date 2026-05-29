@@ -4,7 +4,14 @@ import RoleSwitcher from '../RoleSwitcher';
 
 vi.mock('@inertiajs/react', () => ({
     usePage: vi.fn(),
-    router: { post: vi.fn() },
+    router: { 
+      post: vi.fn(),
+      // Add other router methods if needed by other tests
+      get: vi.fn(),
+      put: vi.fn(),
+      patch: vi.fn(),
+      delete: vi.fn(),
+    },
 }));
 
 import { usePage, router } from '@inertiajs/react';
@@ -12,7 +19,7 @@ const mockedUsePage = vi.mocked(usePage);
 const mockedRouter = vi.mocked(router);
 
 // Mock global route function
-global.route = vi.fn((name: string) => `/mock/${name}`);
+global.route = vi.fn((name: string) => `/mock/${name}`) as any;
 
 describe('RoleSwitcher', () => {
     beforeEach(() => {

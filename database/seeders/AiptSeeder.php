@@ -7,6 +7,8 @@ namespace Database\Seeders;
 use App\Models\AiptMetric;
 use App\Models\PeriodeAkademik;
 use App\Models\SpmiCycle;
+use App\Models\Prodi;
+use App\Models\InstrumenAkreditasi;
 use Illuminate\Database\Seeder;
 
 class AiptSeeder extends Seeder
@@ -14,6 +16,8 @@ class AiptSeeder extends Seeder
     public function run(): void
     {
         $periode = PeriodeAkademik::first();
+        $prodi = Prodi::first();
+        $instrumen = InstrumenAkreditasi::first();
 
         // 4 Aspek BAN-PT 4.0
         $data = [
@@ -46,13 +50,18 @@ class AiptSeeder extends Seeder
 
         foreach ($cycles as $c) {
             SpmiCycle::firstOrCreate(
-                ['nama_siklus' => $c['nama']],
+                [
+                    'nama_siklus' => $c['nama'],
+                    'prodi_id' => $prodi?->id,
+                    'periode_id' => $periode?->id,
+                ],
                 [
                     'tahap' => $c['tahap'],
                     'persentase_selesai' => $c['progress'],
                     'status' => $c['status'],
                     'tanggal_mulai' => now()->subMonths(3),
                     'kategori' => 'Akademik',
+                    'instrumen_id' => $instrumen?->id,
                 ]
             );
         }

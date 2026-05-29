@@ -487,6 +487,84 @@ Route::middleware(['auth', PermissionMiddleware::class, 'throttle:crud'])->group
         Route::post('/cascading/store', [CascadingIkuController::class, 'store'])->name('cascading.store')->can('cascading.create');
         Route::post('/cascading/{cascading}/capaian', [CascadingIkuController::class, 'updateCapaian'])->name('cascading.capaian')->can('cascading.edit');
     });
+
+    // ===== WR3 KEMAHASISWAAN =====
+    Route::prefix('kemahasiswaan')->name('kemahasiswaan.')->group(function () {
+        Route::get('/ormawa', [\App\Http\Controllers\Api\OrmawaController::class, 'index'])->name('ormawa.index');
+        Route::post('/ormawa', [\App\Http\Controllers\Api\OrmawaController::class, 'store'])->name('ormawa.store');
+        Route::put('/ormawa/{ormawa}', [\App\Http\Controllers\Api\OrmawaController::class, 'update'])->name('ormawa.update');
+        Route::delete('/ormawa/{ormawa}', [\App\Http\Controllers\Api\OrmawaController::class, 'destroy'])->name('ormawa.destroy');
+
+        Route::get('/pembina-ormawa', [\App\Http\Controllers\Api\PembinaOrmawaController::class, 'index'])->name('pembina-ormawa.index');
+        Route::post('/pembina-ormawa', [\App\Http\Controllers\Api\PembinaOrmawaController::class, 'store'])->name('pembina-ormawa.store');
+        Route::put('/pembina-ormawa/{pembina_ormawa}', [\App\Http\Controllers\Api\PembinaOrmawaController::class, 'update'])->name('pembina-ormawa.update');
+        Route::delete('/pembina-ormawa/{pembina_ormawa}', [\App\Http\Controllers\Api\PembinaOrmawaController::class, 'destroy'])->name('pembina-ormawa.destroy');
+
+        Route::get('/kategori-prestasi', [\App\Http\Controllers\Api\KategoriPrestasiController::class, 'index'])->name('kategori-prestasi.index');
+        Route::post('/kategori-prestasi', [\App\Http\Controllers\Api\KategoriPrestasiController::class, 'store'])->name('kategori-prestasi.store');
+        Route::put('/kategori-prestasi/{kategori_prestasi}', [\App\Http\Controllers\Api\KategoriPrestasiController::class, 'update'])->name('kategori-prestasi.update');
+        Route::delete('/kategori-prestasi/{kategori_prestasi}', [\App\Http\Controllers\Api\KategoriPrestasiController::class, 'destroy'])->name('kategori-prestasi.destroy');
+
+        Route::get('/prestasi', [\App\Http\Controllers\Api\PrestasiController::class, 'index'])->name('prestasi.index');
+        Route::post('/prestasi', [\App\Http\Controllers\Api\PrestasiController::class, 'store'])->name('prestasi.store');
+        Route::get('/prestasi/{prestasi}', [\App\Http\Controllers\Api\PrestasiController::class, 'show'])->name('prestasi.show');
+        Route::put('/prestasi/{prestasi}', [\App\Http\Controllers\Api\PrestasiController::class, 'update'])->name('prestasi.update');
+        Route::delete('/prestasi/{prestasi}', [\App\Http\Controllers\Api\PrestasiController::class, 'destroy'])->name('prestasi.destroy');
+        Route::post('/prestasi/{prestasi}/verify', [\App\Http\Controllers\Api\PrestasiController::class, 'verify'])->name('prestasi.verify');
+        Route::post('/prestasi/{prestasi}/request-revision', [\App\Http\Controllers\Api\PrestasiController::class, 'requestRevision'])->name('prestasi.request-revision');
+
+        Route::get('/prestasi-member', [\App\Http\Controllers\Api\PrestasiMemberController::class, 'index'])->name('prestasi-member.index');
+        Route::post('/prestasi-member', [\App\Http\Controllers\Api\PrestasiMemberController::class, 'store'])->name('prestasi-member.store');
+        Route::put('/prestasi-member/{prestasi_member}', [\App\Http\Controllers\Api\PrestasiMemberController::class, 'update'])->name('prestasi-member.update');
+        Route::delete('/prestasi-member/{prestasi_member}', [\App\Http\Controllers\Api\PrestasiMemberController::class, 'destroy'])->name('prestasi-member.destroy');
+
+        Route::get('/proposal', [\App\Http\Controllers\Api\ProposalKegiatanController::class, 'index'])->name('proposal.index');
+        Route::post('/proposal', [\App\Http\Controllers\Api\ProposalKegiatanController::class, 'store'])->name('proposal.store');
+        Route::get('/proposal/{proposal_kegiatan}', [\App\Http\Controllers\Api\ProposalKegiatanController::class, 'show'])->name('proposal.show');
+        Route::put('/proposal/{proposal_kegiatan}', [\App\Http\Controllers\Api\ProposalKegiatanController::class, 'update'])->name('proposal.update');
+        Route::delete('/proposal/{proposal_kegiatan}', [\App\Http\Controllers\Api\ProposalKegiatanController::class, 'destroy'])->name('proposal.destroy');
+        Route::post('/proposal/{proposal_kegiatan}/submit', [\App\Http\Controllers\Api\ProposalKegiatanController::class, 'submit'])->name('proposal.submit');
+        Route::post('/proposal/{proposal_kegiatan}/approve-pembina', [\App\Http\Controllers\Api\ProposalKegiatanController::class, 'approvePembina'])->name('proposal.approve-pembina');
+        Route::post('/proposal/{proposal_kegiatan}/approve-fakultas', [\App\Http\Controllers\Api\ProposalKegiatanController::class, 'approveFakultas'])->name('proposal.approve-fakultas');
+        Route::post('/proposal/{proposal_kegiatan}/approve-wr3', [\App\Http\Controllers\Api\ProposalKegiatanController::class, 'approveWR3'])->name('proposal.approve-wr3');
+        Route::post('/proposal/{proposal_kegiatan}/reject', [\App\Http\Controllers\Api\ProposalKegiatanController::class, 'reject'])->name('proposal.reject');
+        Route::post('/proposal/{proposal_kegiatan}/submit-lpj', [\App\Http\Controllers\Api\ProposalKegiatanController::class, 'submitLPJ'])->name('proposal.submit-lpj');
+        Route::post('/proposal/{proposal_kegiatan}/approve-lpj', [\App\Http\Controllers\Api\ProposalKegiatanController::class, 'approveLPJ'])->name('proposal.approve-lpj');
+        Route::post('/proposal/{proposal_kegiatan}/approve-kaprodi', [\App\Http\Controllers\Api\ProposalKegiatanController::class, 'approveKaprodi'])->name('proposal.approve-kaprodi');
+        Route::post('/proposal/{proposal_kegiatan}/approve-dekan', [\App\Http\Controllers\Api\ProposalKegiatanController::class, 'approveDekan'])->name('proposal.approve-dekan');
+
+        Route::get('/aset-ormawa', [\App\Http\Controllers\Api\AsetOrmawaController::class, 'index'])->name('aset-ormawa.index');
+        Route::post('/aset-ormawa', [\App\Http\Controllers\Api\AsetOrmawaController::class, 'store'])->name('aset-ormawa.store');
+        Route::put('/aset-ormawa/{aset_ormawa}', [\App\Http\Controllers\Api\AsetOrmawaController::class, 'update'])->name('aset-ormawa.update');
+        Route::delete('/aset-ormawa/{aset_ormawa}', [\App\Http\Controllers\Api\AsetOrmawaController::class, 'destroy'])->name('aset-ormawa.destroy');
+
+        Route::get('/fasilitas-internet', [\App\Http\Controllers\Api\FasilitasInternetController::class, 'index'])->name('fasilitas-internet.index');
+        Route::post('/fasilitas-internet', [\App\Http\Controllers\Api\FasilitasInternetController::class, 'store'])->name('fasilitas-internet.store');
+        Route::put('/fasilitas-internet/{fasilitas_internet}', [\App\Http\Controllers\Api\FasilitasInternetController::class, 'update'])->name('fasilitas-internet.update');
+        Route::delete('/fasilitas-internet/{fasilitas_internet}', [\App\Http\Controllers\Api\FasilitasInternetController::class, 'destroy'])->name('fasilitas-internet.destroy');
+
+        Route::get('/layanan-mahasiswa', [\App\Http\Controllers\Api\LayananMahasiswaController::class, 'index'])->name('layanan-mahasiswa.index');
+        Route::post('/layanan-mahasiswa', [\App\Http\Controllers\Api\LayananMahasiswaController::class, 'store'])->name('layanan-mahasiswa.store');
+        Route::put('/layanan-mahasiswa/{layanan_mahasiswa}', [\App\Http\Controllers\Api\LayananMahasiswaController::class, 'update'])->name('layanan-mahasiswa.update');
+        Route::delete('/layanan-mahasiswa/{layanan_mahasiswa}', [\App\Http\Controllers\Api\LayananMahasiswaController::class, 'destroy'])->name('layanan-mahasiswa.destroy');
+
+        Route::get('/seleksi-pmb', [\App\Http\Controllers\Api\SeleksiPmbController::class, 'index'])->name('seleksi-pmb.index');
+        Route::post('/seleksi-pmb', [\App\Http\Controllers\Api\SeleksiPmbController::class, 'store'])->name('seleksi-pmb.store');
+        Route::put('/seleksi-pmb/{seleksi_pmb}', [\App\Http\Controllers\Api\SeleksiPmbController::class, 'update'])->name('seleksi-pmb.update');
+        Route::delete('/seleksi-pmb/{seleksi_pmb}', [\App\Http\Controllers\Api\SeleksiPmbController::class, 'destroy'])->name('seleksi-pmb.destroy');
+
+        Route::get('/skpi', [\App\Http\Controllers\Api\SkpiController::class, 'index'])->name('skpi.index');
+        Route::post('/skpi', [\App\Http\Controllers\Api\SkpiController::class, 'store'])->name('skpi.store');
+        Route::put('/skpi/{skpi}', [\App\Http\Controllers\Api\SkpiController::class, 'update'])->name('skpi.update');
+        Route::delete('/skpi/{skpi}', [\App\Http\Controllers\Api\SkpiController::class, 'destroy'])->name('skpi.destroy');
+        Route::post('/skpi/{skpi}/verify', [\App\Http\Controllers\Api\SkpiController::class, 'verify'])->name('skpi.verify');
+
+        Route::get('/sertifikat-ostamaru', [\App\Http\Controllers\Api\SertifikatOstamaruController::class, 'index'])->name('sertifikat-ostamaru.index');
+        Route::post('/sertifikat-ostamaru', [\App\Http\Controllers\Api\SertifikatOstamaruController::class, 'store'])->name('sertifikat-ostamaru.store');
+        Route::put('/sertifikat-ostamaru/{sertifikat_ostamaru}', [\App\Http\Controllers\Api\SertifikatOstamaruController::class, 'update'])->name('sertifikat-ostamaru.update');
+        Route::delete('/sertifikat-ostamaru/{sertifikat_ostamaru}', [\App\Http\Controllers\Api\SertifikatOstamaruController::class, 'destroy'])->name('sertifikat-ostamaru.destroy');
+        Route::get('/sertifikat-ostamaru/{sertifikat_ostamaru}/download', [\App\Http\Controllers\Api\SertifikatOstamaruController::class, 'download'])->name('sertifikat-ostamaru.download');
+    });
 });
 
 require __DIR__.'/auth.php';

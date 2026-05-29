@@ -354,7 +354,8 @@ Versi: 1.0 Final
 Tanggal: 13 Mei 2026
 Status: Siap digunakan untuk tahap development.
 
-Alur Kerja pengembangan aplikasi ini: PLAN - BUILD - TES KODE -  GIT COMMIT - PUSH GIT HUB - TES KODE DI GITHUB
+Alur Kerja pengembangan aplikasi ini: 
+
 
 
 Catatan: File ini adalah satu-satunya acuan. Semua perubahan harus melalui revisi
