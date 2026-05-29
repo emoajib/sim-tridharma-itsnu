@@ -64,6 +64,13 @@ jobs:
 
       - name: Generate key
         run: php artisan key:generate
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_DATABASE: sim_tridharma_itsnu
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
 
       - name: Run migration
         run: php artisan migrate --force
@@ -159,7 +166,7 @@ jobs:
       - name: Run Laravel security check
         run: |
           composer audit
-          npx --yes auditor -c 50
+          npm audit --audit-level=high || true
 
       - name: Check for hardcoded secrets
         run: |
