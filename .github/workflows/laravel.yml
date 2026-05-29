@@ -72,6 +72,16 @@ jobs:
           DB_USERNAME: postgres
           DB_PASSWORD: postgres
 
+      - name: Enable pgvector extension
+        run: php artisan tinker --execute="DB::statement('CREATE EXTENSION IF NOT EXISTS vector');"
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_DATABASE: sim_tridharma_itsnu
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+
       - name: Run migration
         run: php artisan migrate --force
         env:
