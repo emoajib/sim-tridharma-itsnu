@@ -24,7 +24,7 @@
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
         <env name="DB_CONNECTION" value="sqlite"/>
-        <env name="DB_DATABASE" value="database/database-test.sqlite"/>
+        <env name="DB_DATABASE" value=":memory:"/>
         <env name="DB_HOST" value=""/>
         <env name="DB_PORT" value=""/>
         <env name="DB_USERNAME" value=""/>
@@ -39,5 +39,8 @@
         <env name="NIGHTWATCH_ENABLED" value="false"/>
         <env name="MCP_API_KEY" value="test-key"/>
         <env name="AGENT_API_KEY" value="test-key"/>
+        
+        <!-- DatabaseTransactions configuration for faster test execution -->
+        <env name="DB_USE_TRANSACTIONS" value="true"/>
     </php>
 </phpunit>

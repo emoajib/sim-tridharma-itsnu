@@ -21,6 +21,7 @@
         "tightenco/ziggy": "^2.0"
     },
     "require-dev": {
+        "brianium/paratest": "^7.0",
         "fakerphp/faker": "^1.23",
         "laramint/laravel-brain": "^2.2",
         "larastan/larastan": "^3.0",
