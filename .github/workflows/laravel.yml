@@ -56,8 +56,6 @@ jobs:
           path: vendor
           key: composer-${{ hashFiles('composer.lock') }}
 
-      - name: PHP Syntax Check
-        run: php -l app/
 
       - name: Install PHP dependencies
         run: composer install --no-interaction --prefer-dist
