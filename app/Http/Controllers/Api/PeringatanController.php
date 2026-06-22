@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\AgentRunRequest;
 use App\Services\MCP\MCPClientService;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -58,26 +56,4 @@ class PeringatanController extends Controller
         }
     }
 
-    public function run(AgentRunRequest $request): JsonResponse
-    {
-        try {
-            $result = $this->mcpClient->runPeringatanAgent(
-                $request->prodi_id,
-                $request->periode_id ?? null
-            );
-
-            return response()->json([
-                'message' => 'Agent peringatan executed',
-                'agent' => 'peringatan',
-                'status' => 'completed',
-                'result' => $result,
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Agent peringatan failed: '.$e->getMessage());
-
-            return response()->json([
-                'error' => 'Agent peringatan failed: '.$e->getMessage(),
-            ], 500);
-        }
-    }
 }

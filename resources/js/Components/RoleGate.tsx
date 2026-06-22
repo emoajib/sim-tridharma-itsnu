@@ -12,7 +12,7 @@ export default function RoleGate({ roles, permissions, fallback = null, children
     const { auth } = usePage().props as unknown as {
         auth: {
             user: {
-                roles?: string[];
+                role_list?: string[];
                 permissions?: string[];
             };
         };
@@ -21,7 +21,7 @@ export default function RoleGate({ roles, permissions, fallback = null, children
     if (!auth?.user) return fallback;
 
     if (roles && roles.length > 0) {
-        const userRoles = auth.user.roles ?? [];
+        const userRoles = auth.user.role_list ?? [];
         if (!roles.some(r => userRoles.includes(r))) return fallback;
     }
 

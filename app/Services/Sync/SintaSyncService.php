@@ -111,40 +111,24 @@ class SintaSyncService
             $title = $pub['judul_publikasi'] ?: ($pub['judul'] ?: ($pub['title'] ?: ''));
             if (empty($title)) continue;
 
-            $existing = IntegrasiSintaPublikasi::where('dosen_id', $dosen->id)
-                ->where('judul', $title)
-                ->first();
-
-            if ($existing) {
-                $existing->update([
-                    'data_dari_sinta' => $pub,
-                    'status_sinkron' => 'pending',
-                ]);
-                continue;
-            }
-
-            $existingPub = Publikasi::where('dosen_id', $dosen->id)
-                ->where('judul_publikasi', $title)
-                ->first();
-
-            IntegrasiSintaPublikasi::create([
-                'dosen_id' => $dosen->id,
-                'publikasi_id' => $existingPub?->id,
-                'judul' => $title,
-                'data_dari_sinta' => $pub,
-                'status_sinkron' => $existingPub ? 'matched' : 'pending',
-            ]);
-
-            if (!$existingPub) {
-                Publikasi::create([
-                    'dosen_id' => $dosen->id,
+            $existingPub = Publikasi::firstOrCreate(
+                ['dosen_id' => $dosen->id, 'judul_publikasi' => $title],
+                [
                     'prodi_id' => $dosen->prodi_id,
-                    'judul_publikasi' => $title,
                     'jenis_publikasi' => $pub['jenis_publikasi'] ?? null,
                     'tahun' => $pub['tahun'] ?? null,
                     'link' => $pub['link'] ?? null,
-                ]);
-            }
+                ]
+            );
+
+            IntegrasiSintaPublikasi::updateOrCreate(
+                ['dosen_id' => $dosen->id, 'judul' => $title],
+                [
+                    'publikasi_id' => $existingPub->id,
+                    'data_dari_sinta' => $pub,
+                    'status_sinkron' => 'matched',
+                ]
+            );
 
             $updated++;
         }
@@ -179,44 +163,28 @@ class SintaSyncService
             $skema = $row['skema'] ?? null;
             $dana = $row['jumlah_dana'] ?? $row['dana'] ?? null;
 
-            $existing = IntegrasiSintaPenelitian::where('dosen_id', $dosen->id)
-                ->where('judul', $title)
-                ->first();
-
-            if ($existing) {
-                $existing->update([
-                    'data_dari_sinta' => $row,
-                    'status_sinkron' => 'pending',
-                ]);
-                continue;
-            }
-
-            $existingLit = Penelitian::where('dosen_id', $dosen->id)
-                ->where('judul_penelitian', $title)
-                ->first();
-
-            IntegrasiSintaPenelitian::create([
-                'dosen_id' => $dosen->id,
-                'penelitian_id' => $existingLit?->id,
-                'judul' => $title,
-                'tahun' => $tahun,
-                'skema' => $skema,
-                'jumlah_dana' => $dana,
-                'data_dari_sinta' => $row,
-                'status_sinkron' => $existingLit ? 'matched' : 'pending',
-            ]);
-
-            if (!$existingLit) {
-                Penelitian::create([
-                    'dosen_id' => $dosen->id,
+            $existingLit = Penelitian::firstOrCreate(
+                ['dosen_id' => $dosen->id, 'judul_penelitian' => $title],
+                [
                     'prodi_id' => $dosen->prodi_id,
-                    'judul_penelitian' => $title,
                     'jenis_penelitian' => $skema,
                     'tahun_pelaksanaan' => $tahun,
                     'sumber_dana' => $row['sumber_dana'] ?? null,
                     'jumlah_dana' => $dana,
-                ]);
-            }
+                ]
+            );
+
+            IntegrasiSintaPenelitian::updateOrCreate(
+                ['dosen_id' => $dosen->id, 'judul' => $title],
+                [
+                    'penelitian_id' => $existingLit->id,
+                    'tahun' => $tahun,
+                    'skema' => $skema,
+                    'jumlah_dana' => $dana,
+                    'data_dari_sinta' => $row,
+                    'status_sinkron' => 'matched',
+                ]
+            );
 
             $updated++;
         }
@@ -251,45 +219,29 @@ class SintaSyncService
             $skema = $row['skema'] ?? $row['jenis_pkm'] ?? null;
             $dana = $row['jumlah_dana'] ?? $row['dana'] ?? null;
 
-            $existing = IntegrasiSintaPkm::where('dosen_id', $dosen->id)
-                ->where('judul', $title)
-                ->first();
-
-            if ($existing) {
-                $existing->update([
-                    'data_dari_sinta' => $row,
-                    'status_sinkron' => 'pending',
-                ]);
-                continue;
-            }
-
-            $existingPkm = Pkm::where('dosen_id', $dosen->id)
-                ->where('judul_pkm', $title)
-                ->first();
-
-            IntegrasiSintaPkm::create([
-                'dosen_id' => $dosen->id,
-                'pkm_id' => $existingPkm?->id,
-                'judul' => $title,
-                'tahun' => $tahun,
-                'skema' => $skema,
-                'jumlah_dana' => $dana,
-                'data_dari_sinta' => $row,
-                'status_sinkron' => $existingPkm ? 'matched' : 'pending',
-            ]);
-
-            if (!$existingPkm) {
-                Pkm::create([
-                    'dosen_id' => $dosen->id,
+            $existingPkm = Pkm::firstOrCreate(
+                ['dosen_id' => $dosen->id, 'judul_pkm' => $title],
+                [
                     'prodi_id' => $dosen->prodi_id,
-                    'judul_pkm' => $title,
                     'jenis_pkm' => $row['jenis_pkm'] ?? $skema,
                     'lokasi' => $row['lokasi'] ?? null,
                     'tahun_pelaksanaan' => $tahun,
                     'sumber_dana' => $row['sumber_dana'] ?? null,
                     'jumlah_dana' => $dana,
-                ]);
-            }
+                ]
+            );
+
+            IntegrasiSintaPkm::updateOrCreate(
+                ['dosen_id' => $dosen->id, 'judul' => $title],
+                [
+                    'pkm_id' => $existingPkm->id,
+                    'tahun' => $tahun,
+                    'skema' => $skema,
+                    'jumlah_dana' => $dana,
+                    'data_dari_sinta' => $row,
+                    'status_sinkron' => 'matched',
+                ]
+            );
 
             $updated++;
         }

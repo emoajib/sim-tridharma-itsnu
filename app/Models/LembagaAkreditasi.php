@@ -14,6 +14,13 @@ class LembagaAkreditasi extends Model
 
     protected $fillable = ['nama_lembaga', 'singkatan', 'deskripsi', 'is_active'];
 
+    protected function casts(): array
+    {
+        return [
+            'is_active' => 'boolean',
+        ];
+    }
+
     public function instrumen()
     {
         return $this->hasMany(InstrumenAkreditasi::class, 'lembaga_id');

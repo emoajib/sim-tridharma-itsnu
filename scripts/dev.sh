@@ -48,14 +48,20 @@ AGENTS_CMD="cd \"$AGENTS_DIR\" && \"$AGENTS_VENV_PYTHON\" -m uvicorn main:app --
 RAG_CMD="cd \"$RAG_DIR\" && \"$RAG_VENV_PYTHON\" -m uvicorn main:app --host 0.0.0.0 --port 5001 --reload"
 # CELERY_CMD deprecated — agents now called via MCP direct HTTP calls
 
+# --- Wrapper scripts for auto-restarting services ---
+REVERB_WRAPPER="bash \"$SCRIPT_DIR/reverb-wrapper.sh\""
+QUEUE_WRAPPER="bash \"$SCRIPT_DIR/queue-wrapper.sh\""
+WATCHER_CMD="bash \"$SCRIPT_DIR/watcher.sh\""
+
 npx concurrently \
-  -c "#93c5fd,#c4b5fd,#fb7185,#fdba74,#f472b6,#a78bfa,#34d399,#fbbf24" \
-  --names="laravel,reverb,queue,pail,vite,agents,rag" \
+  -c "#93c5fd,#c4b5fd,#fb7185,#fdba74,#f472b6,#a78bfa,#34d399,#fbbf24,#f97316" \
+  --names="laravel,reverb,queue,pail,vite,agents,rag,watch" \
   --kill-others \
   "php artisan serve" \
-  "php artisan reverb:start" \
-  "php artisan queue:listen --tries=1 --timeout=0" \
+  "$REVERB_WRAPPER" \
+  "$QUEUE_WRAPPER" \
   "php artisan pail --timeout=0" \
   "npm run dev" \
   "$AGENTS_CMD" \
-  "$RAG_CMD"
+  "$RAG_CMD" \
+  "$WATCHER_CMD"

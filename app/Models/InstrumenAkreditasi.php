@@ -14,9 +14,12 @@ class InstrumenAkreditasi extends Model
 
     protected $fillable = ['lembaga_id', 'nama_instrumen', 'matriks_kriteria'];
 
-    protected $casts = [
-        'matriks_kriteria' => 'json',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'matriks_kriteria' => 'json',
+        ];
+    }
 
     public function lembaga(): BelongsTo
     {

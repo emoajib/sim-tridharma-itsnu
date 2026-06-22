@@ -59,7 +59,21 @@ class AgentController extends Controller
 
     public function latestResults(Request $request)
     {
-        return response()->json([]);
+        $agent = $request->query('agent');
+        $limit = min((int) $request->query('limit', 10), 50);
+
+        $query = AgentExecutionLog::query()->latest();
+
+        if ($agent) {
+            $query->where('agent_name', $agent);
+        }
+
+        $logs = $query->take($limit)->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $logs,
+        ]);
     }
 
     public function logInternal(Request $request)

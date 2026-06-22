@@ -105,11 +105,11 @@ export default function Authenticated({
      useEffect(() => {
          if (isModernTheme) {
              document.documentElement.classList.add('theme-modern');
-             document.documentElement.classList.remove('theme-klasik', 'theme-3');
-         } else {
-             // klasik
-             document.documentElement.classList.add('theme-klasik');
-             document.documentElement.classList.remove('theme-modern', 'theme-3');
+              document.documentElement.classList.remove('theme-klasik', 'theme3');
+          } else {
+              // klasik
+              document.documentElement.classList.add('theme-klasik');
+              document.documentElement.classList.remove('theme-modern', 'theme3');
          }
      }, [themeMode]);
 
@@ -199,6 +199,10 @@ export default function Authenticated({
         { name: 'Indikator Akreditasi', route: 'admin.indikator.index', icon: '🎯', perm: 'admin.view' },
         { name: 'Template', route: 'admin.templates.index', icon: '📄', perm: 'admin.view' },
         { name: 'Knowledge Base', route: 'admin.knowledge-base.index', icon: '📚', perm: 'admin.view' },
+        { name: 'Manajemen Pengguna', route: 'admin.users.index', icon: '👥', perm: 'users.view' },
+        { name: 'Manajemen Role', route: 'admin.roles.index', icon: '🔐', perm: 'admin.view' },
+        { name: 'Daftar Permission', route: 'admin.permissions.index', icon: '📋', perm: 'admin.view' },
+        { name: 'Import Data', route: 'data-import.templates', icon: '📮', perm: 'data-import.download-template' },
     ];
 
     const isMasterDataActive = masterDataLinks.some((l) => route().current(l.route));

@@ -31,7 +31,8 @@ class PermissionMiddleware
         'create' => 'create', 'store' => 'create',
         'edit' => 'edit', 'update' => 'edit',
         'destroy' => 'delete', 'remove' => 'delete',
-        'run' => 'trigger', 'generate' => 'generate',
+        'run' => 'trigger', 'runAgent' => 'trigger',
+        'generate' => 'generate', 'paguStore' => 'create',
         'download' => 'view', 'upload' => 'upload',
         'switch' => 'view', 'status' => 'view',
         'latest' => 'view', 'ask' => 'view',
@@ -42,6 +43,17 @@ class PermissionMiddleware
         'toggle' => 'edit', 'markRead' => 'edit',
         'markAllRead' => 'edit', 'kuisioner' => 'view',
         'jawaban' => 'view',
+        'submitVerification' => 'trigger', 'verify' => 'verify',
+        'submit' => 'trigger', 'submitLPJ' => 'trigger',
+        'approvePembina' => 'approve', 'approveFakultas' => 'approve',
+        'approveWR3' => 'approve', 'approveKaprodi' => 'approve',
+        'approveDekan' => 'approve', 'approveLPJ' => 'approve',
+        'requestRevision' => 'trigger', 'autoGenerate' => 'trigger',
+        'batchTransition' => 'transition',
+        'transitionActionItem' => 'transition',
+        'storeActionItem' => 'create', 'updateActionItem' => 'edit',
+        'destroyActionItem' => 'delete', 'updateCapaian' => 'edit',
+        'syncRoles' => 'edit',
     ];
 
     public function handle(Request $request, Closure $next): Response
