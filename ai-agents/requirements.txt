@@ -1,7 +1,6 @@
 # Vetted by AI - Manual Review Required by Senior Engineer/Manager
 fastapi==0.115.6
 uvicorn==0.31.1
-celery==5.4.0
 redis==5.0.0
 sqlalchemy==2.0.35
 psycopg2-binary==2.9.9
@@ -13,6 +12,6 @@ httpx==0.27.2
 asyncpg==0.29.0
 mcp==1.2.0
 
-pydantic>=2.10.0,<3.0.0
+pydantic==2.10.0
 google-generativeai==0.8.3
 pytest-asyncio==0.23.8
