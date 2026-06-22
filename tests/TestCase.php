@@ -24,4 +24,13 @@ abstract class TestCase extends BaseTestCase
 
         parent::setUp();
     }
+
+    /**
+     * Run the given seeder after RefreshDatabase has migrated the database.
+     * This avoids running the seeder per test method.
+     */
+    protected function afterRefreshingDatabase()
+    {
+        $this->artisan('db:seed', ['--class' => 'RolePermissionSeeder']);
+    }
 }

@@ -18,10 +18,7 @@ trait SeedOnce
      */
     protected function seedOnce(): void
     {
-        if (!static::$seeded) {
-            $this->artisan('db:seed', ['--class' => 'RolePermissionSeeder']);
-            static::$seeded = true;
-        }
+        // Seeding is now handled globally by TestCase::afterRefreshingDatabase
     }
 
     /**
@@ -31,7 +28,7 @@ trait SeedOnce
      */
     protected function tearDownSeedOnce(): void
     {
-        static::$seeded = false;
+        // No-op
     }
 
     protected function admin(): User
