@@ -7,9 +7,15 @@
     <testsuites>
         <testsuite name="Unit">
             <directory>tests/Unit</directory>
+            <php>
+                <env name="PARATEST" value="1"/>
+            </php>
         </testsuite>
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
+            <php>
+                <env name="PARATEST" value="1"/>
+            </php>
         </testsuite>
     </testsuites>
     <source>
