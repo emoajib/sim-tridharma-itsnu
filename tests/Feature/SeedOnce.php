@@ -10,25 +10,19 @@ trait SeedOnce
      * Tracks whether the seeder has run in the current test method's transaction.
      * Reset by tearDownSeedOnce() between test methods.
      */
-    protected static bool $seeded = false;
+    private bool $seeded = false;
 
-    /**
-     * Seed role/permission data once per test method.
-     * Safe to call multiple times within the same test — only runs once.
-     */
     protected function seedOnce(): void
     {
-        // Seeding is now handled globally by TestCase::afterRefreshingDatabase
+        if (!$this->seeded) {
+            $this->artisan('db:seed', ['--class' => 'RolePermissionSeeder']);
+            $this->seeded = true;
+        }
     }
 
-    /**
-     * Automatically discovered by Laravel's setUpTraits() lifecycle.
-     * Resets $seeded after each test method so the next test seeds again
-     * (required because RefreshDatabase rolls back the transaction).
-     */
     protected function tearDownSeedOnce(): void
     {
-        // No-op
+        $this->seeded = false;
     }
 
     protected function admin(): User
