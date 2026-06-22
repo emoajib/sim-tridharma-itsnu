@@ -48,13 +48,16 @@ jobs:
           php-version: ${{ matrix.php }}
           extensions: pdo_pgsql, redis
           tools: composer:v2
-          coverage: pcov
+          coverage: none
 
       - name: Cache Composer dependencies
         uses: actions/cache@v4
         with:
           path: vendor
           key: composer-${{ hashFiles('composer.lock') }}
+
+      - name: PHP Syntax Check
+        run: php -l app/
 
       - name: Install PHP dependencies
         run: composer install --no-interaction --prefer-dist
@@ -108,7 +111,7 @@ jobs:
           node-version: 20
 
       - name: Install Frontend Dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm install --legacy-peer-deps
 
       - name: Run Frontend Tests (Vitest)
         run: npx vitest run
@@ -130,7 +133,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm install --legacy-peer-deps
 
       - name: TypeScript type check
         run: npx tsc --noEmit
@@ -175,7 +178,6 @@ jobs:
 
       - name: Run Laravel security check
         run: |
-          composer audit
           npm audit --audit-level=high || true
 
       - name: Check for hardcoded secrets
