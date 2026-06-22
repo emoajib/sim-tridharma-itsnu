@@ -19,7 +19,7 @@ describe('RoleGate', () => {
       props: {
         auth: {
           user: {
-            roles: ['admin'],
+            role_list: ['admin'],
             permissions: [],
           },
         },
@@ -40,7 +40,7 @@ describe('RoleGate', () => {
       props: {
         auth: {
           user: {
-            roles: ['user'],
+            role_list: ['user'],
             permissions: [],
           },
         },
@@ -62,7 +62,7 @@ describe('RoleGate', () => {
       props: {
         auth: {
           user: {
-            roles: [],
+            role_list: [],
             permissions: ['data-import.view'],
           },
         },
@@ -83,7 +83,7 @@ describe('RoleGate', () => {
       props: {
         auth: {
           user: {
-            roles: [],
+            role_list: [],
             permissions: ['other.view'],
           },
         },
@@ -120,7 +120,7 @@ describe('RoleGate', () => {
       props: {
         auth: {
           user: {
-            roles: ['user'],
+            role_list: ['user'],
             permissions: [],
           },
         },
@@ -141,7 +141,7 @@ describe('RoleGate', () => {
       props: {
         auth: {
           user: {
-            roles: ['editor'],
+            role_list: ['editor'],
             permissions: [],
           },
         },
@@ -162,7 +162,7 @@ describe('RoleGate', () => {
       props: {
         auth: {
           user: {
-            roles: [],
+            role_list: [],
             permissions: ['rkat.view'],
           },
         },
