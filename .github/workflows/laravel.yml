@@ -7,8 +7,8 @@ on:
     branches: [main]
 
 jobs:
-  laravel:
-    name: Laravel (PHP ${{ matrix.php }})
+  laravel-feature:
+    name: Laravel Feature (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -56,6 +56,111 @@ jobs:
           path: vendor
           key: composer-${{ hashFiles('composer.lock') }}
 
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Copy .env
+        run: cp .env.example .env
+
+      - name: Generate key
+        run: php artisan key:generate
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_DATABASE: sim_tridharma_itsnu
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+
+      - name: Enable pgvector extension
+        run: php artisan tinker --execute="DB::statement('CREATE EXTENSION IF NOT EXISTS vector');"
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_DATABASE: sim_tridharma_itsnu
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+
+      - name: Run migration
+        run: php artisan migrate --force
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_DATABASE: sim_tridharma_itsnu
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Frontend Dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build Frontend Assets
+        run: npm run build
+
+      - name: Run Feature tests
+        run: php artisan test --testsuite=Feature
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_DATABASE: sim_tridharma_itsnu
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+
+  laravel-unit:
+    name: Laravel Unit (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: [8.3, 8.4]
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: sim_tridharma_itsnu
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: pdo_pgsql, redis
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
 
       - name: Install PHP dependencies
         run: composer install --no-interaction --prefer-dist
@@ -93,8 +198,8 @@ jobs:
           DB_USERNAME: postgres
           DB_PASSWORD: postgres
 
-      - name: Run PHP tests
-        run: php artisan test --testsuite=Feature,Unit
+      - name: Run Unit tests
+        run: php artisan test --testsuite=Unit
         env:
           DB_CONNECTION: pgsql
           DB_HOST: localhost

@@ -119,7 +119,7 @@ class MCPClientServiceTest extends TestCase
 
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('timeout');
-        $this->service->runPrediksiSkor(1);
+        $this->service->runPrediksiSkor(1, null, 3, 100);
     }
 
     public function test_ask_rag_calls_rag_server(): void

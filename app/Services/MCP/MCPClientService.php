@@ -83,7 +83,7 @@ class MCPClientService
     /**
      * Synchronous MCP call with polling — used by background jobs only.
      */
-    public function callToolSync(string $toolName, array $arguments = [], string $server = 'agents', int $maxRetries = 20, int $retryDelay = 500): array
+    public function callToolSync(string $toolName, array $arguments = [], string $server = 'agents', int $maxRetries = 10, int $retryDelay = 300): array
     {
         $baseUrl = $server === 'rag' ? $this->ragUrl : $this->agentsUrl;
 
@@ -263,13 +263,13 @@ class MCPClientService
         return $this->callToolSync('verifikasi_dokumen', $arguments);
     }
 
-    public function runPrediksiSkor(int $prodiId, ?int $periodeId = null): array
+    public function runPrediksiSkor(int $prodiId, ?int $periodeId = null, int $maxRetries = 10, int $retryDelay = 300): array
     {
         $arguments = ['prodi_id' => $prodiId];
         if ($periodeId !== null) {
             $arguments['periode_id'] = $periodeId;
         }
-        return $this->callToolSync('prediksi_skor', $arguments);
+        return $this->callToolSync('prediksi_skor', $arguments, maxRetries: $maxRetries, retryDelay: $retryDelay);
     }
 
     public function runPeringatanAgent(int $prodiId, ?int $periodeId = null): array
