@@ -54,7 +54,7 @@ class SpmiIntegrationTest extends TestCase
         $this->assertStringContainsString('Audit Lulusan', $cascading->catatan);
 
         // Assert History was created
-        $this->assertDatabaseHas('audit_histories', [
+        $this->assertDatabaseHas('trx_audit_mutu_histories', [
             'audit_mutu_id' => $audit->id,
             'action' => 'iku_integration_updated',
             'new_value' => 'Synced to IKU: IKU 1',
@@ -93,7 +93,7 @@ class SpmiIntegrationTest extends TestCase
         $this->assertStringContainsString('Beli mikroskop', $rkat->komentar_reviewer);
 
         // Assert History was created
-        $this->assertDatabaseHas('audit_histories', [
+        $this->assertDatabaseHas('trx_audit_mutu_histories', [
             'audit_mutu_id' => $audit->id,
             'action' => 'rkat_integration_updated',
         ]);

@@ -14,8 +14,8 @@ class Rtm extends Model
     protected $table = 'trx_rtm';
 
     protected $fillable = [
-        'judul', 'tanggal_rapat', 'agenda', 'notulen',
-        'file_notulen', 'dipimpin_oleh',
+        'prodi_id', 'periode_id', 'judul', 'tanggal_rapat', 'agenda', 'notulen',
+        'file_notulen', 'dipimpin_oleh', 'status', 'created_by',
     ];
 
     protected function casts(): array

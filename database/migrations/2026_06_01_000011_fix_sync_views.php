@@ -7,6 +7,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         DB::statement('DROP VIEW IF EXISTS v_sync_sister_riwayat');
 
         DB::statement("
@@ -64,6 +68,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         DB::statement('DROP VIEW IF EXISTS v_sync_sister_riwayat');
 
         // Restore original stub view

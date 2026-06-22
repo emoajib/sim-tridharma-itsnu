@@ -7,6 +7,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         DB::statement('DROP VIEW IF EXISTS v_reconciliation_summary');
         DB::statement('
             CREATE VIEW v_reconciliation_summary AS
@@ -37,6 +41,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         DB::statement('DROP VIEW IF EXISTS v_reconciliation_summary');
         DB::statement('DROP VIEW IF EXISTS v_reconciliation_pending');
     }

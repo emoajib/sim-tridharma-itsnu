@@ -3,20 +3,22 @@
 namespace Tests\Feature\Services;
 
 use App\Services\Sinta\SintaImportService;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Maatwebsite\Excel\Facades\Excel;
+use Tests\Feature\SeedOnce;
 use Tests\TestCase;
 
 class SintaImportServiceTest extends TestCase
 {
-    use DatabaseTransactions;
+    use RefreshDatabase, SeedOnce;
 
     private SintaImportService $service;
 
     protected function setUp(): void
     {
         parent::setUp();
+        $this->seedOnce();
         $this->service = new SintaImportService;
     }
 
@@ -80,7 +82,7 @@ class SintaImportServiceTest extends TestCase
     public function test_import_penelitian_returns_count(): void
     {
         Excel::shouldReceive('import')
-            ->times(2)
+            ->once()
             ->andReturnNull();
 
         $result = $this->service->importPenelitian(
@@ -94,7 +96,7 @@ class SintaImportServiceTest extends TestCase
     public function test_import_publikasi_returns_count(): void
     {
         Excel::shouldReceive('import')
-            ->times(2)
+            ->once()
             ->andReturnNull();
 
         $result = $this->service->importPublikasi(
@@ -108,7 +110,7 @@ class SintaImportServiceTest extends TestCase
     public function test_import_pkm_returns_count(): void
     {
         Excel::shouldReceive('import')
-            ->times(2)
+            ->once()
             ->andReturnNull();
 
         $result = $this->service->importPkm(

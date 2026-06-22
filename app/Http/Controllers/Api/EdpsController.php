@@ -128,4 +128,23 @@ class EdpsController extends Controller
         $edps->delete();
         return redirect()->route('spmi.edps')->with('success', 'EDPS berhasil dihapus.');
     }
+
+    public function autoEvaluate(Request $request, Edps $edps)
+    {
+        $service = new \App\Services\SPMI\EdpsEvaluationService();
+        $result = $service->evaluateWithAi($edps);
+
+        if (! $result['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'],
+            ], 400);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $result['data'],
+            'message' => $result['message'],
+        ]);
+    }
 }

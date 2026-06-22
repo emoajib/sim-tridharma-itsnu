@@ -214,6 +214,7 @@ Route::middleware(['auth', PermissionMiddleware::class, 'throttle:crud'])->group
     Route::post('/spmi/edps', [EdpsController::class, 'store'])->name('spmi.edps.store');
     Route::put('/spmi/edps/{edps}', [EdpsController::class, 'update'])->name('spmi.edps.update');
     Route::delete('/spmi/edps/{edps}', [EdpsController::class, 'destroy'])->name('spmi.edps.destroy');
+    Route::post('/spmi/edps/{edps}/auto-evaluate', [EdpsController::class, 'autoEvaluate'])->name('spmi.edps.auto-evaluate');
 
     // RTM
     Route::get('/spmi/rtm', [RtmController::class, 'index'])->name('spmi.rtm');

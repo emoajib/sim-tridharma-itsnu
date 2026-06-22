@@ -23,7 +23,10 @@ return new class extends Migration
             $table->softDeletes();
 
             $table->index(['dosen_id', 'status_sinkron']);
-            $table->fullText('judul');
+
+            if (Schema::getConnection()->getDriverName() !== 'sqlite') {
+                $table->fullText('judul');
+            }
         });
     }
 

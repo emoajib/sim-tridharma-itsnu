@@ -37,6 +37,10 @@ return new class extends Migration
 
     public function up(): void
     {
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         DB::statement('SET statement_timeout = 60000;');
 
         foreach ($this->fkFixes as $table => $constraints) {
@@ -68,6 +72,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         // Drop all new FKs first
         foreach ($this->fkFixes as $table => $constraints) {
             foreach ($constraints as [$constraint, $column, $references]) {
