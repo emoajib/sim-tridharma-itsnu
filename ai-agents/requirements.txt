@@ -1,5 +1,5 @@
 # Vetted by AI - Manual Review Required by Senior Engineer/Manager
-fastapi==0.115.6
+fastapi==0.138.0
 uvicorn==0.31.1
 redis==5.0.0
 sqlalchemy==2.0.35
