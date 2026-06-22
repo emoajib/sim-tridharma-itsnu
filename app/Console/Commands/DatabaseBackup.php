@@ -33,19 +33,28 @@ class DatabaseBackup extends Command
         $this->info("Starting database backup: {$dbName}");
         $this->line("Host: {$dbHost}:{$dbPort}, User: {$dbUser}");
 
+        $this->line('Running pg_dump...');
+        $start = microtime(true);
+        
+        $password = config('database.connections.pgsql.password');
+        $tempPasswordFile = temp_path('pgpass_' . md5($password) . '.txt');
+        file_put_contents($tempPasswordFile, "*:*:*:*:{$password}");
+        chmod($tempPasswordFile, 0600);
+        
         $command = sprintf(
-            'PGPASSWORD="%s" pg_dump -h %s -p %s -U %s -d %s --no-owner --no-acl | gzip > %s',
-            config('database.connections.pgsql.password'),
+            'export PGPASSWORD="%s" && pg_dump -h %s -p %s -U %s -d %s --no-owner --no-acl | gzip > %s',
             escapeshellarg($dbHost),
             escapeshellarg((string) $dbPort),
             escapeshellarg($dbUser),
             escapeshellarg($dbName),
             escapeshellarg($localPath)
         );
-
-        $this->line('Running pg_dump...');
-        $start = microtime(true);
-        exec($command, $output, $exitCode);
+        
+        $envCommand = sprintf('cat %s | %s', escapeshellarg($tempPasswordFile), $command);
+        exec($envCommand, $output, $exitCode);
+        
+        unlink($tempPasswordFile);
+        
         $elapsed = round(microtime(true) - $start, 2);
 
         if ($exitCode !== 0) {
