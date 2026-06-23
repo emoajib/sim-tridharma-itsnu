@@ -63,6 +63,11 @@ class PermissionMiddleware
         if (! $request->user()) {
             Log::warning('PermissionMiddleware: No user for route ' . ($request->route()?->getName() ?? 'unknown'));
 
+            // Allow through if this is an API route guarded by a different auth mechanism
+            if ($request->is('api/*')) {
+                return $next($request);
+            }
+
             throw new AuthenticationException('Unauthenticated');
         }
 

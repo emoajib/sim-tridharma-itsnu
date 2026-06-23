@@ -9,9 +9,20 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Only run on PostgreSQL (pgvector extension) — skip on SQLite/testing
+        // Only run on PostgreSQL with pgvector extension
         if (DB::getDriverName() !== 'pgsql') {
             return;
+        }
+
+        try {
+            DB::statement('SELECT 1 FROM pg_extension WHERE extname = \'vector\'');
+        } catch (\Exception $e) {
+            return; // pgvector not installed, skip
+        }
+
+        $hasVector = DB::select('SELECT 1 FROM pg_extension WHERE extname = \'vector\'');
+        if (empty($hasVector)) {
+            return; // pgvector not installed, skip
         }
 
         // Multilingual-e5-small has 384 dimensions

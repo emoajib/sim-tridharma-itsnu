@@ -24,10 +24,19 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // Only run on PostgreSQL (pgvector extension) — skip on SQLite/testing
+        // Only run on PostgreSQL with pgvector extension
         if (DB::getDriverName() === 'pgsql') {
-            DB::statement('ALTER TABLE semantic_caches ADD COLUMN question_vector vector(384)');
-            DB::statement('CREATE INDEX semantic_cache_vector_idx ON semantic_caches USING hnsw (question_vector vector_cosine_ops)');
+            try {
+                DB::statement('SELECT 1 FROM pg_extension WHERE extname = \'vector\'');
+
+                $hasVector = DB::select('SELECT 1 FROM pg_extension WHERE extname = \'vector\'');
+                if (!empty($hasVector)) {
+                    DB::statement('ALTER TABLE semantic_caches ADD COLUMN question_vector vector(384)');
+                    DB::statement('CREATE INDEX semantic_cache_vector_idx ON semantic_caches USING hnsw (question_vector vector_cosine_ops)');
+                }
+            } catch (\Exception $e) {
+                // pgvector not installed, skip
+            }
         }
     }
 

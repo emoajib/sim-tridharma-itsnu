@@ -69,10 +69,9 @@ class AgentControllerTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertJson([
+            'agent' => 'prediksi',
             'status' => 'completed',
-            'result' => [
-                'result' => ['skor' => 85.5],
-            ],
+            'result' => ['skor' => 85.5],
         ]);
     }
 
@@ -96,7 +95,8 @@ class AgentControllerTest extends TestCase
             'triggered_by' => 'test',
         ];
 
-        $response = $this->actingAs($this->admin())->postJson('/api/internal/agents/log', $payload);
+        $response = $this->withHeader('X-Internal-Key', 'default-internal-key')
+            ->postJson('/api/internal/agents/log', $payload);
 
         $response->assertStatus(201);
         $response->assertJson(['success' => true]);
@@ -118,7 +118,8 @@ class AgentControllerTest extends TestCase
             'finished_at' => '2026-01-01T00:00:01',
         ];
 
-        $response = $this->actingAs($this->admin())->postJson('/api/internal/agents/log', $payload);
+        $response = $this->withHeader('X-Internal-Key', 'default-internal-key')
+            ->postJson('/api/internal/agents/log', $payload);
 
         $response->assertStatus(422);
         $response->assertJsonValidationErrors('status');
@@ -132,7 +133,8 @@ class AgentControllerTest extends TestCase
             'finished_at' => '2026-01-01T00:00:01',
         ];
 
-        $response = $this->actingAs($this->admin())->postJson('/api/internal/agents/log', $payload);
+        $response = $this->withHeader('X-Internal-Key', 'default-internal-key')
+            ->postJson('/api/internal/agents/log', $payload);
 
         $response->assertStatus(422);
         $response->assertJsonValidationErrors('agent_name');

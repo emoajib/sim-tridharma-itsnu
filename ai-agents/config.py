@@ -64,7 +64,7 @@ def calculate_prediction(historical_scores: list[float]) -> dict:
     }
 
 
-DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://salsabil@localhost:5433/sim_tridharma_itsnu")
+DATABASE_URL: str = os.getenv("DATABASE_URL", "")
 REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 AGENT_API_PORT: int = int(os.getenv("AGENT_API_PORT", "8001"))
 

@@ -7,9 +7,9 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <title inertia>{{ config('app.name', 'SIM Tridharma ITSNU') }}</title>
 
-        <link rel="icon" type="image/svg+xml" href="{{ url('/favicon.ico') }}">
-        <link rel="alternate icon" href="{{ url('/favicon.ico') }}" type="image/x-icon">
-        <link rel="shortcut icon" href="{{ url('/favicon.ico') }}">
+        <link rel="icon" type="image/svg+xml" href="{{ url('/favicon.svg') }}">
+        <link rel="alternate icon" href="{{ url('/favicon.svg') }}" type="image/svg+xml">
+        <link rel="shortcut icon" href="{{ url('/favicon.svg') }}">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
