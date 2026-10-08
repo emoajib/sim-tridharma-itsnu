@@ -1,3 +1,3 @@
-import Show from './index';
+import Show from './Show/index';
 
 export default Show;
