@@ -99,7 +99,7 @@ jobs:
         run: php artisan migrate --force
 
       - name: Run Feature tests (Parallel)
-        run: php artisan test --testsuite=Feature --parallel --processes=4
+        run: vendor/bin/paratest --testsuite=Feature -p4
         env:
           DB_CONNECTION: sqlite
           DB_DATABASE: database/database.sqlite
@@ -169,7 +169,7 @@ jobs:
         run: php artisan migrate --force
 
       - name: Run Unit tests (Parallel)
-        run: php artisan test --testsuite=Unit --parallel --processes=4
+        run: vendor/bin/paratest --testsuite=Unit -p4
         env:
           DB_CONNECTION: sqlite
           DB_DATABASE: database/database.sqlite
