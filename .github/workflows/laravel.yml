@@ -102,7 +102,7 @@ jobs:
         run: vendor/bin/paratest --testsuite=Feature -p4
         env:
           DB_CONNECTION: sqlite
-          DB_DATABASE: database/database.sqlite
+          DB_DATABASE: ":memory:"
 
   laravel-unit:
     name: Laravel Unit (PHP ${{ matrix.php }})
@@ -172,7 +172,7 @@ jobs:
         run: vendor/bin/paratest --testsuite=Unit -p4
         env:
           DB_CONNECTION: sqlite
-          DB_DATABASE: database/database.sqlite
+          DB_DATABASE: ":memory:"
 
   frontend:
     name: Frontend (Node)
