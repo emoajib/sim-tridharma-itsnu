@@ -22,13 +22,13 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->registerPolicies();
 
-        Gate::define('admin.view', fn (User $user) => $user->can('admin.view'));
-        Gate::define('data-import.upload', fn (User $user) => $user->can('data-import.upload'));
-        Gate::define('data-import.download-template', fn (User $user) => $user->can('data-import.download-template'));
-        Gate::define('reconciliation.view', fn (User $user) => $user->can('reconciliation.view'));
-        Gate::define('reconciliation.approve', fn (User $user) => $user->can('reconciliation.approve'));
-        Gate::define('rkat.view', fn (User $user) => $user->can('rkat.view'));
-        Gate::define('iku.view', fn (User $user) => $user->can('iku.view'));
-        Gate::define('users.view', fn (User $user) => $user->can('users.view'));
+        Gate::define('admin.view', fn (User $user) => $user->hasPermissionTo('admin.view'));
+        Gate::define('data-import.upload', fn (User $user) => $user->hasPermissionTo('data-import.upload'));
+        Gate::define('data-import.download-template', fn (User $user) => $user->hasPermissionTo('data-import.download-template'));
+        Gate::define('reconciliation.view', fn (User $user) => $user->hasPermissionTo('reconciliation.view'));
+        Gate::define('reconciliation.approve', fn (User $user) => $user->hasPermissionTo('reconciliation.approve'));
+        Gate::define('rkat.view', fn (User $user) => $user->hasPermissionTo('rkat.view'));
+        Gate::define('iku.view', fn (User $user) => $user->hasPermissionTo('iku.view'));
+        Gate::define('users.view', fn (User $user) => $user->hasPermissionTo('users.view'));
     }
 }

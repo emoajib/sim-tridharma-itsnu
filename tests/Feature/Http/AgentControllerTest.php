@@ -17,6 +17,11 @@ class AgentControllerTest extends TestCase
     {
         parent::setUp();
         $this->seedOnce();
+
+        // Set key eksplisit. Sebelumnya test ini memakai literal
+        // 'default-internal-key' yang sama dengan fallback di config — jadi
+        // kunci fallback itu bocor ke test suite. Sekarang key harus di-set.
+        config(['ai-service.internal_key' => 'test-internal-key-for-phpunit']);
     }
 
     public function test_unauthenticated_user_cannot_run_agent(): void
@@ -95,7 +100,7 @@ class AgentControllerTest extends TestCase
             'triggered_by' => 'test',
         ];
 
-        $response = $this->withHeader('X-Internal-Key', 'default-internal-key')
+        $response = $this->withHeader('X-Internal-Key', config('ai-service.internal_key'))
             ->postJson('/api/internal/agents/log', $payload);
 
         $response->assertStatus(201);
@@ -118,7 +123,7 @@ class AgentControllerTest extends TestCase
             'finished_at' => '2026-01-01T00:00:01',
         ];
 
-        $response = $this->withHeader('X-Internal-Key', 'default-internal-key')
+        $response = $this->withHeader('X-Internal-Key', config('ai-service.internal_key'))
             ->postJson('/api/internal/agents/log', $payload);
 
         $response->assertStatus(422);
@@ -133,10 +138,58 @@ class AgentControllerTest extends TestCase
             'finished_at' => '2026-01-01T00:00:01',
         ];
 
-        $response = $this->withHeader('X-Internal-Key', 'default-internal-key')
+        $response = $this->withHeader('X-Internal-Key', config('ai-service.internal_key'))
             ->postJson('/api/internal/agents/log', $payload);
 
         $response->assertStatus(422);
         $response->assertJsonValidationErrors('agent_name');
+    }
+
+    /**
+     * Regression test untuk F-15.
+     *
+     * Sebelumnya config punya fallback 'default-internal-key' yang berarti
+     * salah-deploy (AI_INTERNAL_KEY kosong) membuka endpoint ini dengan kunci
+     * yang ada di source code. Sekarang harus fail-closed.
+     */
+    public function test_log_internal_fails_closed_when_key_not_configured(): void
+    {
+        config(['ai-service.internal_key' => null]);
+
+        $payload = [
+            'agent_name' => 'prediksi',
+            'status' => 'success',
+            'started_at' => '2026-01-01T00:00:00',
+            'finished_at' => '2026-01-01T00:00:01',
+        ];
+
+        // Kunci "lama" yang dulu jadi fallback — harus TIDAK diterima
+        $response = $this->withHeader('X-Internal-Key', 'default-internal-key')
+            ->postJson('/api/internal/agents/log', $payload);
+
+        $response->assertStatus(500);
+
+        $this->assertDatabaseMissing('agent_execution_log', [
+            'agent_name' => 'prediksi',
+        ]);
+    }
+
+    public function test_log_internal_rejects_wrong_key(): void
+    {
+        $payload = [
+            'agent_name' => 'prediksi',
+            'status' => 'success',
+            'started_at' => '2026-01-01T00:00:00',
+            'finished_at' => '2026-01-01T00:00:01',
+        ];
+
+        $response = $this->withHeader('X-Internal-Key', 'kunci-salah')
+            ->postJson('/api/internal/agents/log', $payload);
+
+        $response->assertStatus(401);
+
+        $this->assertDatabaseMissing('agent_execution_log', [
+            'agent_name' => 'prediksi',
+        ]);
     }
 }

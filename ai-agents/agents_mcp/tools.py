@@ -10,6 +10,28 @@ from typing import Optional
 from datetime import datetime, date
 import os
 from agents_mcp.config import MCP_SERVER_NAME, MCP_SERVER_VERSION
+
+
+def _resolve_file_path(file_path: str) -> str:
+    """
+    Resolve relative Laravel storage paths (e.g. 'storage/docs/x.pdf' or 'dokumen/x.pdf')
+    against the repo root and the public storage disk.
+    Returns the file_path unchanged when no candidate exists on disk.
+    """
+    if not file_path or os.path.isabs(file_path) and os.path.exists(file_path):
+        return file_path
+
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    candidates = [
+        file_path,
+        os.path.join(repo_root, file_path),
+        os.path.join(repo_root, "storage", "app", "public", file_path),
+        os.path.join(repo_root, "public", file_path),
+    ]
+    for candidate in candidates:
+        if os.path.exists(candidate):
+            return candidate
+    return file_path
 from agents_mcp.auth import verify_mcp_auth
 from agents_mcp.database import execute_query, list_tables, get_table_schema
 from config import calculate_prediction
@@ -294,7 +316,7 @@ async def verifikasi_dokumen(
 
     for row in rows:
         file_path = row.get("file_path", "")
-        file_exists = os.path.exists(file_path) if file_path else False
+        file_exists = os.path.exists(_resolve_file_path(file_path)) if file_path else False
         file_size = row.get("file_size", 0)
         file_hash = row.get("hash", "")
 
@@ -388,8 +410,8 @@ async def prediksi_skor(
         p_id = r["periode_id"]
         if p_id not in period_scores:
             period_scores[p_id] = {"skor": 0, "bobot": 0}
-        period_scores[p_id]["skor"] += float(r["nilai"] or 0) * r["bobot"]
-        period_scores[p_id]["bobot"] += r["bobot"]
+        period_scores[p_id]["skor"] += float(r["nilai"] or 0) * float(r["bobot"])
+        period_scores[p_id]["bobot"] += float(r["bobot"])
 
     historical_scores = []
     for p_id in sorted(period_scores.keys()):

@@ -13,6 +13,7 @@ use App\Models\RkatPagu;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Illuminate\Support\Facades\Session;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -27,9 +28,12 @@ class RkatIkuTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
+        $this->artisan('db:seed', ['--class' => 'RolePermissionSeeder']);
+
         $this->admin = User::factory()->create();
-        $roleAdmin = Role::create(['name' => 'Admin']);
+        $roleAdmin = Role::findOrCreate('Admin');
+        $roleAdmin->givePermissionTo(Permission::all());
         $this->admin->assignRole($roleAdmin);
         Session::put('active_role', 'Admin');
         
@@ -114,7 +118,7 @@ class RkatIkuTest extends TestCase
 
     public function test_can_submit_rkat_usulan()
     {
-        $roleKaprodi = Role::create(['name' => 'Kaprodi']);
+        $roleKaprodi = Role::findOrCreate('Kaprodi');
         $user = User::factory()->create(['prodi_id' => $this->prodi->id]);
         $user->assignRole($roleKaprodi);
         Session::put('active_role', 'Kaprodi');
@@ -155,7 +159,7 @@ class RkatIkuTest extends TestCase
 
     public function test_cannot_submit_rkat_exceeding_pagu()
     {
-        $roleKaprodi = Role::create(['name' => 'Kaprodi']);
+        $roleKaprodi = Role::findOrCreate('Kaprodi');
         $user = User::factory()->create(['prodi_id' => $this->prodi->id]);
         $user->assignRole($roleKaprodi);
         Session::put('active_role', 'Kaprodi');

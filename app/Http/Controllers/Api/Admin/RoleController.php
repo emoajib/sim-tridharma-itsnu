@@ -47,6 +47,8 @@ class RoleController extends Controller
 
     public function store(Request $request)
     {
+        $this->guardSuperAdmin($request);
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:roles,name'],
             'guard_name' => ['nullable', 'string', 'max:255'],
@@ -68,6 +70,8 @@ class RoleController extends Controller
 
     public function update(Request $request, Role $role)
     {
+        $this->guardSuperAdmin($request);
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('roles')->ignore($role->id)],
             'permission_ids' => ['nullable', 'array'],
@@ -85,12 +89,26 @@ class RoleController extends Controller
 
     public function syncPermissions(Request $request, Role $role)
     {
+        // Roles & permissions ADALAH model otorisasi. Mengubahnya berarti
+        // mengubah siapa yang boleh apa — jadi butuh privilege tertinggi.
+        // Tanpa guard ini, admin biasa bisa memberi permission admin.* ke role
+        // miliknya sendiri lalu escalate lewat role itu.
+        $this->guardSuperAdmin($request);
+
         $validated = $request->validate([
             'permission_ids' => ['required', 'array'],
             'permission_ids.*' => ['integer', 'exists:permissions,id'],
         ]);
 
-        $role->syncPermissions(Permission::whereIn('id', $validated['permission_ids'])->pluck('name'));
+        $permissionNames = Permission::whereIn('id', $validated['permission_ids'])->pluck('name');
+
+        $role->syncPermissions($permissionNames);
+
+        Log::warning('Role permissions changed', [
+            'actor' => $request->user()?->email,
+            'role' => $role->name,
+            'permission_count' => $permissionNames->count(),
+        ]);
 
         return response()->json([
             'success' => true,
@@ -98,14 +116,35 @@ class RoleController extends Controller
         ]);
     }
 
-    public function destroy(Role $role)
+    public function destroy(Request $request, Role $role)
     {
-        if ($role->name === 'Super Admin') {
-            return back()->with('error', 'Tidak dapat menghapus role Super Admin.');
+        $this->guardSuperAdmin($request);
+
+        // Proteksi berbasis nama (bukan hanya 1 role): seluruh role
+        // lintas-fakultas tidak boleh dihapus dari UI biasa.
+        if (in_array($role->name, ['Super Admin', 'Rektor', 'WR 1 Akademik',
+            'WR 2 Keuangan & Sarpras', 'WR 3 Kemahasiswaan', 'LPM'], true)) {
+            return back()->with('error', 'Tidak dapat menghapus role lintas-fakultas.');
         }
 
+        $name = $role->name;
         $role->delete();
 
-        return back()->with('success', "Role '{$role->name}' berhasil dihapus.");
+        Log::warning('Role deleted', [
+            'actor' => $request->user()?->email,
+            'role' => $name,
+        ]);
+
+        return back()->with('success', "Role '{$name}' berhasil dihapus.");
+    }
+
+    /**
+     * Manage role & permission hanya untuk Super Admin.
+     */
+    private function guardSuperAdmin(Request $request): void
+    {
+        if (! $request->user()?->hasRole('Super Admin')) {
+            abort(403, 'Hanya Super Admin yang dapat mengelola role dan permission.');
+        }
     }
 }

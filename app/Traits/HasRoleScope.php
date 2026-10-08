@@ -28,7 +28,7 @@ trait HasRoleScope
             'Bagian Akademik' => $query,
 
             'Dekan' => $query->whereIn($scopeField,
-                Prodi::where('fakultas_id', $user->prodi->fakultas_id ?? 0)
+                Prodi::where('fakultas_id', $user->prodi?->fakultas_id ?? 0)
                     ->pluck('id')
             ),
 
@@ -39,7 +39,10 @@ trait HasRoleScope
 
             'Asesor Tamu' => $query->whereRaw('1=0'),
 
-            default => $query,
+            // Fail-closed: role yang tidak dikenal TIDAK boleh melihat data.
+            // Sama dengan default applyOrmawaScope(). Menambah role baru harus
+            // conscious decision di match ini, bukan otomatis dapat akses semua.
+            default => $query->whereRaw('1=0'),
         };
     }
 

@@ -68,6 +68,23 @@ class UserController extends Controller
         // Cross-validation for role requirements
         $this->validateRoleRequirements($request, $validated['role_ids'] ?? []);
 
+        // Guard yang sama seperti update()/syncRoles(): tanpa ini, admin biasa
+        // bisa POST /admin/users dengan role_ids Super Admin dan membuat
+        // akun Super Admin baru.
+        if (! empty($validated['role_ids'])) {
+            $this->guardPrivilegedRoleMutation(
+                $request,
+                Role::whereIn('id', $validated['role_ids'])->pluck('name')->toArray()
+            );
+        }
+
+        // Non-Super-Admin tidak boleh membuat user di luar prodi-nya
+        if (! $request->user()->hasRole('Super Admin')
+            && ! empty($validated['prodi_id'])
+            && (int) $validated['prodi_id'] !== (int) ($request->user()->prodi_id ?? 0)) {
+            abort(403, 'Hanya Super Admin yang dapat membuat user di program studi lain.');
+        }
+
         $validated['password'] = Hash::make($validated['password']);
         $validated['is_active'] = $validated['is_active'] ?? true;
         $roleIds = $validated['role_ids'] ?? [];
@@ -83,6 +100,8 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
+        $this->guardUserScope($request, $user);
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
@@ -93,6 +112,23 @@ class UserController extends Controller
             'dosen_id' => ['nullable', 'integer', 'exists:m_dosen,id'],
             'prodi_id' => ['nullable', 'integer', 'exists:m_prodi,id'],
         ]);
+
+        // Guard escalation:-this request boleh menaikkan role target ke role
+        // lintas-fakultas? Kalau tidak, tolak SEBELUM touch data.
+        if (! empty($validated['role_ids'])) {
+            $this->guardPrivilegedRoleMutation(
+                $request,
+                Role::whereIn('id', $validated['role_ids'])->pluck('name')->toArray()
+            );
+        }
+
+        // Non-Super-Admin tidak boleh memindahkan user ke prodi lain
+        if (! $request->user()->hasRole('Super Admin')
+            && array_key_exists('prodi_id', $validated)
+            && ! empty($validated['prodi_id'])
+            && (int) $validated['prodi_id'] !== (int) $user->prodi_id) {
+            abort(403, 'Hanya Super Admin yang dapat memindahkan user antar program studi.');
+        }
 
         // Cross-validation for role requirements
         $this->validateRoleRequirements($request, $validated['role_ids'] ?? []);
@@ -113,6 +149,73 @@ class UserController extends Controller
         }
 
         return back()->with('success', "User '{$user->name}' berhasil diperbarui.");
+    }
+
+    /**
+     * Role yang memberiKuasa lintas-fakultas / lintas-prodi.
+     * Hanya Super Admin boleh memberikan atau mencabut role ini.
+     */
+    private const PRIVILEGED_ROLES = [
+        'Super Admin',
+        'Rektor',
+        'WR 1 Akademik',
+        'WR 2 Keuangan & Sarpras',
+        'WR 3 Kemahasiswaan',
+        'LPM',
+        'Kepala LPPM',
+        'Staf LPPM',
+        'Kepala Lembaga Kerjasama',
+        'Staf Kerjasama',
+        'Bagian Akademik',
+    ];
+
+    /**
+     * Cegah privilege escalation: role hierarkis hanya boleh diubah oleh Super Admin.
+     * Tanpa guard ini, admin biasa bisa memanggil sync-roles dengan role_ids
+     * berisi Super Admin dan membuat user mana pun jadi Super Admin.
+     */
+    private function guardPrivilegedRoleMutation(Request $request, array $roleNames): void
+    {
+        $touchesPrivileged = array_intersect($roleNames, self::PRIVILEGED_ROLES);
+
+        if ($touchesPrivileged === []) {
+            return;
+        }
+
+        if (! $request->user()?->hasRole('Super Admin')) {
+            abort(403, 'Hanya Super Admin yang dapat memberikan roleAcross-fakultas.');
+        }
+    }
+
+    /**
+     * Cegah cross-tenant: selain Super Admin, hanya boleh mengelola user
+     * di prodi sendiri. Tanpa ini, Kaprodi prodi A bisa edit/hapus user prodi B
+     * hanya dengan Systemicroute binding {user}.
+     */
+    private function guardUserScope(Request $request, User $target): void
+    {
+        $actor = $request->user();
+
+        if (! $actor) {
+            abort(403);
+        }
+
+        if ($actor->hasRole('Super Admin')) {
+            return;
+        }
+
+        // Cegah modifikasi akun yang saat ini punya role privileged
+        if (array_intersect($target->getRoleNames()->toArray(), self::PRIVILEGED_ROLES) !== []) {
+            abort(403, 'Tidak dapat mengelola akun dengan role lintas-fakultas.');
+        }
+
+        $actorProdi = $actor->prodi_id ?? null;
+        $targetProdi = $target->prodi_id ?? null;
+
+        // Admin yang punya prodi hanya boleh mengelola user prodi-nya sendiri
+        if ($actorProdi !== null && (int) $actorProdi !== (int) $targetProdi) {
+            abort(403, 'Akun ini berada di luar lingkup program studi Anda.');
+        }
     }
 
     private function validateRoleRequirements(Request $request, array $roleIds): void
@@ -174,29 +277,65 @@ class UserController extends Controller
         ]);
     }
 
-    public function destroy(User $user)
+    public function destroy(Request $request, User $user)
     {
-        if ($user->email === 'admin@itsnu.ac.id') {
-            return back()->with('error', 'Tidak dapat menghapus Super Admin utama.');
+        $this->guardUserScope($request, $user);
+
+        // Jangan sampai admin menghapus akunnya sendiri
+        if ((int) $request->user()->id === (int) $user->id) {
+            return back()->with('error', 'Tidak dapat menghapus akun Anda sendiri.');
         }
+
+        // Proteksi berbasis ROLE, bukan email. Sebelumnya hanya
+        // $user->email === 'admin@itsnu.ac.id' yang dilindungi, jadi akun
+        // Super Admin kedua (dengan email berbeda) tetap bisa dihapus.
+        if ($user->hasRole('Super Admin')) {
+            return back()->with('error', 'Tidak dapat menghapus akun Super Admin.');
+        }
+
+        $email = $user->email;
 
         $user->delete();
 
-        return back()->with('success', "User '{$user->name}' berhasil dihapus.");
+        Log::warning('User deleted', [
+            'actor' => $request->user()?->email,
+            'target' => $email,
+        ]);
+
+        return back()->with('success', "User '{$email}' berhasil dihapus.");
     }
 
     public function syncRoles(Request $request, User $user)
     {
+        $this->guardUserScope($request, $user);
+
         $validated = $request->validate([
             'role_ids' => ['required', 'array'],
             'role_ids.*' => ['integer', 'exists:roles,id'],
         ]);
 
-        $user->syncRoles(Role::whereIn('id', $validated['role_ids'])->pluck('name'));
+        $roleNames = Role::whereIn('id', $validated['role_ids'])->pluck('name')->toArray();
+
+        // Inti guard privilege escalation: role lintas-fakultas hanya boleh
+        // diberikan oleh Super Admin.
+        $this->guardPrivilegedRoleMutation($request, $roleNames);
+
+        // Mencabut role privileged dari akun yang memilikinya juga perlu otorisasi
+        $this->guardPrivilegedRoleMutation($request, $user->getRoleNames()->toArray());
+
+        $from = $user->getRoleNames()->toArray();
+        $user->syncRoles($roleNames);
+
+        Log::warning('Role assignment changed', [
+            'actor' => $request->user()?->email,
+            'target' => $user->email,
+            'from' => $from,
+            'to' => $roleNames,
+        ]);
 
         return response()->json([
             'success' => true,
-            'roles' => $user->getRoleNames()->toArray(),
+            'roles' => $roleNames,
         ]);
     }
 

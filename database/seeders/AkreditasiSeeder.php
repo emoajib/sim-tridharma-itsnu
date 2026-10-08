@@ -62,7 +62,7 @@ class AkreditasiSeeder extends Seeder
                         'nilai' => $nilai,
                         'status' => $status,
                         'capaian' => 'Capaian indikator: '.$nilai.'%',
-                        'bukti' => 'Dokumen bukti #'.rand(100, 999),
+                        'catatan' => 'Dokumen bukti #'.rand(100, 999),
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);

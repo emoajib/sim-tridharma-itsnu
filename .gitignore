@@ -18,6 +18,9 @@ auth.json
 Thumbs.db
 *.log
 ai-agents/venv/
+ai-agents/output/
+ai-agents/.env.bak
+*.bak
 ai-service/venv/
 ai-service/venv/**
 sim_tridharma_itsnu*

@@ -7,6 +7,8 @@ use App\Http\Requests\AgentRunRequest;
 use App\Models\AgentExecutionLog;
 use App\Services\MCP\MCPClientService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class AgentController extends Controller
 {
@@ -42,9 +44,19 @@ class AgentController extends Controller
                 'status' => 'completed',
                 'result' => $result,
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            // Jangan kirim detail exception ke client: pesan PDO/Laravel
+            // mengandung host database, path absolut, dan nama tabel.
+            Log::error('Agent run failed', [
+                'agent' => $agent,
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile() . ':' . $e->getLine(),
+            ]);
+
             return response()->json([
-                'error' => "Agent {$agent} failed: ".$e->getMessage(),
+                'error' => "Agent {$agent} gagal dijalankan.",
+                'correlation_id' => Str::uuid()->toString(),
             ], 500);
         }
     }
@@ -60,7 +72,7 @@ class AgentController extends Controller
     public function latestResults(Request $request)
     {
         $agent = $request->query('agent');
-        $limit = min((int) $request->query('limit', 10), 50);
+        $limit = max(1, min((int) $request->query('limit', 10), 50));
 
         $query = AgentExecutionLog::query()->latest();
 

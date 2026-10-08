@@ -40,7 +40,7 @@ class AuditMutuControllerTest extends BaseCrudTestCase
             'periode_id' => PeriodeAkademik::factory()->create()->id,
             'judul_audit' => 'Audit Mutu Internal Updated',
             'tanggal_audit' => '2025-01-01',
-            'status' => 'open',
+            'status' => 'submitted',
         ];
     }
 

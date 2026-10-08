@@ -3,6 +3,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from unittest.mock import patch, AsyncMock
+import asyncio
 import pytest
 
 from agents_mcp.tools import (
@@ -13,6 +14,10 @@ from agents_mcp.tools import (
     _NoOpContext,
     _ctx,
 )
+
+
+def run_coro(coro):
+    return asyncio.run(coro)
 
 
 class TestNoOpContext:
@@ -159,6 +164,19 @@ class TestVerifikasiDokumen:
 
         assert result["total_documents"] == 1
         assert result["valid_count"] == 1
+        assert result["results"][0]["status"] == "valid"
+
+    @patch("agents_mcp.tools.execute_query", new_callable=AsyncMock)
+    def test_resolve_relative_storage_path(self, mock_query):
+        mock_query.return_value = [
+            {"id": 1, "nama_dokumen": "Dokumen", "file_path": "storage/docs/x.pdf",
+             "file_size": 1024, "hash": "abc123", "keterangan": None,
+             "nama_depan": "John", "nama_belakang": "Doe"},
+        ]
+
+        with patch("agents_mcp.tools.os.path.exists", side_effect=lambda p: p.endswith("storage/docs/x.pdf")):
+            result = run_coro(verifikasi_dokumen(prodi_id=1))
+
         assert result["results"][0]["status"] == "valid"
 
     @patch("agents_mcp.tools.execute_query", new_callable=AsyncMock)
